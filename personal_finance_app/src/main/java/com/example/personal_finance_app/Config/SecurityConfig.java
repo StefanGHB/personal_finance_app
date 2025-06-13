@@ -3,17 +3,13 @@ package com.example.personal_finance_app.Config;
 import com.example.personal_finance_app.Entity.User;
 import com.example.personal_finance_app.Service.CustomOAuth2UserService;
 import com.example.personal_finance_app.Service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -24,11 +20,6 @@ public class SecurityConfig {
 
     public SecurityConfig(CustomOAuth2UserService customOAuth2UserService) {
         this.customOAuth2UserService = customOAuth2UserService;
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 
     @Bean
@@ -57,8 +48,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // Disabled за API calls
 
                 .authorizeHttpRequests(auth -> auth
-                        // Публични ресурси
+                        // Публични ресурси - СТАТИЧНИ ФАЙЛОВЕ
                         .requestMatchers("/", "/login", "/register").permitAll()
+                        .requestMatchers("/static/**").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
 
                         // API endpoints за регистрация
