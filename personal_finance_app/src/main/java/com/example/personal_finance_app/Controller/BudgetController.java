@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/budgets")
-@CrossOrigin(origins = "*")
 public class BudgetController {
 
     @Autowired
