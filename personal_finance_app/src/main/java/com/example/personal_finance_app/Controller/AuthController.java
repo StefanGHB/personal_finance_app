@@ -2,9 +2,12 @@ package com.example.personal_finance_app.Controller;
 
 import com.example.personal_finance_app.Entity.User;
 import com.example.personal_finance_app.Service.CategoryService;
+import com.example.personal_finance_app.Service.CustomOAuth2User;
 import com.example.personal_finance_app.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,7 +16,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
 public class AuthController {
 
     @Autowired
@@ -21,6 +23,14 @@ public class AuthController {
 
     @Autowired
     private CategoryService categoryService;
+
+    // Static reference за getCurrentUserId() method
+    private static ApplicationContext applicationContext;
+
+    @Autowired
+    public void setApplicationContext(ApplicationContext context) {
+        AuthController.applicationContext = context;
+    }
 
     /**
      * API Register endpoint - създава нов акаунт
@@ -53,20 +63,39 @@ public class AuthController {
     }
 
     /**
-     * Получаване на текущия автентикиран потребител
+     * Получаване на текущия автентикиран потребител (поддържа и OAuth)
      */
     @GetMapping("/current-user")
     public ResponseEntity<Map<String, Object>> getCurrentUser() {
         try {
-            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-            if ("anonymousUser".equals(email)) {
+            if (authentication == null || !authentication.isAuthenticated() ||
+                    "anonymousUser".equals(authentication.getName())) {
                 Map<String, Object> response = new HashMap<>();
                 response.put("authenticated", false);
                 return ResponseEntity.ok(response);
             }
 
-            User user = userService.findByEmail(email);
+            User user = null;
+
+            // Проверка дали е OAuth потребител
+            if (authentication.getPrincipal() instanceof CustomOAuth2User) {
+                CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
+                user = oAuth2User.getUser();
+            }
+            // Проверка дали е обикновен потребител
+            else if (authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.User) {
+                String email = authentication.getName();
+                user = userService.findByEmail(email);
+            }
+
+            if (user == null) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("authenticated", false);
+                response.put("error", "User not found");
+                return ResponseEntity.ok(response);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("authenticated", true);
@@ -76,35 +105,49 @@ public class AuthController {
             response.put("lastName", user.getLastName());
             response.put("fullName", user.getFullName());
             response.put("provider", user.getProvider().name());
+            response.put("isOAuthUser", user.isOAuthUser());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, Object> error = new HashMap<>();
             error.put("authenticated", false);
-            error.put("error", "User not found");
+            error.put("error", "Authentication error: " + e.getMessage());
             return ResponseEntity.badRequest().body(error);
         }
     }
 
     /**
      * Helper method за получаване на current user ID в другите контролери
+     * ФИКС: Сега работи както за OAuth, така и за обикновени потребители
      */
     public static Long getCurrentUserId() {
         try {
-            String email = SecurityContextHolder.getContext().getAuthentication().getName();
-            if ("anonymousUser".equals(email)) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null || !authentication.isAuthenticated() ||
+                    "anonymousUser".equals(authentication.getName())) {
                 throw new RuntimeException("User not authenticated");
             }
 
-            // TODO: Оптимизация - кеширане на user ID в сесията
-            // За сега трябва да намерим user-а по email всеки път
-            // В реална имплементация би трябвало да се кешира ID-то
+            // OAuth потребител
+            if (authentication.getPrincipal() instanceof CustomOAuth2User) {
+                CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
+                return oAuth2User.getUserId();
+            }
+            // Обикновен потребител - намираме ID по email
+            else if (authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.User) {
+                String email = authentication.getName();
 
-            // Временно решение за тестване - връщаме ID=1
-            return 1L;
+                // Получаваме UserService през ApplicationContext
+                UserService userService = applicationContext.getBean(UserService.class);
+                User user = userService.findByEmail(email);
+                return user.getId();
+            }
+
+            throw new RuntimeException("Unknown authentication type");
 
         } catch (Exception e) {
-            throw new RuntimeException("User not authenticated");
+            throw new RuntimeException("User not authenticated: " + e.getMessage());
         }
     }
 }
