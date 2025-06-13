@@ -1,13 +1,14 @@
 package com.example.personal_finance_app.Config;
 
 import com.example.personal_finance_app.Entity.User;
+import com.example.personal_finance_app.Service.CustomOAuth2UserService;
 import com.example.personal_finance_app.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.UserDetails;
+
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -21,6 +22,9 @@ public class SecurityConfig {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private CustomOAuth2UserService customOAuth2UserService;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -33,9 +37,12 @@ public class SecurityConfig {
                 User user = userService.findByEmail(email);
                 return org.springframework.security.core.userdetails.User.builder()
                         .username(user.getEmail())
-                        .password(user.getPassword())
+                        .password(user.getPassword() != null ? user.getPassword() : "") // OAuth users няма парола
                         .authorities("USER")
                         .disabled(!user.getIsEnabled())
+                        .accountLocked(false)
+                        .accountExpired(false)
+                        .credentialsExpired(false)
                         .build();
             } catch (Exception e) {
                 throw new UsernameNotFoundException("User not found: " + email);
@@ -57,6 +64,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/register", "/api/users/check-email").permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/current-user").permitAll()
 
+                        // OAuth endpoints
+                        .requestMatchers("/oauth2/**").permitAll()
+
                         // Всички останали изискват автентикация
                         .requestMatchers("/api/**").authenticated()
                         .requestMatchers("/dashboard", "/app/**").authenticated()
@@ -71,6 +81,15 @@ public class SecurityConfig {
                         .defaultSuccessUrl("/dashboard", true) // При успешен login → dashboard
                         .failureUrl("/?error=true") // При грешка → landing page с error
                         .permitAll()
+                )
+
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/") // Същата landing page за OAuth
+                        .defaultSuccessUrl("/dashboard", true) // При успешен OAuth login → dashboard
+                        .failureUrl("/?error=oauth") // При OAuth грешка
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService) // Нашия custom service
+                        )
                 )
 
                 .logout(logout -> logout
