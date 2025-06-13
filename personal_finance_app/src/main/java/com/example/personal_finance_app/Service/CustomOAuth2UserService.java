@@ -5,6 +5,7 @@ import com.example.personal_finance_app.Enum.AuthProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -17,9 +18,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private static final Logger logger = LoggerFactory.getLogger(CustomOAuth2UserService.class);
 
     @Autowired
+    @Lazy
     private UserService userService;
 
     @Autowired
+    @Lazy
     private CategoryService categoryService;
 
     @Override
