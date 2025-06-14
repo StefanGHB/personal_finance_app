@@ -1,9 +1,12 @@
 /*
- * PERSONAL FINANCE - MODERN LANDING PAGE JAVASCRIPT
- * Handles interactions, form submissions, and enhanced user experience
+ * PERSONAL FINANCE - COMPLETE LANDING PAGE JAVASCRIPT
+ * Final version with clean password validation and email confirmation
  */
 
-// DOM Content Loaded - Initialize everything
+// ==========================================
+// CORE INITIALIZATION
+// ==========================================
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeTabs();
     initializeFormHandlers();
@@ -12,13 +15,18 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeScrollEffects();
     initializeParallaxEffects();
     handleURLParameters();
-    initializeFormValidation();
+
+    // Initialize clean password validation
+    setTimeout(() => {
+        initializeCleanPasswordValidation();
+        console.log('✅ All systems initialized');
+    }, 200);
 });
 
-/*
- * TAB SWITCHING FUNCTIONALITY
- * Enhanced tab switching with smooth animations
- */
+// ==========================================
+// TAB SWITCHING FUNCTIONALITY
+// ==========================================
+
 function initializeTabs() {
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -55,22 +63,23 @@ function initializeTabs() {
     });
 }
 
-/*
- * FORM HANDLERS
- * Enhanced form submission with loading states and animations
- */
+// ==========================================
+// FORM HANDLERS
+// ==========================================
+
 function initializeFormHandlers() {
     const registerForm = document.getElementById('register-form');
+    const loginForm = document.querySelector('.auth-form[action="/login"]');
 
     if (registerForm) {
         registerForm.addEventListener('submit', handleRegistration);
     }
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
 }
 
-/*
- * REGISTRATION FORM HANDLER
- * Enhanced with loading animations and better UX
- */
 async function handleRegistration(event) {
     event.preventDefault();
 
@@ -78,7 +87,8 @@ async function handleRegistration(event) {
     const submitButton = form.querySelector('button[type="submit"]');
     const originalButtonContent = submitButton.innerHTML;
 
-    // Get form data
+    console.log('🚀 Registration started');
+
     const formData = {
         firstName: form.firstName.value.trim(),
         lastName: form.lastName.value.trim(),
@@ -86,12 +96,15 @@ async function handleRegistration(event) {
         password: form.password.value
     };
 
-    // Basic validation
-    if (!validateRegistrationForm(formData)) {
+    console.log('📝 Form data collected:', { ...formData, password: '[HIDDEN]' });
+
+    if (!validateRegistrationFormEnhanced(formData)) {
+        console.log('❌ Validation failed');
         return;
     }
 
-    // Show loading state with animation
+    console.log('✅ Validation passed');
+
     submitButton.disabled = true;
     submitButton.innerHTML = `
         <span class="loading-spinner"></span>
@@ -100,6 +113,8 @@ async function handleRegistration(event) {
     submitButton.classList.add('loading');
 
     try {
+        console.log('🌐 Sending request to backend...');
+
         const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: {
@@ -108,37 +123,49 @@ async function handleRegistration(event) {
             body: JSON.stringify(formData)
         });
 
+        console.log('📡 Response received:', response.status);
+
         const data = await response.json();
+        console.log('📄 Response data:', data);
 
         if (data.success) {
-            // Success animation
+            console.log('✅ Registration successful!');
+
             submitButton.innerHTML = `
                 <span>✓</span>
                 <span>Account Created!</span>
             `;
             submitButton.classList.add('success');
 
-            // Show success message and switch to login tab
-            showMessage('Registration successful! Please sign in with your credentials.', 'success');
+            if (data.emailSent) {
+                showCompactEmailConfirmation(data.email);
+            } else {
+                showMessage(data.message || 'Account created successfully!', 'success');
+            }
+
+            // ИЗЧИСТВАМЕ ФОРМАТА при успех
             form.reset();
             resetFormLabels();
 
-            setTimeout(() => {
-                switchToLoginTab();
-            }, 1500);
-
         } else {
-            // Error from server
+            console.log('❌ Registration failed:', data.error);
             showMessage(data.error || 'Registration failed. Please try again.', 'error');
             shakeForm(form);
+
+            // ИЗЧИСТВАМЕ ФОРМАТА при грешка
+            form.reset();
+            resetFormLabels();
         }
 
     } catch (error) {
-        console.error('Registration error:', error);
-        showMessage('Network error. Please check your connection and try again.', 'error');
+        console.error('💥 Network error:', error);
+        showMessage('Network connection error. Please check your internet connection and try again.', 'error');
         shakeForm(form);
+
+        // ИЗЧИСТВАМЕ ФОРМАТА при грешка
+        form.reset();
+        resetFormLabels();
     } finally {
-        // Reset button state after delay
         setTimeout(() => {
             submitButton.disabled = false;
             submitButton.innerHTML = originalButtonContent;
@@ -147,53 +174,303 @@ async function handleRegistration(event) {
     }
 }
 
-/*
- * FORM VALIDATION
- * Enhanced real-time validation with visual feedback
- */
-function validateRegistrationForm(data) {
-    clearMessages();
-    let isValid = true;
+// ==========================================
+// CLEAN PASSWORD VALIDATION SYSTEM
+// ==========================================
 
-    // Check required fields with individual validation
-    const validations = [
-        { field: 'firstName', value: data.firstName, message: 'First name is required.' },
-        { field: 'lastName', value: data.lastName, message: 'Last name is required.' },
-        { field: 'email', value: data.email, message: 'Email is required.' },
-        { field: 'password', value: data.password, message: 'Password is required.' }
-    ];
+function validatePassword(password) {
+    console.log('🔐 validatePassword called with:', password ? `"${password}" (length: ${password.length})` : 'empty password');
 
-    validations.forEach(validation => {
-        if (!validation.value) {
-            showFieldError(validation.field, validation.message);
-            isValid = false;
-        }
+    if (!password) {
+        console.log('❌ Password is empty');
+        return { valid: false, message: 'Password is required', level: 'empty' };
+    }
+
+    const length = password.length;
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+    console.log('🔐 Password checks:', {
+        length: length,
+        hasUpper: hasUpper,
+        hasLower: hasLower,
+        hasNumber: hasNumber,
+        hasSpecial: hasSpecial
     });
 
-    // Email validation
-    if (data.email && !isValidEmail(data.email)) {
-        showFieldError('email', 'Please enter a valid email address.');
-        isValid = false;
+    // Length check first
+    if (length < 8) {
+        console.log('❌ Password too short');
+        return {
+            valid: false,
+            message: `Password must be at least 8 characters (${8 - length} more needed)`,
+            level: 'invalid'
+        };
     }
 
-    // Password validation
-    if (data.password && data.password.length < 8) {
-        showFieldError('password', 'Password must be at least 8 characters long.');
-        isValid = false;
+    // Format requirements
+    const requirements = [hasUpper, hasLower, hasNumber, hasSpecial];
+    const metCount = requirements.filter(Boolean).length;
+
+    console.log('🔐 Met requirements count:', metCount);
+
+    if (metCount < 3) {
+        const missing = [];
+        if (!hasUpper) missing.push('uppercase letter');
+        if (!hasLower) missing.push('lowercase letter');
+        if (!hasNumber) missing.push('number');
+        if (!hasSpecial) missing.push('special character');
+
+        console.log('❌ Not enough requirements met. Missing:', missing);
+        return {
+            valid: false,
+            message: `Add: ${missing.slice(0, 2).join(', ')}`,
+            level: 'weak'
+        };
     }
 
-    return isValid;
+    // Calculate strength score
+    let score = 0;
+    if (length >= 8) score += 25;
+    if (length >= 12) score += 20;
+    score += metCount * 15;
+
+    // Penalties
+    if (/(.)\1{2,}/.test(password)) score -= 15;
+    if (/123|abc|password|admin/i.test(password)) score -= 20;
+
+    // Determine level
+    let level = 'fair';
+    let message = 'Password strength: acceptable';
+
+    if (score >= 80) {
+        level = 'excellent';
+        message = 'Password strength: excellent';
+    } else if (score >= 65) {
+        level = 'good';
+        message = 'Password strength: strong';
+    } else if (score < 45) {
+        level = 'weak';
+        message = 'Password strength: weak';
+    }
+
+    console.log('✅ Password validation passed:', { level, message, score });
+    return { valid: true, message, level, score };
 }
 
-/*
- * FORM ENHANCEMENTS
- * Modern form interactions and animations
- */
+function createPasswordTooltip(input) {
+    const tooltipId = 'password-tooltip-' + Math.random().toString(36).substr(2, 9);
+
+    const tooltip = document.createElement('div');
+    tooltip.id = tooltipId;
+    tooltip.className = 'password-tooltip hidden';
+    tooltip.innerHTML = `
+        <div class="tooltip-content">
+            <div class="strength-indicator">
+                <div class="strength-bar-mini"></div>
+            </div>
+            <div class="strength-message">Enter password...</div>
+            <div class="requirements-compact">
+                <span class="req" data-req="length">8+ chars</span>
+                <span class="req" data-req="upper">A-Z</span>
+                <span class="req" data-req="lower">a-z</span>
+                <span class="req" data-req="number">0-9</span>
+                <span class="req" data-req="special">!@#</span>
+            </div>
+        </div>
+        <div class="tooltip-arrow"></div>
+    `;
+
+    document.body.appendChild(tooltip);
+
+    // Position tooltip
+    function positionTooltip() {
+        const rect = input.getBoundingClientRect();
+        const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+
+        tooltip.style.position = 'absolute';
+        tooltip.style.left = (rect.left + scrollX) + 'px';
+        tooltip.style.top = (rect.bottom + scrollY + 8) + 'px';
+        tooltip.style.zIndex = '10000';
+    }
+
+    input.addEventListener('focus', () => {
+        positionTooltip();
+        tooltip.classList.remove('hidden');
+        tooltip.classList.add('visible');
+    });
+
+    input.addEventListener('blur', () => {
+        setTimeout(() => {
+            tooltip.classList.remove('visible');
+            tooltip.classList.add('hidden');
+        }, 150);
+    });
+
+    input.addEventListener('input', () => {
+        updatePasswordTooltip(tooltip, input.value);
+    });
+
+    window.addEventListener('resize', positionTooltip);
+    window.addEventListener('scroll', positionTooltip);
+
+    return tooltip;
+}
+
+function updatePasswordTooltip(tooltip, password) {
+    const validation = validatePassword(password);
+    const strengthBar = tooltip.querySelector('.strength-bar-mini');
+    const strengthMessage = tooltip.querySelector('.strength-message');
+    const requirements = tooltip.querySelectorAll('.req');
+
+    // Update strength bar
+    let progress = 0;
+    let barClass = 'empty';
+
+    if (validation.level === 'invalid') {
+        progress = Math.min(40, (password.length / 8) * 40);
+        barClass = 'invalid';
+    } else if (validation.level === 'weak') {
+        progress = 45;
+        barClass = 'weak';
+    } else if (validation.level === 'fair') {
+        progress = 65;
+        barClass = 'fair';
+    } else if (validation.level === 'good') {
+        progress = 80;
+        barClass = 'good';
+    } else if (validation.level === 'excellent') {
+        progress = 100;
+        barClass = 'excellent';
+    }
+
+    strengthBar.style.width = progress + '%';
+    strengthBar.className = `strength-bar-mini ${barClass}`;
+    strengthMessage.textContent = validation.message;
+    strengthMessage.className = `strength-message ${validation.level}`;
+
+    // Update individual requirements
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    const hasLength = password.length >= 8;
+
+    const checks = {
+        length: hasLength,
+        upper: hasUpper,
+        lower: hasLower,
+        number: hasNumber,
+        special: hasSpecial
+    };
+
+    requirements.forEach(req => {
+        const type = req.dataset.req;
+        const isMet = checks[type];
+
+        req.classList.remove('met', 'unmet');
+        req.classList.add(isMet ? 'met' : 'unmet');
+    });
+
+    // Update input styling
+    const currentInput = document.querySelector('input[type="password"]:focus');
+    if (currentInput) {
+        const wrapper = currentInput.closest('.input-wrapper');
+        if (wrapper) {
+            wrapper.classList.remove('password-empty', 'password-invalid', 'password-weak', 'password-fair', 'password-good', 'password-excellent');
+            wrapper.classList.add(`password-${validation.level}`);
+        }
+    }
+}
+
+function validatePasswordField(input) {
+    console.log('🔐 validatePasswordField called');
+    const password = input.value;
+    console.log('🔐 Input password value:', password ? `"${password}"` : 'empty');
+
+    const validation = validatePassword(password);
+    console.log('🔐 Password validation result:', validation);
+
+    // Clear existing errors
+    const wrapper = input.closest('.input-wrapper') || input.parentElement;
+    const existingError = wrapper.querySelector('.field-error');
+    if (existingError) existingError.remove();
+    wrapper.classList.remove('has-error');
+
+    if (!validation.valid) {
+        console.log('❌ Password validation failed, showing error:', validation.message);
+        // Show error
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error';
+        errorDiv.textContent = validation.message;
+        wrapper.appendChild(errorDiv);
+        wrapper.classList.add('has-error');
+        return false;
+    }
+
+    console.log('✅ Password validation passed');
+    return true;
+}
+
+function initializeCleanPasswordValidation() {
+    const passwordInputs = document.querySelectorAll('input[type="password"]');
+
+    passwordInputs.forEach(input => {
+        createPasswordTooltip(input);
+
+        input.addEventListener('blur', () => {
+            if (input.value) {
+                validatePasswordField(input);
+            }
+        });
+    });
+
+    console.log('✅ Password validation initialized');
+}
+
+// ==========================================
+// COMPACT EMAIL CONFIRMATION
+// ==========================================
+
+function showCompactEmailConfirmation(email) {
+    clearMessages();
+
+    const notification = document.createElement('div');
+    notification.className = 'success-notification';
+    notification.innerHTML = `
+        <div class="notification-icon">✓</div>
+        <div class="notification-content">
+            <strong>Account created!</strong> Check ${email} to activate.
+        </div>
+        <div class="notification-close">×</div>
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => notification.classList.add('show'), 100);
+
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 6000);
+
+    notification.querySelector('.notification-close').addEventListener('click', () => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    });
+}
+
+// ==========================================
+// FORM ENHANCEMENTS
+// ==========================================
+
 function initializeFormEnhancements() {
     const formInputs = document.querySelectorAll('.form-input');
 
     formInputs.forEach(input => {
-        // Enhanced focus/blur effects
         input.addEventListener('focus', function() {
             this.parentElement.classList.add('focused');
             this.parentElement.classList.remove('error');
@@ -202,18 +479,15 @@ function initializeFormEnhancements() {
         input.addEventListener('blur', function() {
             this.parentElement.classList.remove('focused');
 
-            // Add filled class if input has value
             if (this.value.trim()) {
                 this.parentElement.classList.add('filled');
             } else {
                 this.parentElement.classList.remove('filled');
             }
 
-            // Real-time validation
             validateField(this);
         });
 
-        // Input animation on typing
         input.addEventListener('input', function() {
             if (this.value.trim()) {
                 this.parentElement.classList.add('filled');
@@ -221,21 +495,163 @@ function initializeFormEnhancements() {
                 this.parentElement.classList.remove('filled');
             }
 
-            // Clear previous errors while typing
             this.parentElement.classList.remove('error');
         });
 
-        // Check initial state
         if (input.value.trim()) {
             input.parentElement.classList.add('filled');
         }
     });
+
+    // Инициализирай real-time email валидация
+    initializeRealTimeEmailValidation();
+}
+// ==========================================
+// VALIDATION FUNCTIONS
+// ==========================================
+
+// ЗАМЕНИ ТАЗИ ФУНКЦИЯ В LANDING.JS
+// Намери функцията validateRegistrationForm и замени я с тази:
+
+// ЗАМЕНИ validateRegistrationForm функцията с тази:
+
+function validateRegistrationForm(data) {
+    console.log('🔍 Starting validation with data:', data);
+    clearMessages();
+    let isValid = true;
+
+    // Basic field validation
+    const validations = [
+        { field: 'firstName', value: data.firstName, message: 'First name is required' },
+        { field: 'lastName', value: data.lastName, message: 'Last name is required' },
+        { field: 'email', value: data.email, message: 'Email is required' }
+    ];
+
+    validations.forEach(validation => {
+        console.log(`🔍 Checking ${validation.field}:`, validation.value);
+        if (!validation.value) {
+            console.log(`❌ ${validation.field} is empty`);
+            showFieldError(validation.field, validation.message);
+            isValid = false;
+        } else {
+            console.log(`✅ ${validation.field} is OK`);
+        }
+    });
+
+    // Email validation
+    if (data.email) {
+        console.log('🔍 Validating email:', data.email);
+        if (!isValidEmail(data.email)) {
+            console.log('❌ Email format invalid');
+            showFieldError('email', 'Please enter a valid email address');
+            isValid = false;
+        } else {
+            console.log('✅ Email format OK');
+        }
+    }
+
+    // FIXED Password validation - use the data directly instead of DOM element
+    console.log('🔍 Checking password...');
+    if (!data.password) {
+        console.log('❌ Password is empty');
+        showFieldError('password', 'Password is required');
+        isValid = false;
+    } else {
+        console.log('🔍 Password provided, validating directly...');
+        const passwordValidation = validatePassword(data.password);
+        console.log('🔍 Password validation result:', passwordValidation);
+
+        if (!passwordValidation.valid) {
+            console.log('❌ Password validation failed:', passwordValidation.message);
+            showFieldError('password', passwordValidation.message);
+            isValid = false;
+        } else {
+            console.log('✅ Password validation passed');
+        }
+    }
+
+    console.log('🔍 Final validation result:', isValid);
+    return isValid;
 }
 
-/*
- * SCROLL EFFECTS
- * Enhanced scrolling animations and header effects
- */
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+function validateField(input) {
+    const value = input.value.trim();
+    const type = input.type;
+    const name = input.name;
+
+    if (type === 'email' && value && !isValidEmail(value)) {
+        showFieldError(name, 'Please enter a valid email address');
+        return false;
+    }
+
+    if (type === 'password' && value) {
+        return validatePasswordField(input);
+    }
+
+    return true;
+}
+
+// НАМЕРИ СЪЩЕСТВУВАЩАТА showFieldError функция И Я ЗАМЕНИ С:
+function showFieldError(fieldName, message) {
+    console.log('🚫 Showing field error for:', fieldName, 'Message:', message);
+
+    const input = document.querySelector(`[name="${fieldName}"]`);
+    if (!input) {
+        console.log('❌ Input field not found:', fieldName);
+        return;
+    }
+
+    const wrapper = input.closest('.input-wrapper') || input.parentElement;
+    if (!wrapper) {
+        console.log('❌ Input wrapper not found for:', fieldName);
+        return;
+    }
+
+    // Remove existing error
+    const existingError = wrapper.querySelector('.field-error');
+    if (existingError) {
+        console.log('🔄 Removing existing error for:', fieldName);
+        existingError.remove();
+    }
+    wrapper.classList.remove('has-error', 'error');
+
+    // Add new error
+    wrapper.classList.add('has-error');
+
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'field-error';
+    errorDiv.textContent = message;
+
+    // Insert after the input wrapper
+    wrapper.appendChild(errorDiv);
+
+    console.log('✅ Field error added for:', fieldName);
+
+    // Add red border to input
+    input.style.borderColor = '#ef4444';
+    input.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
+
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        if (errorDiv && errorDiv.parentNode) {
+            errorDiv.remove();
+            wrapper.classList.remove('has-error', 'error');
+            input.style.borderColor = '';
+            input.style.boxShadow = '';
+            console.log('🔄 Auto-removed error for:', fieldName);
+        }
+    }, 10000);
+}
+
+// ==========================================
+// SCROLL EFFECTS
+// ==========================================
+
 function initializeScrollEffects() {
     const header = document.querySelector('.header');
     let lastScrollY = window.scrollY;
@@ -243,7 +659,6 @@ function initializeScrollEffects() {
     window.addEventListener('scroll', function() {
         const currentScrollY = window.scrollY;
 
-        // Header background opacity based on scroll
         if (currentScrollY > 50) {
             header.style.background = 'linear-gradient(135deg, #1d4ed8 0%, #1e40af 50%, #0891b2 100%)';
             header.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.2)';
@@ -252,7 +667,6 @@ function initializeScrollEffects() {
             header.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
         }
 
-        // Hide/show header on scroll direction
         if (currentScrollY > lastScrollY && currentScrollY > 100) {
             header.style.transform = 'translateY(-100%)';
         } else {
@@ -260,16 +674,10 @@ function initializeScrollEffects() {
         }
 
         lastScrollY = currentScrollY;
-
-        // Animate elements on scroll into view
         animateOnScroll();
     });
 }
 
-/*
- * PARALLAX EFFECTS
- * Subtle parallax scrolling for modern feel
- */
 function initializeParallaxEffects() {
     const heroPattern = document.querySelector('.hero-pattern');
 
@@ -283,10 +691,6 @@ function initializeParallaxEffects() {
     });
 }
 
-/*
- * SCROLL ANIMATIONS
- * Animate elements when they come into view
- */
 function animateOnScroll() {
     const elements = document.querySelectorAll('.feature-card, .trust-card, .benefit-item');
 
@@ -300,10 +704,10 @@ function animateOnScroll() {
     });
 }
 
-/*
- * ENHANCED SMOOTH SCROLLING
- * Improved smooth scrolling with easing
- */
+// ==========================================
+// SMOOTH SCROLLING
+// ==========================================
+
 function initializeSmoothScrolling() {
     const anchorLinks = document.querySelectorAll('a[href^="#"]');
 
@@ -315,76 +719,160 @@ function initializeSmoothScrolling() {
 
             if (targetElement) {
                 e.preventDefault();
-
-                // Add ripple effect
                 createRippleEffect(this, e);
 
-                // Calculate offset for sticky header
                 const headerHeight = document.querySelector('.header').offsetHeight;
                 const targetPosition = targetElement.offsetTop - headerHeight - 20;
 
-                // Smooth scroll with easing
                 smoothScrollTo(targetPosition, 1000);
             }
         });
     });
 }
 
-/*
- * UTILITY FUNCTIONS
- */
+function smoothScrollTo(target, duration) {
+    const start = window.pageYOffset;
+    const distance = target - start;
+    let startTime = null;
 
-// Enhanced email validation
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-}
-
-// Field validation
-function validateField(input) {
-    const value = input.value.trim();
-    const type = input.type;
-    const name = input.name;
-
-    if (type === 'email' && value && !isValidEmail(value)) {
-        showFieldError(name, 'Please enter a valid email address.');
-        return false;
+    function ease(t, b, c, d) {
+        t /= d / 2;
+        if (t < 1) return c / 2 * t * t + b;
+        t--;
+        return -c / 2 * (t * (t - 2) - 1) + b;
     }
 
-    if (type === 'password' && value && value.length < 8) {
-        showFieldError(name, 'Password must be at least 8 characters long.');
-        return false;
+    function animation(currentTime) {
+        if (startTime === null) startTime = currentTime;
+        const timeElapsed = currentTime - startTime;
+        const run = ease(timeElapsed, start, distance, duration);
+        window.scrollTo(0, run);
+        if (timeElapsed < duration) requestAnimationFrame(animation);
     }
 
-    return true;
+    requestAnimationFrame(animation);
 }
 
-// Show field-specific error
-function showFieldError(fieldName, message) {
-    const input = document.querySelector(`[name="${fieldName}"]`);
-    if (input) {
-        input.parentElement.classList.add('error');
+// ==========================================
+// URL PARAMETER HANDLING
+// ==========================================
 
-        // Create or update error message
-        let errorElement = input.parentElement.querySelector('.field-error');
-        if (!errorElement) {
-            errorElement = document.createElement('div');
-            errorElement.className = 'field-error';
-            input.parentElement.appendChild(errorElement);
-        }
-        errorElement.textContent = message;
+function handleURLParameters() {
+    const urlParams = new URLSearchParams(window.location.search);
 
-        // Auto-hide after 5 seconds
+    // Email confirmation success
+    if (urlParams.get('confirmed') === 'true') {
         setTimeout(() => {
-            if (errorElement && errorElement.parentNode) {
-                errorElement.remove();
-                input.parentElement.classList.remove('error');
+            showMessage('🎉 Email confirmed successfully! Your account is now active.', 'success');
+        }, 500);
+    }
+
+    // Registration success
+    if (urlParams.get('register') === 'success') {
+        setTimeout(() => {
+            showMessage('Registration successful! Please check your email to confirm your account.', 'info');
+            switchToLoginTab();
+        }, 500);
+    }
+
+    // Handle various error types
+    const errorType = urlParams.get('error');
+    const isLogoutForced = urlParams.get('logout') === 'forced';
+
+    if (errorType) {
+        setTimeout(() => {
+            let message = '';
+            let type = 'error';
+
+            switch (errorType) {
+                case 'user_deleted':
+                    message = '⚠️ Your account was deleted. Please contact support if this was not intended.';
+                    type = 'error';
+                    break;
+
+                case 'account_invalid':
+                    message = '⚠️ Your account is disabled or email not verified. Please contact support.';
+                    type = 'error';
+                    break;
+
+                case 'user_not_found':
+                    message = '⚠️ User account not found. Please log in again.';
+                    type = 'error';
+                    break;
+
+                case 'validation_error':
+                    message = '⚠️ Account validation failed. Please log in again.';
+                    type = 'error';
+                    break;
+
+                case 'account_disabled':
+                    message = '⚠️ Your account has been disabled. Please contact support.';
+                    type = 'error';
+                    break;
+
+                case 'email_not_verified':
+                    message = '⚠️ Please verify your email address before continuing.';
+                    type = 'warning';
+                    break;
+
+                case 'invalid_token':
+                    message = 'Invalid or expired confirmation link. Please request a new one.';
+                    type = 'error';
+                    break;
+
+                case 'confirmation_failed':
+                    message = 'Email confirmation failed. Please try again or contact support.';
+                    type = 'error';
+                    break;
+
+                case 'oauth':
+                    message = 'OAuth authentication failed. Please try again or use email/password.';
+                    type = 'error';
+                    break;
+
+                case 'logout_failed':
+                    message = 'Logout process failed. Please clear your browser data and try again.';
+                    type = 'error';
+                    break;
+
+                case 'true':
+                default:
+                    if (isLogoutForced) {
+                        message = '⚠️ You were automatically logged out due to account changes.';
+                        type = 'warning';
+                    } else {
+                        message = 'Invalid email or password. Please try again.';
+                        type = 'error';
+                    }
+                    break;
             }
-        }, 5000);
+
+            showMessage(message, type);
+
+            // Always switch to login tab for errors
+            if (type === 'error' || type === 'warning') {
+                switchToLoginTab();
+            }
+        }, 500);
+    }
+
+    // Regular logout success
+    if (urlParams.get('logout') === 'true' && !isLogoutForced) {
+        setTimeout(() => {
+            showMessage('You have been successfully signed out.', 'success');
+        }, 500);
+    }
+
+    // Clean URL after processing parameters
+    if (urlParams.toString()) {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
     }
 }
+// ==========================================
+// UTILITY FUNCTIONS
+// ==========================================
 
-// Switch to login tab with animation
 function switchToLoginTab() {
     const loginTab = document.querySelector('.tab-btn[data-tab="login"]');
     if (loginTab) {
@@ -392,32 +880,32 @@ function switchToLoginTab() {
     }
 }
 
-// Enhanced message display with animations
-function showMessage(message, type = 'info') {
+function showMessage(message, type = 'info', autoHide = true) {
     const messagesContainer = document.getElementById('messages');
     if (!messagesContainer) return;
 
-    // Clear existing messages
     messagesContainer.innerHTML = '';
 
-    // Create message element with animation
     const messageElement = document.createElement('div');
     messageElement.className = `message ${type}`;
-    messageElement.textContent = message;
+
+    if (typeof message === 'string') {
+        messageElement.textContent = message;
+    } else {
+        messageElement.innerHTML = message;
+    }
+
     messageElement.style.opacity = '0';
     messageElement.style.transform = 'translateY(-10px)';
 
-    // Add message to container
     messagesContainer.appendChild(messageElement);
 
-    // Animate in
     setTimeout(() => {
         messageElement.style.opacity = '1';
         messageElement.style.transform = 'translateY(0)';
     }, 100);
 
-    // Auto-hide success messages after 5 seconds
-    if (type === 'success') {
+    if (autoHide && type === 'success') {
         setTimeout(() => {
             if (messageElement.parentNode) {
                 messageElement.style.opacity = '0';
@@ -431,30 +919,27 @@ function showMessage(message, type = 'info') {
         }, 5000);
     }
 
-    // Scroll to message
     messagesContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-// Clear all messages
 function clearMessages() {
     const messagesContainer = document.getElementById('messages');
     if (messagesContainer) {
         messagesContainer.innerHTML = '';
     }
 
-    // Clear field errors
     document.querySelectorAll('.field-error').forEach(error => error.remove());
-    document.querySelectorAll('.input-wrapper').forEach(wrapper => wrapper.classList.remove('error'));
-}
-
-// Reset form labels after form reset
-function resetFormLabels() {
     document.querySelectorAll('.input-wrapper').forEach(wrapper => {
-        wrapper.classList.remove('filled', 'focused', 'error');
+        wrapper.classList.remove('error', 'has-error');
     });
 }
 
-// Shake animation for forms
+function resetFormLabels() {
+    document.querySelectorAll('.input-wrapper').forEach(wrapper => {
+        wrapper.classList.remove('filled', 'focused', 'error', 'has-error');
+    });
+}
+
 function shakeForm(form) {
     form.style.animation = 'shake 0.5s ease-in-out';
     setTimeout(() => {
@@ -462,7 +947,6 @@ function shakeForm(form) {
     }, 500);
 }
 
-// Ripple effect for buttons
 function createRippleEffect(element, event) {
     const ripple = document.createElement('span');
     const rect = element.getBoundingClientRect();
@@ -494,167 +978,26 @@ function createRippleEffect(element, event) {
     }, 600);
 }
 
-// Smooth scroll with easing
-function smoothScrollTo(target, duration) {
-    const start = window.pageYOffset;
-    const distance = target - start;
-    let startTime = null;
+// ==========================================
+// GOOGLE OAUTH ENHANCEMENTS
+// ==========================================
 
-    function ease(t, b, c, d) {
-        t /= d / 2;
-        if (t < 1) return c / 2 * t * t + b;
-        t--;
-        return -c / 2 * (t * (t - 2) - 1) + b;
-    }
-
-    function animation(currentTime) {
-        if (startTime === null) startTime = currentTime;
-        const timeElapsed = currentTime - startTime;
-        const run = ease(timeElapsed, start, distance, duration);
-        window.scrollTo(0, run);
-        if (timeElapsed < duration) requestAnimationFrame(animation);
-    }
-
-    requestAnimationFrame(animation);
-}
-
-/*
- * URL PARAMETER HANDLING
- * Enhanced with animations
- */
-function handleURLParameters() {
-    const urlParams = new URLSearchParams(window.location.search);
-
-    // Handle registration success
-    if (urlParams.get('register') === 'success') {
-        setTimeout(() => {
-            showMessage('Registration successful! Please sign in with your credentials.', 'success');
-            switchToLoginTab();
-        }, 500);
-    }
-
-    // Handle login errors
-    if (urlParams.get('error') === 'true') {
-        setTimeout(() => {
-            showMessage('Invalid email or password. Please try again.', 'error');
-            switchToLoginTab();
-        }, 500);
-    }
-
-    // Handle OAuth errors
-    if (urlParams.get('error') === 'oauth') {
-        setTimeout(() => {
-            showMessage('OAuth authentication failed. Please try again or use email/password.', 'error');
-            switchToLoginTab();
-        }, 500);
-    }
-
-    // Handle logout message
-    if (urlParams.get('logout') === 'true') {
-        setTimeout(() => {
-            showMessage('You have been successfully signed out.', 'success');
-        }, 500);
-    }
-
-    // Clean URL parameters after handling
-    if (urlParams.toString()) {
-        const cleanUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, cleanUrl);
-    }
-}
-
-/*
- * ADDITIONAL FORM VALIDATION
- * Real-time validation with enhanced UX
- */
-function initializeFormValidation() {
-    const emailInputs = document.querySelectorAll('input[type="email"]');
-    const passwordInputs = document.querySelectorAll('input[type="password"]');
-
-    // Email validation with visual feedback
-    emailInputs.forEach(input => {
-        input.addEventListener('blur', function() {
-            if (this.value && !isValidEmail(this.value)) {
-                this.parentElement.classList.add('error');
-            } else {
-                this.parentElement.classList.remove('error');
-            }
-        });
-
-        input.addEventListener('input', function() {
-            this.parentElement.classList.remove('error');
-        });
-    });
-
-    // Password strength indicator
-    passwordInputs.forEach(input => {
-        input.addEventListener('input', function() {
-            const strength = calculatePasswordStrength(this.value);
-            updatePasswordStrength(this, strength);
-        });
-    });
-}
-
-// Calculate password strength
-function calculatePasswordStrength(password) {
-    let score = 0;
-    if (password.length >= 8) score++;
-    if (password.match(/[a-z]/)) score++;
-    if (password.match(/[A-Z]/)) score++;
-    if (password.match(/[0-9]/)) score++;
-    if (password.match(/[^a-zA-Z0-9]/)) score++;
-    return score;
-}
-
-// Update password strength indicator
-function updatePasswordStrength(input, strength) {
-    let indicator = input.parentElement.querySelector('.password-strength');
-    if (!indicator && input.value.length > 0) {
-        indicator = document.createElement('div');
-        indicator.className = 'password-strength';
-        input.parentElement.appendChild(indicator);
-    }
-
-    if (indicator && input.value.length === 0) {
-        indicator.remove();
-        return;
-    }
-
-    if (indicator) {
-        const strengthLevels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
-        const strengthColors = ['#ef4444', '#f59e0b', '#eab308', '#22c55e', '#10b981'];
-
-        indicator.textContent = strengthLevels[strength - 1] || 'Very Weak';
-        indicator.style.color = strengthColors[strength - 1] || strengthColors[0];
-        indicator.style.fontSize = '0.75rem';
-        indicator.style.marginTop = '0.25rem';
-    }
-}
-
-/*
- * GOOGLE OAUTH BUTTON ENHANCEMENT
- * Enhanced loading states and animations
- */
 document.addEventListener('DOMContentLoaded', function() {
     const googleButtons = document.querySelectorAll('.btn-google');
 
     googleButtons.forEach(button => {
         button.addEventListener('click', function(e) {
-            // Add ripple effect
             createRippleEffect(this, e);
 
-            // Add loading state
             this.style.opacity = '0.8';
             this.style.pointerEvents = 'none';
 
-            // Create loading animation
             const originalContent = this.innerHTML;
             this.innerHTML = `
                 <span class="loading-spinner"></span>
                 <span>Connecting to Google...</span>
             `;
 
-            // Reset after timeout in case of error
             setTimeout(() => {
                 this.innerHTML = originalContent;
                 this.style.opacity = '';
@@ -664,42 +1007,881 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-/*
- * KEYBOARD ACCESSIBILITY
- * Enhanced keyboard navigation
- */
+// ==========================================
+// KEYBOARD ACCESSIBILITY
+// ==========================================
+
 document.addEventListener('keydown', function(e) {
-    // Handle Enter key on tab buttons
     if (e.key === 'Enter' && e.target.classList.contains('tab-btn')) {
         e.target.click();
     }
 
-    // Handle Escape key to clear messages
     if (e.key === 'Escape') {
         clearMessages();
     }
 
-    // Handle Tab key for better focus management
     if (e.key === 'Tab') {
         document.body.classList.add('keyboard-navigation');
     }
 });
 
-// Remove keyboard navigation class on mouse use
 document.addEventListener('mousedown', function() {
     document.body.classList.remove('keyboard-navigation');
 });
 
-/*
- * DEVELOPMENT HELPERS
- * Console logging for development
- */
+// ==========================================
+// DEVELOPMENT HELPERS
+// ==========================================
+
 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    console.log('🚀 PersonalFinance Modern Landing Page Loaded');
-    console.log('✨ Enhanced features:', {
-        animations: 'Scroll, parallax, ripple effects',
-        forms: 'Real-time validation, floating labels',
-        interactions: 'Tab switching, smooth scrolling',
-        accessibility: 'Keyboard navigation, focus management'
+    console.log('🚀 PersonalFinance Complete Landing Page Loaded');
+    console.log('✨ Features:', {
+        'Clean Password Validation': 'Length + Format validation',
+        'Floating Tooltip': 'Non-intrusive requirements display',
+        'Compact Notifications': 'Elegant email confirmations',
+        'Form Validation': 'Real-time field validation',
+        'Accessibility': 'Keyboard navigation, focus management'
     });
+}
+
+// ==========================================
+// НОВИ ФУНКЦИИ ЗА LOGIN ERROR HANDLING
+// ДОБАВИ ТЕЗИ В КРАЯ НА landing.js
+// ==========================================
+async function handleLogin(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalButtonContent = submitButton.innerHTML;
+
+    console.log('🔐 Login started');
+
+    // Get form data
+    const formData = new FormData(form);
+    const email = formData.get('email').trim();
+    const password = formData.get('password');
+
+    console.log('📝 Login data collected:', { email: email, password: '[HIDDEN]' });
+
+    // Clear previous errors
+    clearMessages();
+    clearFieldErrors();
+
+    // Basic validation
+    if (!email) {
+        showLoginError('Email is required');
+        return;
+    }
+
+    if (!password) {
+        showLoginError('Password is required');
+        return;
+    }
+
+    // Show loading state
+    submitButton.disabled = true;
+    submitButton.innerHTML = `
+        <span class="loading-spinner"></span>
+        <span>Signing In...</span>
+    `;
+    submitButton.classList.add('loading');
+
+    try {
+        console.log('🌐 Submitting login via AJAX...');
+
+        const response = await fetch('/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`,
+            redirect: 'manual'
+        });
+
+        console.log('📡 Response status:', response.status);
+
+        if (response.type === 'opaqueredirect' || response.status === 0) {
+            console.log('🔄 Redirect detected, checking destination...');
+
+            const authCheckResponse = await fetch('/api/auth/current-user');
+            const authData = await authCheckResponse.json();
+
+            if (authData.authenticated) {
+                console.log('✅ Login successful!');
+
+                submitButton.innerHTML = `
+                    <span>✓</span>
+                    <span>Success!</span>
+                `;
+                submitButton.classList.add('success');
+
+                // ИЗЧИСТВАМЕ ФОРМАТА при успех
+                form.reset();
+                resetFormLabels();
+
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1000);
+                return;
+            }
+        }
+
+        // При всякаква грешка - показваме същото съобщение
+        console.log('❌ Login failed');
+        showLoginError('Invalid email or password!');
+
+        // ИЗЧИСТВАМЕ ФОРМАТА при грешка
+        form.reset();
+        resetFormLabels();
+
+    } catch (error) {
+        console.error('💥 Network error during login:', error);
+        showLoginError('Connection error. Please try again.');
+
+        // ИЗЧИСТВАМЕ ФОРМАТА при грешка
+        form.reset();
+        resetFormLabels();
+    } finally {
+        setTimeout(() => {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonContent;
+            submitButton.classList.remove('loading', 'success');
+        }, 2000);
+    }
+}
+
+
+function showLoginError(message) {
+    console.log('🚫 Showing login error:', message);
+
+    // Намери login tab-a
+    const loginTab = document.getElementById('login-tab');
+    if (!loginTab) return;
+
+    // Намери submit button-а
+    const submitButton = loginTab.querySelector('.btn-auth');
+    if (!submitButton) return;
+
+    // Премахни съществуващи error съобщения
+    const existingError = loginTab.querySelector('.login-error-message');
+    if (existingError) {
+        existingError.remove();
+    }
+
+    // Създай ново error съобщение
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'login-error-message';
+    errorDiv.textContent = message;
+
+    // Вмъкни ПРЕДИ submit button-а
+    submitButton.parentNode.insertBefore(errorDiv, submitButton);
+
+    // Анимация
+    errorDiv.style.opacity = '0';
+    errorDiv.style.transform = 'translateY(-10px)';
+
+    setTimeout(() => {
+        errorDiv.style.opacity = '1';
+        errorDiv.style.transform = 'translateY(0)';
+    }, 100);
+
+    // Auto-remove след 8 секунди
+    setTimeout(() => {
+        if (errorDiv && errorDiv.parentNode) {
+            errorDiv.style.opacity = '0';
+            errorDiv.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                if (errorDiv && errorDiv.parentNode) {
+                    errorDiv.remove();
+                }
+            }, 300);
+        }
+    }, 8000);
+
+    // Shake ефект на формата
+    const form = loginTab.querySelector('.auth-form');
+    if (form) {
+        shakeForm(form);
+    }
+}
+
+
+function showDetailedError(title, suggestion, errorType, showResendButton = false) {
+    console.log('📋 Showing detailed error:', { title, suggestion, errorType });
+
+    // Create detailed error notification
+    const notification = document.createElement('div');
+    notification.className = 'detailed-error-notification';
+    notification.innerHTML = `
+        <div class="error-header">
+            <div class="error-icon">⚠️</div>
+            <div class="error-title">${title}</div>
+            <div class="error-close">×</div>
+        </div>
+        <div class="error-content">
+            <p>${suggestion}</p>
+            ${showResendButton ? `
+                <button class="btn-resend-verification" onclick="handleResendVerification()">
+                    Resend Verification Email
+                </button>
+            ` : ''}
+        </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Show notification
+    setTimeout(() => notification.classList.add('show'), 100);
+
+    // Auto-hide after 10 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+    }, 10000);
+
+    // Close button
+    notification.querySelector('.error-close').addEventListener('click', () => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 300);
+    });
+}
+
+async function handleResendVerification() {
+    try {
+        const emailInput = document.querySelector('[name="email"]');
+        const email = emailInput ? emailInput.value.trim() : '';
+
+        if (!email) {
+            showMessage('Please enter your email address first.', 'error');
+            return;
+        }
+
+        console.log('📧 Resending verification email to:', email);
+
+        const response = await fetch('/api/auth/resend-confirmation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email: email })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showMessage('✅ Verification email sent! Please check your inbox.', 'success');
+
+            // Close detailed error notification
+            const notification = document.querySelector('.detailed-error-notification');
+            if (notification) {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }
+        } else {
+            showMessage(data.error || 'Failed to send verification email. Please try again.', 'error');
+        }
+
+    } catch (error) {
+        console.error('💥 Error resending verification:', error);
+        showMessage('Network error. Please try again.', 'error');
+    }
+}
+
+function clearFieldErrors() {
+    console.log('🧹 Clearing all field errors');
+
+    // Clear all field errors
+    document.querySelectorAll('.field-error').forEach(error => {
+        console.log('🧹 Removing field error:', error.textContent);
+        error.remove();
+    });
+
+    document.querySelectorAll('.input-wrapper').forEach(wrapper => {
+        wrapper.classList.remove('error', 'has-error');
+    });
+
+    // Reset input styles
+    document.querySelectorAll('.form-input').forEach(input => {
+        input.style.borderColor = '';
+        input.style.boxShadow = '';
+    });
+
+    // Clear detailed error notifications
+    document.querySelectorAll('.detailed-error-notification').forEach(notification => {
+        notification.remove();
+    });
+
+    console.log('✅ All field errors cleared');
+}
+
+// Подобрена showFieldError функция
+function showFieldErrorEnhanced(fieldName, message) {
+    const input = document.querySelector(`[name="${fieldName}"]`);
+    if (input) {
+        const wrapper = input.closest('.input-wrapper') || input.parentElement;
+
+        // Remove existing error
+        const existingError = wrapper.querySelector('.field-error');
+        if (existingError) {
+            existingError.remove();
+        }
+        wrapper.classList.remove('has-error');
+
+        // Add new error
+        wrapper.classList.add('has-error');
+
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'field-error';
+        errorDiv.textContent = message;
+        wrapper.appendChild(errorDiv);
+
+        // Auto-remove after 8 seconds
+        setTimeout(() => {
+            if (errorDiv && errorDiv.parentNode) {
+                errorDiv.remove();
+                wrapper.classList.remove('has-error');
+            }
+        }, 8000);
+    }
+}
+
+
+function validateRegistrationFormEnhanced(data) {
+    console.log('🔍 Starting enhanced validation with data:', data);
+    clearMessages();
+    clearFieldErrors();
+    let isValid = true;
+
+    // First Name validation
+    if (!data.firstName) {
+        console.log('❌ First name is empty');
+        showFieldError('firstName', 'First name is required');
+        isValid = false;
+    } else if (data.firstName.length < 2) {
+        console.log('❌ First name too short');
+        showFieldError('firstName', 'First name must be at least 2 characters');
+        isValid = false;
+    } else {
+        console.log('✅ First name is valid');
+    }
+
+    // Last Name validation
+    if (!data.lastName) {
+        console.log('❌ Last name is empty');
+        showFieldError('lastName', 'Last name is required');
+        isValid = false;
+    } else if (data.lastName.length < 2) {
+        console.log('❌ Last name too short');
+        showFieldError('lastName', 'Last name must be at least 2 characters');
+        isValid = false;
+    } else {
+        console.log('✅ Last name is valid');
+    }
+
+    // ПЪЛНА Email validation с всички проверки
+    if (!data.email) {
+        console.log('❌ Email is empty');
+        showFieldError('email', 'Email address is required');
+        isValid = false;
+    } else {
+        console.log('🔍 Validating email:', data.email);
+
+        // 1. Основна format проверка
+        if (!isValidEmailFormat(data.email)) {
+            console.log('❌ Email format invalid');
+            showFieldError('email', 'Invalid email address');
+            isValid = false;
+        } else {
+            // 2. Проверка за disposable email domains
+            const domain = data.email.split('@')[1]?.toLowerCase();
+            const disposableDomains = [
+                '10minutemail.com', 'temp-mail.org', 'guerrillamail.com',
+                'mailinator.com', 'throwaway.email', 'yopmail.com',
+                'tempmail.com', 'sharklasers.com', '0-mail.com',
+                'maildrop.cc', 'guerrillamailblock.com', 'fakeinbox.com'
+            ];
+
+            if (disposableDomains.includes(domain)) {
+                console.log('❌ Disposable email detected');
+                showFieldError('email', 'Invalid email address');
+                isValid = false;
+            } else {
+                // 3. Проверка за common typos
+                const suggestions = getEmailSuggestion(data.email);
+                if (suggestions) {
+                    console.log('⚠️ Email typo detected, suggesting:', suggestions);
+                    showFieldError('email', 'Invalid email address');
+                    isValid = false;
+                } else {
+                    // 4. Проверка за много къси или странни домейни
+                    const domainParts = domain.split('.');
+                    const tld = domainParts[domainParts.length - 1];
+
+                    if (tld.length < 2 || domainParts.length < 2) {
+                        console.log('❌ Email domain too short or invalid');
+                        showFieldError('email', 'Invalid email address');
+                        isValid = false;
+                    } else {
+                        console.log('✅ Email is valid');
+                    }
+                }
+            }
+        }
+    }
+
+    // Password validation (остава същата)
+    if (!data.password) {
+        console.log('❌ Password is empty');
+        showFieldError('password', 'Password is required');
+        isValid = false;
+    } else {
+        const passwordValidation = validatePassword(data.password);
+        if (!passwordValidation.valid) {
+            console.log('❌ Password validation failed:', passwordValidation.message);
+            showFieldError('password', passwordValidation.message);
+            isValid = false;
+        } else {
+            console.log('✅ Password is valid');
+        }
+    }
+
+    console.log('🔍 Final validation result:', isValid);
+    return isValid;
+}
+
+
+// ==========================================
+// НОВИ: EMAIL VALIDATION HELPERS
+// ==========================================
+
+function isValidEmailFormat(email) {
+    console.log('🔍 Checking email format for:', email);
+
+    if (!email || typeof email !== 'string') {
+        console.log('❌ Email is empty or not string');
+        return false;
+    }
+
+    email = email.trim();
+
+    // Базови проверки
+    if (email.length > 254) {
+        console.log('❌ Email too long');
+        return false;
+    }
+
+    if (!email.includes('@')) {
+        console.log('❌ Email missing @ symbol');
+        return false;
+    }
+
+    const parts = email.split('@');
+    if (parts.length !== 2) {
+        console.log('❌ Email has wrong number of @ symbols');
+        return false;
+    }
+
+    const [localPart, domain] = parts;
+
+    // Local part проверки
+    if (!localPart || localPart.length === 0 || localPart.length > 64) {
+        console.log('❌ Email local part invalid length');
+        return false;
+    }
+
+    // Domain проверки
+    if (!domain || domain.length === 0 || domain.length > 253) {
+        console.log('❌ Email domain invalid length');
+        return false;
+    }
+
+    if (!domain.includes('.')) {
+        console.log('❌ Email domain missing dot');
+        return false;
+    }
+
+    // Проверка че domain не започва/завършва с точка или тире
+    if (domain.startsWith('.') || domain.endsWith('.') ||
+        domain.startsWith('-') || domain.endsWith('-')) {
+        console.log('❌ Email domain invalid start/end');
+        return false;
+    }
+
+    // Проверка че има валиден TLD
+    const domainParts = domain.split('.');
+    const tld = domainParts[domainParts.length - 1];
+    if (!tld || tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) {
+        console.log('❌ Email domain invalid TLD');
+        return false;
+    }
+
+    // Проверка за .test, .invalid, .localhost и други невалидни TLDs
+    const invalidTlds = ['test', 'invalid', 'localhost', 'local', 'example'];
+    if (invalidTlds.includes(tld.toLowerCase())) {
+        console.log('❌ Email domain uses invalid TLD');
+        return false;
+    }
+
+    // Final regex проверка
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+    const isValid = emailRegex.test(email);
+    console.log('🔍 Email regex test result:', isValid);
+
+    return isValid;
+}
+
+function getEmailSuggestion(email) {
+    const domain = email.split('@')[1]?.toLowerCase();
+    if (!domain) return null;
+
+    const suggestions = {
+        // Gmail typos
+        'gmail.comm': 'gmail.com',
+        'gmial.com': 'gmail.com',
+        'gmai.com': 'gmail.com',
+        'gmail.co': 'gmail.com',
+        'gamil.com': 'gmail.com',
+        'gmaill.com': 'gmail.com',
+
+        // Yahoo typos
+        'yahooo.com': 'yahoo.com',
+        'yahoo.co': 'yahoo.com',
+        'yaho.com': 'yahoo.com',
+        'yhoo.com': 'yahoo.com',
+
+        // Outlook typos
+        'outlok.com': 'outlook.com',
+        'outlook.co': 'outlook.com',
+        'outloook.com': 'outlook.com',
+
+        // Hotmail typos
+        'hotmial.com': 'hotmail.com',
+        'hotmail.co': 'hotmail.com',
+        'hotmial.co': 'hotmail.com',
+
+        // Bulgarian domains
+        'abv.gb': 'abv.bg',
+        'abv.b': 'abv.bg',
+        'mail.gb': 'mail.bg',
+        'mail.b': 'mail.bg',
+
+        // Common misspellings
+        'gmai.bg': 'gmail.com',
+        'test.com': null, // Don't suggest anything for test domains
+        'example.com': null,
+        'localhost': null
+    };
+
+    if (suggestions.hasOwnProperty(domain)) {
+        return suggestions[domain] ? email.replace(domain, suggestions[domain]) : null;
+    }
+
+    return null;
+}
+
+function isValidEmailFormat(email) {
+    console.log('🔍 Checking email format for:', email);
+
+    if (!email || typeof email !== 'string') {
+        return false;
+    }
+
+    email = email.trim();
+
+    if (email.length > 254 || !email.includes('@')) {
+        return false;
+    }
+
+    const parts = email.split('@');
+    if (parts.length !== 2) {
+        return false;
+    }
+
+    const [localPart, domain] = parts;
+
+    if (!localPart || localPart.length === 0 || localPart.length > 64) {
+        return false;
+    }
+
+    if (!domain || domain.length === 0 || domain.length > 253 || !domain.includes('.')) {
+        return false;
+    }
+
+    if (domain.startsWith('.') || domain.endsWith('.') ||
+        domain.startsWith('-') || domain.endsWith('-')) {
+        return false;
+    }
+
+    const domainParts = domain.split('.');
+    const tld = domainParts[domainParts.length - 1];
+    if (!tld || tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) {
+        return false;
+    }
+
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+    return emailRegex.test(email);
+}
+
+function getEmailSuggestion(email) {
+    const domain = email.split('@')[1]?.toLowerCase();
+    if (!domain) return null;
+
+    const suggestions = {
+        'gmail.comm': 'gmail.com',
+        'gmial.com': 'gmail.com',
+        'gmai.com': 'gmail.com',
+        'gmail.co': 'gmail.com',
+        'yahooo.com': 'yahoo.com',
+        'yahoo.co': 'yahoo.com',
+        'yaho.com': 'yahoo.com',
+        'outlok.com': 'outlook.com',
+        'outlook.co': 'outlook.com',
+        'hotmial.com': 'hotmail.com',
+        'hotmail.co': 'hotmail.com',
+        'abv.gb': 'abv.bg',
+        'abv.b': 'abv.bg'
+    };
+
+    if (suggestions[domain]) {
+        return email.replace(domain, suggestions[domain]);
+    }
+
+    return null;
+}
+
+function clearFieldErrors() {
+    // Clear field errors
+    document.querySelectorAll('.field-error').forEach(error => error.remove());
+    document.querySelectorAll('.input-wrapper').forEach(wrapper => {
+        wrapper.classList.remove('error', 'has-error');
+    });
+    document.querySelectorAll('.form-input').forEach(input => {
+        input.style.borderColor = '';
+        input.style.boxShadow = '';
+    });
+
+    // Clear login error messages
+    document.querySelectorAll('.login-error-message').forEach(error => error.remove());
+
+    // Clear detailed error notifications
+    document.querySelectorAll('.detailed-error-notification').forEach(notification => {
+        notification.remove();
+    });
+}
+
+function showFieldError(fieldName, message) {
+    console.log('🚫 Showing field error for:', fieldName, 'Message:', message);
+
+    const input = document.querySelector(`[name="${fieldName}"]`);
+    if (!input) return;
+
+    const wrapper = input.closest('.input-wrapper') || input.parentElement;
+    if (!wrapper) return;
+
+    const existingError = wrapper.querySelector('.field-error');
+    if (existingError) {
+        existingError.remove();
+    }
+    wrapper.classList.remove('has-error', 'error');
+
+    wrapper.classList.add('has-error');
+
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'field-error';
+    errorDiv.textContent = message;
+    wrapper.appendChild(errorDiv);
+
+    input.style.borderColor = '#ef4444';
+    input.style.boxShadow = '0 0 0 3px rgba(239, 68, 68, 0.1)';
+
+    setTimeout(() => {
+        if (errorDiv && errorDiv.parentNode) {
+            errorDiv.remove();
+            wrapper.classList.remove('has-error', 'error');
+            input.style.borderColor = '';
+            input.style.boxShadow = '';
+        }
+    }, 8000);
+}
+
+function showDetailedError(title, suggestion, errorType, showResendButton = false) {
+    const notification = document.createElement('div');
+    notification.className = 'detailed-error-notification';
+    notification.innerHTML = `
+        <div class="error-header">
+            <div class="error-icon">⚠️</div>
+            <div class="error-title">${title}</div>
+            <div class="error-close">×</div>
+        </div>
+        <div class="error-content">
+            <p>${suggestion}</p>
+            ${showResendButton ? `
+                <button class="btn-resend-verification" onclick="handleResendVerification()">
+                    Resend Verification Email
+                </button>
+            ` : ''}
+        </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => notification.classList.add('show'), 100);
+
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+    }, 10000);
+
+    notification.querySelector('.error-close').addEventListener('click', () => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 300);
+    });
+}
+
+async function handleResendVerification() {
+    try {
+        const emailInput = document.querySelector('[name="email"]');
+        const email = emailInput ? emailInput.value.trim() : '';
+
+        if (!email) {
+            showMessage('Please enter your email address first.', 'error');
+            return;
+        }
+
+        const response = await fetch('/api/auth/resend-confirmation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email: email })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showMessage('✅ Verification email sent! Please check your inbox.', 'success');
+
+            const notification = document.querySelector('.detailed-error-notification');
+            if (notification) {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 300);
+            }
+        } else {
+            showMessage(data.error || 'Failed to send verification email. Please try again.', 'error');
+        }
+
+    } catch (error) {
+        console.error('💥 Error resending verification:', error);
+        showMessage('Network error. Please try again.', 'error');
+    }
+}
+
+function resetFormLabels() {
+    document.querySelectorAll('.input-wrapper').forEach(wrapper => {
+        wrapper.classList.remove('filled', 'focused', 'error', 'has-error');
+    });
+}
+
+function initializeRealTimeEmailValidation() {
+    const emailInput = document.querySelector('#register-tab input[name="email"]');
+
+    if (emailInput) {
+        let validationTimeout;
+
+        emailInput.addEventListener('input', function() {
+            const email = this.value.trim();
+
+            // Clear existing timeout
+            clearTimeout(validationTimeout);
+
+            // Clear existing errors when typing
+            const wrapper = this.closest('.input-wrapper');
+            const existingError = wrapper.querySelector('.field-error');
+            if (existingError) {
+                existingError.remove();
+            }
+            wrapper.classList.remove('has-error');
+            this.style.borderColor = '';
+            this.style.boxShadow = '';
+
+            // Only validate if there's content and it looks like an email
+            if (email.length > 5 && email.includes('@')) {
+                validationTimeout = setTimeout(() => {
+                    validateEmailRealTime(email);
+                }, 1000); // 1 second delay
+            }
+        });
+
+        emailInput.addEventListener('blur', function() {
+            const email = this.value.trim();
+            if (email) {
+                validateEmailRealTime(email);
+            }
+        });
+    }
+}
+
+function validateEmailRealTime(email) {
+    console.log('🔍 Real-time email validation for:', email);
+
+    if (!isValidEmailFormat(email)) {
+        console.log('❌ Real-time: Email format invalid');
+        showFieldError('email', 'Invalid email address');
+        return false;
+    }
+
+    // Check for disposable emails
+    const domain = email.split('@')[1]?.toLowerCase();
+    const disposableDomains = [
+        '10minutemail.com', 'temp-mail.org', 'guerrillamail.com',
+        'mailinator.com', 'throwaway.email', 'yopmail.com'
+    ];
+
+    if (disposableDomains.includes(domain)) {
+        console.log('❌ Real-time: Disposable email detected');
+        showFieldError('email', 'Invalid email address');
+        return false;
+    }
+
+    // Check for typos
+    const suggestion = getEmailSuggestion(email);
+    if (suggestion) {
+        console.log('⚠️ Real-time: Email typo detected');
+        showFieldError('email', 'Invalid email address');
+        return false;
+    }
+
+    console.log('✅ Real-time: Email is valid');
+    return true;
 }

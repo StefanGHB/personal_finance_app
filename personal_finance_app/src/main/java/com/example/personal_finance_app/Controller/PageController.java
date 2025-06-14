@@ -1,5 +1,7 @@
 package com.example.personal_finance_app.Controller;
 
+import com.example.personal_finance_app.Service.EmailValidationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -8,6 +10,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 public class PageController {
+
+    @Autowired
+    private EmailValidationService emailValidationService;
 
     /**
      * Landing Page - пренасочва към статичен HTML файл
@@ -33,7 +38,13 @@ public class PageController {
         String redirectUrl = "/static/index.html";
 
         if (error != null) {
-            redirectUrl += "?error=true";
+            if ("invalid_token".equals(error)) {
+                redirectUrl += "?error=invalid_token";
+            } else if ("confirmation_failed".equals(error)) {
+                redirectUrl += "?error=confirmation_failed";
+            } else {
+                redirectUrl += "?error=true";
+            }
         } else if (logout != null) {
             redirectUrl += "?logout=true";
         } else if (register != null && register.equals("success")) {
@@ -42,6 +53,30 @@ public class PageController {
 
         System.out.println("🔍 Redirecting to: " + redirectUrl);
         return "redirect:" + redirectUrl;
+    }
+
+    /**
+     * Email confirmation endpoint - НОВ
+     */
+    @GetMapping("/confirm-email")
+    public String confirmEmail(@RequestParam String token) {
+        System.out.println("🔍 Email confirmation accessed with token: " + token.substring(0, 8) + "...");
+
+        try {
+            boolean confirmed = emailValidationService.confirmEmail(token);
+
+            if (confirmed) {
+                System.out.println("✅ Email confirmed successfully!");
+                return "redirect:/dashboard?confirmed=true";
+            } else {
+                System.out.println("❌ Email confirmation failed - invalid or expired token");
+                return "redirect:/?error=invalid_token";
+            }
+
+        } catch (Exception e) {
+            System.out.println("❌ Email confirmation error: " + e.getMessage());
+            return "redirect:/?error=confirmation_failed";
+        }
     }
 
     /**
@@ -66,8 +101,15 @@ public class PageController {
      * Dashboard страница - пренасочва към статичен HTML
      */
     @GetMapping("/dashboard")
-    public String dashboardPage() {
+    public String dashboardPage(@RequestParam(value = "confirmed", required = false) String confirmed) {
         System.out.println("🔍 Dashboard page accessed");
-        return "redirect:/static/dashboard.html";
+
+        String redirectUrl = "/static/dashboard.html";
+
+        if ("true".equals(confirmed)) {
+            redirectUrl += "?confirmed=true";
+        }
+
+        return "redirect:" + redirectUrl;
     }
 }

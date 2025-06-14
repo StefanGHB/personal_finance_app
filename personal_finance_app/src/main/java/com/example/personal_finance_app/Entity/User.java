@@ -48,6 +48,14 @@ public class User {
     @Column(name = "is_enabled")
     private Boolean isEnabled = true;
 
+    // ===== НОВИ ПОЛЕТА ЗА EMAIL VERIFICATION =====
+    @Column(name = "email_verified")
+    private Boolean emailVerified = false;
+
+    @Column(name = "email_verified_at")
+    private LocalDateTime emailVerifiedAt;
+    // ============================================
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -56,7 +64,7 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Relationships
+    // Relationships (ВСИЧКИ ОСТАВАТ СЪЩИТЕ)
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Category> categories;
 
@@ -69,7 +77,12 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BudgetAlert> budgetAlerts;
 
-    // Constructors
+    // ===== НОВА RELATIONSHIP =====
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<EmailConfirmationToken> emailConfirmationTokens;
+    // =============================
+
+    // Constructors (ВСИЧКИ ОСТАВАТ СЪЩИТЕ)
     public User() {}
 
     public User(String email, String firstName, String lastName) {
@@ -93,9 +106,12 @@ public class User {
         this.lastName = lastName;
         this.provider = provider;
         this.providerId = providerId;
+        // OAuth users са automatically verified
+        this.emailVerified = true;
+        this.emailVerifiedAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
+    // Getters and Setters (ВСИЧКИ СТАРИТЕ + НОВИТЕ)
     public Long getId() {
         return id;
     }
@@ -160,6 +176,35 @@ public class User {
         this.isEnabled = isEnabled;
     }
 
+    // ===== НОВИ GETTERS/SETTERS =====
+    public Boolean getEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
+        if (emailVerified && this.emailVerifiedAt == null) {
+            this.emailVerifiedAt = LocalDateTime.now();
+        }
+    }
+
+    public LocalDateTime getEmailVerifiedAt() {
+        return emailVerifiedAt;
+    }
+
+    public void setEmailVerifiedAt(LocalDateTime emailVerifiedAt) {
+        this.emailVerifiedAt = emailVerifiedAt;
+    }
+
+    public List<EmailConfirmationToken> getEmailConfirmationTokens() {
+        return emailConfirmationTokens;
+    }
+
+    public void setEmailConfirmationTokens(List<EmailConfirmationToken> emailConfirmationTokens) {
+        this.emailConfirmationTokens = emailConfirmationTokens;
+    }
+    // ================================
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -208,7 +253,7 @@ public class User {
         this.budgetAlerts = budgetAlerts;
     }
 
-    // Helper methods
+    // Helper methods (ВСИЧКИ СТАРИТЕ + НОВИ)
     public String getFullName() {
         return firstName + " " + lastName;
     }
@@ -216,6 +261,31 @@ public class User {
     public boolean isOAuthUser() {
         return provider != AuthProvider.LOCAL;
     }
+
+    // ===== НОВИ HELPER METHODS =====
+    public boolean isEmailVerified() {
+        return Boolean.TRUE.equals(emailVerified);
+    }
+
+    public boolean needsEmailVerification() {
+        return !isOAuthUser() && !isEmailVerified();
+    }
+
+    public void verifyEmail() {
+        this.emailVerified = true;
+        this.emailVerifiedAt = LocalDateTime.now();
+    }
+
+    public String getVerificationStatus() {
+        if (isOAuthUser()) {
+            return "OAuth Verified";
+        } else if (isEmailVerified()) {
+            return "Email Verified";
+        } else {
+            return "Pending Verification";
+        }
+    }
+    // ===============================
 
     @Override
     public String toString() {
@@ -226,6 +296,7 @@ public class User {
                 ", lastName='" + lastName + '\'' +
                 ", provider=" + provider +
                 ", isEnabled=" + isEnabled +
+                ", emailVerified=" + emailVerified +
                 '}';
     }
 }

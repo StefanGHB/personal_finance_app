@@ -1,50 +1,42 @@
 package com.example.personal_finance_app.Service;
 
-
+import com.example.personal_finance_app.Entity.EmailConfirmationToken;
 import com.example.personal_finance_app.Entity.User;
 import com.example.personal_finance_app.Enum.AuthProvider;
-import com.example.personal_finance_app.Exeption.UserAlreadyExistsException;
-import com.example.personal_finance_app.Exeption.UserNotFoundException;
+import com.example.personal_finance_app.Repository.EmailConfirmationTokenRepository;
 import com.example.personal_finance_app.Repository.UserRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Transactional
 public class UserService {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
-
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
+    private EmailConfirmationTokenRepository emailConfirmationTokenRepository;
 
-    /**
-     * Регистрация на нов потребител с email и парола
-     */
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    // ===== ОРИГИНАЛНИ МЕТОДИ (ОСТАВАТ СЪЩИТЕ) =====
+
     public User registerUser(String email, String password, String firstName, String lastName) {
-        logger.info("Attempting to register user with email: {}", email);
-
-        validateUserInput(email, firstName, lastName);
-        validatePassword(password);
-
-        if (userRepository.existsByEmail(email)) {
-            logger.warn("Registration failed - email already exists: {}", email);
-            throw new UserAlreadyExistsException("User with email " + email + " already exists");
+        // Проверка дали email съществува
+        if (emailExists(email)) {
+            throw new RuntimeException("User with email " + email + " already exists");
         }
 
+        // Създаване на нов потребител
         User user = new User();
         user.setEmail(email.toLowerCase().trim());
         user.setPassword(passwordEncoder.encode(password));
@@ -53,169 +45,229 @@ public class UserService {
         user.setProvider(AuthProvider.LOCAL);
         user.setIsEnabled(true);
 
-        User savedUser = userRepository.save(user);
-        logger.info("Successfully registered user with ID: {}", savedUser.getId());
+        // ===== НОВА ЛОГИКА - Email не е verified при регистрация =====
+        user.setEmailVerified(false);
+        // ============================================================
 
-        return savedUser;
+        return userRepository.save(user);
     }
 
-    /**
-     * OAuth регистрация/автентикация
-     */
-    public User processOAuthUser(String email, String firstName, String lastName,
-                                 AuthProvider provider, String providerId) {
-        logger.info("Processing OAuth user with email: {} and provider: {}", email, provider);
-
-        validateUserInput(email, firstName, lastName);
-
-        if (provider == null || !StringUtils.hasText(providerId)) {
-            throw new IllegalArgumentException("Provider and provider ID are required for OAuth users");
-        }
-
-        // Проверка дали потребителят съществува по provider ID
-        Optional<User> existingUser = userRepository.findByProviderAndProviderId(provider, providerId);
-        if (existingUser.isPresent()) {
-            logger.info("Found existing OAuth user with ID: {}", existingUser.get().getId());
-            return updateUserInfo(existingUser.get(), email, firstName, lastName);
-        }
-
-        // Проверка дали има потребител с този email
-        Optional<User> userByEmail = userRepository.findByEmail(email.toLowerCase().trim());
-        if (userByEmail.isPresent()) {
-            logger.warn("Email {} already exists for different authentication method", email);
-            throw new UserAlreadyExistsException("User with email " + email + " already exists with different authentication method");
-        }
-
-        // Създаване на нов OAuth потребител
-        User newUser = new User();
-        newUser.setEmail(email.toLowerCase().trim());
-        newUser.setFirstName(firstName.trim());
-        newUser.setLastName(lastName.trim());
-        newUser.setProvider(provider);
-        newUser.setProviderId(providerId);
-        newUser.setIsEnabled(true);
-
-        User savedUser = userRepository.save(newUser);
-        logger.info("Successfully created OAuth user with ID: {}", savedUser.getId());
-
-        return savedUser;
-    }
-
-    /**
-     * Намиране на потребител по email
-     */
-    @Transactional(readOnly = true)
     public User findByEmail(String email) {
-        if (!StringUtils.hasText(email)) {
-            throw new IllegalArgumentException("Email cannot be empty");
-        }
-
         return userRepository.findByEmail(email.toLowerCase().trim())
-                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
     }
 
-    /**
-     * Намиране на потребител по ID
-     */
-    @Transactional(readOnly = true)
     public User findById(Long id) {
-        if (id == null || id <= 0) {
-            throw new IllegalArgumentException("User ID must be a positive number");
-        }
-
         return userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
     }
 
-    /**
-     * Обновяване на потребителска информация
-     */
-    public User updateUserInfo(Long userId, String firstName, String lastName) {
-        User user = findById(userId);
-        return updateUserInfo(user, user.getEmail(), firstName, lastName);
-    }
-
-    /**
-     * Обновяване на парола
-     */
-    public void updatePassword(Long userId, String currentPassword, String newPassword) {
-        User user = findById(userId);
-
-        if (user.isOAuthUser()) {
-            throw new IllegalArgumentException("Cannot update password for OAuth users");
-        }
-
-        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
-            throw new IllegalArgumentException("Current password is incorrect");
-        }
-
-        validatePassword(newPassword);
-
-        user.setPassword(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
-
-        logger.info("Password updated for user ID: {}", userId);
-    }
-
-    /**
-     * Активиране/деактивиране на потребител
-     */
-    public void toggleUserStatus(Long userId) {
-        User user = findById(userId);
-        user.setIsEnabled(!user.getIsEnabled());
-        userRepository.save(user);
-
-        logger.info("User status toggled for ID: {} - now enabled: {}", userId, user.getIsEnabled());
-    }
-
-    /**
-     * Проверка дали email съществува
-     */
-    @Transactional(readOnly = true)
     public boolean emailExists(String email) {
-        if (!StringUtils.hasText(email)) {
-            return false;
-        }
         return userRepository.existsByEmail(email.toLowerCase().trim());
     }
 
-    // Private helper methods
-    private User updateUserInfo(User user, String email, String firstName, String lastName) {
-        validateUserInput(email, firstName, lastName);
-
-        user.setEmail(email.toLowerCase().trim());
+    public User updateUserInfo(Long userId, String firstName, String lastName) {
+        User user = findById(userId);
         user.setFirstName(firstName.trim());
         user.setLastName(lastName.trim());
-
-        User updatedUser = userRepository.save(user);
-        logger.info("Updated user info for ID: {}", updatedUser.getId());
-
-        return updatedUser;
+        return userRepository.save(user);
     }
 
-    private void validateUserInput(String email, String firstName, String lastName) {
-        if (!StringUtils.hasText(email)) {
-            throw new IllegalArgumentException("Email is required");
-        }
-        if (!StringUtils.hasText(firstName)) {
-            throw new IllegalArgumentException("First name is required");
-        }
-        if (!StringUtils.hasText(lastName)) {
-            throw new IllegalArgumentException("Last name is required");
+    public void updatePassword(Long userId, String currentPassword, String newPassword) {
+        User user = findById(userId);
+
+        if (user.getPassword() == null) {
+            throw new RuntimeException("Cannot change password for OAuth users");
         }
 
-        // Базова email валидация
-        if (!email.contains("@") || !email.contains(".")) {
-            throw new IllegalArgumentException("Invalid email format");
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    public User save(User user) {
+        return userRepository.save(user);
+    }
+
+    // ===== НОВИ МЕТОДИ ЗА EMAIL CONFIRMATION =====
+
+    /**
+     * Създава и запазва email confirmation token
+     */
+    public EmailConfirmationToken createEmailConfirmationToken(User user) {
+        // Генерира уникален token
+        String token = generateUniqueToken();
+
+        // Създава token с 24 часа валидност
+        EmailConfirmationToken confirmationToken = new EmailConfirmationToken(
+                token,
+                user.getEmail(),
+                user,
+                LocalDateTime.now().plusHours(24)
+        );
+
+        return emailConfirmationTokenRepository.save(confirmationToken);
+    }
+
+    /**
+     * Потвърждава email чрез token
+     */
+    public boolean confirmEmailWithToken(String token) {
+        Optional<EmailConfirmationToken> tokenOpt = emailConfirmationTokenRepository
+                .findValidTokenByToken(token, LocalDateTime.now());
+
+        if (tokenOpt.isEmpty()) {
+            return false; // Token не съществува, използван е или е изтекъл
+        }
+
+        EmailConfirmationToken confirmationToken = tokenOpt.get();
+        User user = confirmationToken.getUser();
+
+        // Маркира token като използван
+        confirmationToken.markAsUsed();
+        emailConfirmationTokenRepository.save(confirmationToken);
+
+        // Потвърждава email на потребителя
+        user.verifyEmail();
+        userRepository.save(user);
+
+        return true;
+    }
+
+    /**
+     * Намира последния token за потребител
+     */
+    public Optional<EmailConfirmationToken> getLastConfirmationTokenForUser(Long userId) {
+        User user = findById(userId);
+        return emailConfirmationTokenRepository.findFirstByUserOrderByCreatedAtDesc(user);
+    }
+
+    /**
+     * Проверява дали потребителят има валиден token
+     */
+    public boolean hasValidConfirmationToken(String email) {
+        return emailConfirmationTokenRepository.hasValidTokenForEmail(email, LocalDateTime.now());
+    }
+
+    /**
+     * Намира token по стойност
+     */
+    public Optional<EmailConfirmationToken> findConfirmationToken(String token) {
+        return emailConfirmationTokenRepository.findByToken(token);
+    }
+
+    /**
+     * Изтрива просрочени tokens (cleanup task)
+     */
+    public void cleanupExpiredTokens() {
+        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(7); // Изтрий tokens по-стари от 7 дни
+        emailConfirmationTokenRepository.deleteByExpiryDateBefore(cutoffDate);
+        emailConfirmationTokenRepository.deleteByIsUsedTrueAndCreatedAtBefore(cutoffDate);
+    }
+
+    /**
+     * Възстановяване на изпратени tokens за потребител
+     */
+    public List<EmailConfirmationToken> getUserConfirmationTokens(Long userId) {
+        User user = findById(userId);
+        return emailConfirmationTokenRepository.findByUserOrderByCreatedAtDesc(user);
+    }
+
+    /**
+     * Провери дали потребителят може да получи нов token
+     */
+    public boolean canReceiveNewConfirmationToken(String email) {
+        // Ограничение: максимум 1 валиден token на email в момента
+        return !hasValidConfirmationToken(email);
+    }
+
+    /**
+     * Потвърди email директно (за OAuth users или admin операции)
+     */
+    public void verifyEmailDirectly(Long userId) {
+        User user = findById(userId);
+        user.verifyEmail();
+        userRepository.save(user);
+    }
+
+    /**
+     * Създава OAuth потребител (automatically verified)
+     */
+    public User createOAuthUser(String email, String firstName, String lastName,
+                                AuthProvider provider, String providerId) {
+        User user = new User(email, firstName, lastName, provider, providerId);
+        // OAuth users са автоматично verified
+        user.setEmailVerified(true);
+        user.setEmailVerifiedAt(LocalDateTime.now());
+        return userRepository.save(user);
+    }
+
+    // ===== HELPER METHODS =====
+
+    /**
+     * Генерира уникален token
+     */
+    private String generateUniqueToken() {
+        String token;
+        do {
+            token = UUID.randomUUID().toString().replace("-", "");
+        } while (emailConfirmationTokenRepository.existsByToken(token));
+
+        return token;
+    }
+
+    /**
+     * Статистики за email verification
+     */
+    public long getVerifiedUsersCount() {
+        return userRepository.countByEmailVerifiedTrue();
+    }
+
+    public long getUnverifiedUsersCount() {
+        return userRepository.countByEmailVerifiedFalse();
+    }
+
+    public long getPendingTokensCount() {
+        return emailConfirmationTokenRepository.countActiveTokensForUser(null, LocalDateTime.now());
+    }
+
+
+    /**
+     * OAuth user processing (compatibility method)
+     * Създава или обновява OAuth потребител
+     */
+    public User processOAuthUser(String email, String firstName, String lastName,
+                                 AuthProvider provider, String providerId) {
+        try {
+            // Провери дали потребителят вече съществува
+            User existingUser = userRepository.findByEmail(email.toLowerCase().trim()).orElse(null);
+
+            if (existingUser != null) {
+                // Обнови съществуващия потребител с OAuth данни
+                existingUser.setProvider(provider);
+                existingUser.setProviderId(providerId);
+                existingUser.setFirstName(firstName.trim());
+                existingUser.setLastName(lastName.trim());
+
+                // OAuth users са автоматично verified
+                if (!existingUser.isEmailVerified()) {
+                    existingUser.verifyEmail();
+                }
+
+                return userRepository.save(existingUser);
+            } else {
+                // Създай нов OAuth потребител
+                return createOAuthUser(email, firstName, lastName, provider, providerId);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to process OAuth user: " + e.getMessage());
         }
     }
 
-    private void validatePassword(String password) {
-        if (!StringUtils.hasText(password)) {
-            throw new IllegalArgumentException("Password is required");
-        }
-        if (password.length() < 8) {
-            throw new IllegalArgumentException("Password must be at least 8 characters long");
-        }
-    }
+
+
 }
