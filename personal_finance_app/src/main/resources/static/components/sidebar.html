@@ -1,10 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+<!-- Sidebar Navigation Component -->
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo">
+            <span class="logo-icon">💰</span>
+            <span class="logo-text">PersonalFinance</span>
+        </div>
+        <button class="sidebar-toggle" id="sidebar-toggle">
+            <i data-lucide="menu"></i>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <ul class="nav-list">
+            <li class="nav-item" data-page="dashboard">
+                <a href="/dashboard" class="nav-link" data-page="dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item" data-page="transactions">
+                <a href="/transactions" class="nav-link" data-page="transactions">
+                    <i data-lucide="credit-card"></i>
+                    <span>Transactions</span>
+                </a>
+            </li>
+            <li class="nav-item" data-page="budgets">
+                <a href="/budgets" class="nav-link" data-page="budgets">
+                    <i data-lucide="target"></i>
+                    <span>Budgets</span>
+                </a>
+            </li>
+            <li class="nav-item" data-page="categories">
+                <a href="/categories" class="nav-link" data-page="categories">
+                    <i data-lucide="tag"></i>
+                    <span>Categories</span>
+                </a>
+            </li>
+            <li class="nav-item" data-page="reports">
+                <a href="/reports" class="nav-link" data-page="reports">
+                    <i data-lucide="bar-chart-3"></i>
+                    <span>Reports</span>
+                </a>
+            </li>
+            <li class="nav-item" data-page="settings">
+                <a href="/settings" class="nav-link" data-page="settings">
+                    <i data-lucide="settings"></i>
+                    <span>Settings</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-profile">
+            <div class="user-avatar">
+                <img src="/static/images/default-avatar.png" alt="User Avatar" id="user-avatar">
+            </div>
+            <div class="user-info">
+                <span class="user-name" id="user-name">Loading...</span>
+                <span class="user-email" id="user-email">Loading...</span>
+            </div>
+            <button class="logout-btn" id="logout-btn" title="Logout">
+                <i data-lucide="log-out"></i>
+            </button>
+        </div>
+    </div>
+</aside>
