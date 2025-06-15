@@ -1,10 +1,354 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - PersonalFinance</title>
+    <meta name="description" content="Manage your financial transactions - Track income and expenses">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/shared.css">
+    <link rel="stylesheet" href="/static/css/transactions.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 <body>
-$END$
+<div class="app-container">
+    <!-- Shared Sidebar Navigation -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+        <!-- Dashboard Header -->
+        <header class="dashboard-header">
+            <div class="header-left">
+                <h1>💰 Transactions</h1>
+                <p class="page-subtitle">Track and manage all your financial transactions</p>
+            </div>
+            <div class="header-right">
+                <!-- Notifications -->
+                <div class="notifications-dropdown">
+                    <button class="notification-btn" id="notification-btn">
+                        <i data-lucide="bell"></i>
+                        <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
+                    </button>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="quick-action-btn" id="add-income-btn">
+                        <i data-lucide="plus-circle"></i>
+                        <span>Add Income</span>
+                    </button>
+                    <button class="quick-action-btn" id="add-expense-btn">
+                        <i data-lucide="minus-circle"></i>
+                        <span>Add Expense</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Summary Section -->
+            <section class="summary-section">
+                <div class="summary-grid">
+                    <!-- Total Transactions Card -->
+                    <div class="summary-card">
+                        <div class="card-background">
+                            <div class="card-pattern"></div>
+                        </div>
+                        <div class="card-header">
+                            <div class="card-icon balance-icon">
+                                <i data-lucide="database"></i>
+                            </div>
+                            <div class="card-actions">
+                                <button class="card-action-btn" title="Refresh">
+                                    <i data-lucide="refresh-cw"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <h3 class="card-title">Total Transactions</h3>
+                        <div class="card-value" id="total-transactions">
+                            <span class="value-amount">--</span>
+                            <span class="value-currency">records</span>
+                        </div>
+                        <div class="card-trend">
+                            <div class="trend-indicator">
+                                <i data-lucide="trending-up"></i>
+                            </div>
+                            <span class="trend-text">All time transactions</span>
+                        </div>
+                    </div>
+
+                    <!-- This Month Transactions Card -->
+                    <div class="summary-card">
+                        <div class="card-background">
+                            <div class="card-pattern"></div>
+                        </div>
+                        <div class="card-header">
+                            <div class="card-icon income-icon">
+                                <i data-lucide="calendar"></i>
+                            </div>
+                            <div class="card-actions">
+                                <button class="card-action-btn" title="View details">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <h3 class="card-title">This Month</h3>
+                        <div class="card-value" id="monthly-transactions">
+                            <span class="value-amount">--</span>
+                            <span class="value-currency">transactions</span>
+                        </div>
+                        <div class="card-trend">
+                            <div class="trend-indicator">
+                                <i data-lucide="arrow-up"></i>
+                            </div>
+                            <span class="trend-text" id="monthly-trend">Current month activity</span>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity Card -->
+                    <div class="summary-card">
+                        <div class="card-background">
+                            <div class="card-pattern"></div>
+                        </div>
+                        <div class="card-header">
+                            <div class="card-icon expense-icon">
+                                <i data-lucide="activity"></i>
+                            </div>
+                            <div class="card-actions">
+                                <button class="card-action-btn" title="View recent">
+                                    <i data-lucide="clock"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <h3 class="card-title">Recent Activity</h3>
+                        <div class="card-value" id="recent-activity">
+                            <span class="value-amount">--</span>
+                            <span class="value-currency">today</span>
+                        </div>
+                        <div class="card-trend">
+                            <div class="trend-indicator">
+                                <i data-lucide="clock"></i>
+                            </div>
+                            <span class="trend-text" id="last-activity">Latest transactions</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transactions Section -->
+            <section class="transactions-section">
+                <div class="section-header">
+                    <div class="header-left">
+                        <h2 class="section-title">Recent Transactions</h2>
+                        <p class="section-subtitle">Your latest financial activities</p>
+                    </div>
+                    <div class="section-actions">
+                        <button class="section-action-btn" id="view-all-btn">
+                            <i data-lucide="list"></i>
+                            <span>View All</span>
+                        </button>
+                        <button class="section-action-btn primary" id="add-transaction-btn">
+                            <i data-lucide="plus"></i>
+                            <span>Add Transaction</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="transactions-container">
+                    <!-- Loading State -->
+                    <div class="loading-state" id="loading-state" style="display: none;">
+                        <div class="loading-spinner"></div>
+                        <p>Loading transactions...</p>
+                    </div>
+
+                    <!-- Transactions List -->
+                    <div class="transactions-list" id="transactions-list">
+                        <!-- Transactions will be dynamically loaded here -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="empty-state" id="empty-state" style="display: none;">
+                        <div class="empty-icon">💳</div>
+                        <h3>No transactions found</h3>
+                        <p>Start tracking your finances by adding your first transaction</p>
+                        <div class="empty-actions">
+                            <button class="btn btn-primary" id="add-first-transaction-btn">
+                                <i data-lucide="plus"></i>
+                                <span>Add First Transaction</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transaction Types Section -->
+            <section class="transaction-types-section">
+                <div class="section-header">
+                    <div class="header-left">
+                        <h2 class="section-title">Transaction Types</h2>
+                        <p class="section-subtitle">Quick access to add different transaction types</p>
+                    </div>
+                    <div class="section-actions">
+                        <button class="section-action-btn" id="manage-categories-btn">
+                            <i data-lucide="settings"></i>
+                            <span>Manage Categories</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="transaction-types-grid">
+                    <!-- Income Type -->
+                    <div class="transaction-type-card income-type">
+                        <div class="type-icon">
+                            <i data-lucide="trending-up"></i>
+                        </div>
+                        <h3 class="type-title">Income</h3>
+                        <p class="type-description">Add money you received</p>
+                        <button class="type-btn" id="quick-add-income">
+                            <i data-lucide="plus"></i>
+                            <span>Add Income</span>
+                        </button>
+                    </div>
+
+                    <!-- Expense Type -->
+                    <div class="transaction-type-card expense-type">
+                        <div class="type-icon">
+                            <i data-lucide="trending-down"></i>
+                        </div>
+                        <h3 class="type-title">Expenses</h3>
+                        <p class="type-description">Add money you spent</p>
+                        <button class="type-btn" id="quick-add-expense">
+                            <i data-lucide="plus"></i>
+                            <span>Add Expense</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<!-- Add/Edit Transaction Modal -->
+<div class="modal" id="transaction-modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modal-title">Add New Transaction</h3>
+            <button class="modal-close" id="close-transaction-modal">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="modal-content">
+            <form class="transaction-form" id="transaction-form">
+                <input type="hidden" id="transaction-id" name="transactionId">
+
+                <!-- Transaction Type Toggle -->
+                <div class="form-group">
+                    <label class="form-label">Transaction Type</label>
+                    <div class="toggle-group">
+                        <button type="button" class="toggle-btn active" data-type="EXPENSE">
+                            <i data-lucide="minus-circle"></i>
+                            <span>Expense</span>
+                        </button>
+                        <button type="button" class="toggle-btn" data-type="INCOME">
+                            <i data-lucide="plus-circle"></i>
+                            <span>Income</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Row: Amount & Category -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="transaction-amount" class="form-label">Amount *</label>
+                        <div class="input-group">
+                            <input type="number" id="transaction-amount" name="amount" step="0.01" min="0.01" required class="form-input">
+                            <span class="input-suffix">лв</span>
+                        </div>
+                        <div class="form-error" id="amount-error"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="transaction-category" class="form-label">Category *</label>
+                        <select id="transaction-category" name="categoryId" required class="form-select">
+                            <option value="">Select a category...</option>
+                            <!-- Categories will be loaded dynamically -->
+                        </select>
+                        <div class="form-error" id="category-error"></div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="form-group full-width">
+                    <label for="transaction-description" class="form-label">Description *</label>
+                    <input type="text" id="transaction-description" name="description" required class="form-input" placeholder="Enter transaction description...">
+                    <div class="form-error" id="description-error"></div>
+                </div>
+
+                <!-- Date -->
+                <div class="form-group">
+                    <label for="transaction-date" class="form-label">Date *</label>
+                    <input type="date" id="transaction-date" name="transactionDate" required class="form-input">
+                    <div class="form-error" id="date-error"></div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-transaction-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submit-transaction-btn">
+                        <i data-lucide="save"></i>
+                        <span>Save Transaction</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal" id="delete-confirmation-modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-container small-modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Delete Transaction</h3>
+            <button class="modal-close" id="close-delete-modal">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="modal-content">
+            <div class="delete-confirmation-content">
+                <div class="delete-icon">
+                    <i data-lucide="trash-2"></i>
+                </div>
+                <h4 id="delete-transaction-title">Are you sure?</h4>
+                <p>You're about to delete this transaction:</p>
+                <div class="transaction-preview" id="delete-transaction-preview">
+                    <!-- Transaction details will be shown here -->
+                </div>
+                <p class="delete-warning">This action cannot be undone.</p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" id="cancel-delete-btn">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-btn">
+                    <i data-lucide="trash-2"></i>
+                    <span>Delete Transaction</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script src="/static/js/shared.js"></script>
+<script src="/static/js/transactions.js"></script>
 </body>
 </html>
