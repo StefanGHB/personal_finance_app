@@ -1,66 +1,506 @@
 <!DOCTYPE html>
-<html lang="bg">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - PersonalFinance</title>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 2rem;
-            background: #f9fafb;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #1e40af;
-            margin-bottom: 1rem;
-        }
-        .success {
-            background: #d1fae5;
-            color: #065f46;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-        .logout-btn {
-            background: #ef4444;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            text-decoration: none;
-            border-radius: 8px;
-            display: inline-block;
-            margin-top: 1rem;
-        }
-    </style>
+    <meta name="description" content="Personal Finance Dashboard - Track expenses, manage budgets and monitor your financial health">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/shared.css">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Chart.js for modern charts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 </head>
 <body>
-<div class="container">
-    <h1>🎉 Welcome to PersonalFinance Dashboard!</h1>
+<div class="app-container">
+    <!-- Sidebar Navigation (Shared Component) -->
+    <div id="sidebar-container"></div>
 
-    <div class="success">
-        <strong>Success!</strong> You are successfully logged in to the system.
-    </div>
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-left">
+                <h1 class="page-title">Dashboard</h1>
+                <p class="page-subtitle">Welcome back! Here's your financial overview</p>
+            </div>
+            <div class="header-right">
+                <!-- Notifications -->
+                <div class="notifications-dropdown">
+                    <button class="notification-btn" id="notification-btn">
+                        <i data-lucide="bell"></i>
+                        <span class="notification-badge" id="notification-badge">0</span>
+                    </button>
+                    <div class="notifications-panel" id="notifications-panel">
+                        <div class="notifications-header">
+                            <h3>Notifications</h3>
+                            <button class="mark-all-read" id="mark-all-read">Mark all as read</button>
+                        </div>
+                        <div class="notifications-list" id="notifications-list">
+                            <!-- Notifications will be loaded here -->
+                        </div>
+                    </div>
+                </div>
 
-    <p>This is a temporary dashboard page. The actual dashboard will be created later.</p>
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="quick-action-btn" id="add-transaction-btn" title="Add Transaction">
+                        <i data-lucide="plus"></i>
+                        <span>Add Transaction</span>
+                    </button>
+                    <button class="quick-action-btn" id="add-budget-btn" title="Create Budget">
+                        <i data-lucide="target"></i>
+                        <span>Create Budget</span>
+                    </button>
+                </div>
+            </div>
+        </header>
 
-    <p><strong>What works:</strong></p>
-    <ul>
-        <li>✅ Landing page</li>
-        <li>✅ User registration</li>
-        <li>✅ Email/Password login</li>
-        <li>✅ Google OAuth login</li>
-        <li>✅ Dashboard redirect</li>
-    </ul>
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Summary Cards -->
+            <section class="summary-section">
+                <div class="summary-grid">
+                    <!-- Total Balance Card -->
+                    <div class="summary-card balance-card">
+                        <div class="card-header">
+                            <div class="card-icon balance-icon">
+                                <i data-lucide="wallet"></i>
+                            </div>
+                            <div class="card-actions">
+                                <button class="card-action-btn" title="View Details">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Total Balance</h3>
+                            <div class="card-value" id="total-balance">
+                                <span class="value-amount">--</span>
+                                <span class="value-currency">лв</span>
+                            </div>
+                            <div class="card-trend" id="balance-trend">
+                                    <span class="trend-indicator">
+                                        <i data-lucide="trending-up"></i>
+                                    </span>
+                                <span class="trend-text">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="card-background">
+                            <div class="card-pattern"></div>
+                        </div>
+                    </div>
 
-    <a href="/logout" class="logout-btn">Logout</a>
+                    <!-- Monthly Income Card -->
+                    <div class="summary-card income-card">
+                        <div class="card-header">
+                            <div class="card-icon income-icon">
+                                <i data-lucide="trending-up"></i>
+                            </div>
+                            <div class="card-actions">
+                                <button class="card-action-btn" title="View Details">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Monthly Income</h3>
+                            <div class="card-value" id="monthly-income">
+                                <span class="value-amount">--</span>
+                                <span class="value-currency">лв</span>
+                            </div>
+                            <div class="card-trend" id="income-trend">
+                                    <span class="trend-indicator">
+                                        <i data-lucide="trending-up"></i>
+                                    </span>
+                                <span class="trend-text">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="card-background">
+                            <div class="card-pattern"></div>
+                        </div>
+                    </div>
+
+                    <!-- Monthly Expenses Card -->
+                    <div class="summary-card expense-card">
+                        <div class="card-header">
+                            <div class="card-icon expense-icon">
+                                <i data-lucide="trending-down"></i>
+                            </div>
+                            <div class="card-actions">
+                                <button class="card-action-btn" title="View Details">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Monthly Expenses</h3>
+                            <div class="card-value" id="monthly-expenses">
+                                <span class="value-amount">--</span>
+                                <span class="value-currency">лв</span>
+                            </div>
+                            <div class="card-trend" id="expenses-trend">
+                                    <span class="trend-indicator">
+                                        <i data-lucide="trending-down"></i>
+                                    </span>
+                                <span class="trend-text">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="card-background">
+                            <div class="card-pattern"></div>
+                        </div>
+                    </div>
+
+                    <!-- Budget Status Card -->
+                    <div class="summary-card budget-card">
+                        <div class="card-header">
+                            <div class="card-icon budget-icon">
+                                <i data-lucide="target"></i>
+                            </div>
+                            <div class="card-actions">
+                                <button class="card-action-btn" title="View Details">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">Budget Status</h3>
+                            <div class="card-value" id="budget-status">
+                                <span class="value-percentage">--</span>
+                                <span class="value-symbol">%</span>
+                            </div>
+                            <div class="card-trend" id="budget-trend">
+                                    <span class="trend-indicator">
+                                        <i data-lucide="check-circle"></i>
+                                    </span>
+                                <span class="trend-text">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="card-background">
+                            <div class="card-pattern"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section class="charts-section">
+                <div class="charts-grid">
+                    <!-- Spending Overview Chart -->
+                    <div class="chart-card primary-chart">
+                        <div class="chart-header">
+                            <div class="chart-title-group">
+                                <h3 class="chart-title">Spending Overview</h3>
+                                <p class="chart-subtitle">Last 6 months spending trends</p>
+                            </div>
+                            <div class="chart-controls">
+                                <div class="chart-period-selector">
+                                    <button class="period-btn active" data-period="6m">6M</button>
+                                    <button class="period-btn" data-period="1y">1Y</button>
+                                    <button class="period-btn" data-period="all">All</button>
+                                </div>
+                                <button class="chart-action-btn" title="Export Chart">
+                                    <i data-lucide="download"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="spending-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Category Breakdown Chart -->
+                    <div class="chart-card secondary-chart">
+                        <div class="chart-header">
+                            <div class="chart-title-group">
+                                <h3 class="chart-title">Expense Categories</h3>
+                                <p class="chart-subtitle">This month breakdown</p>
+                            </div>
+                            <div class="chart-controls">
+                                <button class="chart-action-btn" title="View All Categories">
+                                    <i data-lucide="external-link"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="category-chart"></canvas>
+                        </div>
+                        <div class="chart-legend" id="category-legend">
+                            <!-- Legend items will be generated here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Budget Progress Section -->
+            <section class="budgets-section">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <h2 class="section-title">Budget Progress</h2>
+                        <p class="section-subtitle">Track your monthly spending goals</p>
+                    </div>
+                    <div class="section-actions">
+                        <button class="section-action-btn" id="view-all-budgets">
+                            <span>View All Budgets</span>
+                            <i data-lucide="arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="budgets-grid" id="budgets-grid">
+                    <!-- Budget progress cards will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Recent Transactions Section -->
+            <section class="transactions-section">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <h2 class="section-title">Recent Transactions</h2>
+                        <p class="section-subtitle">Your latest financial activity</p>
+                    </div>
+                    <div class="section-actions">
+                        <button class="filter-btn" id="transaction-filter">
+                            <i data-lucide="filter"></i>
+                            <span>Filter</span>
+                        </button>
+                        <button class="section-action-btn" id="view-all-transactions">
+                            <span>View All</span>
+                            <i data-lucide="arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="transactions-container">
+                    <div class="transactions-list" id="transactions-list">
+                        <!-- Recent transactions will be loaded here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Financial Insights Section -->
+            <section class="insights-section">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <h2 class="section-title">Financial Insights</h2>
+                        <p class="section-subtitle">AI-powered recommendations for better financial health</p>
+                    </div>
+                </div>
+
+                <div class="insights-grid">
+                    <div class="insight-card savings-insight">
+                        <div class="insight-icon">
+                            <i data-lucide="piggy-bank"></i>
+                        </div>
+                        <div class="insight-content">
+                            <h4 class="insight-title">Savings Opportunity</h4>
+                            <p class="insight-description">Loading insights...</p>
+                            <div class="insight-action">
+                                <button class="insight-btn">Learn More</button>
+                            </div>
+                        </div>
+                        <div class="insight-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-text">--</span>
+                        </div>
+                    </div>
+
+                    <div class="insight-card budget-insight">
+                        <div class="insight-icon">
+                            <i data-lucide="target"></i>
+                        </div>
+                        <div class="insight-content">
+                            <h4 class="insight-title">Budget Alert</h4>
+                            <p class="insight-description">Loading insights...</p>
+                            <div class="insight-action">
+                                <button class="insight-btn">Adjust Budget</button>
+                            </div>
+                        </div>
+                        <div class="insight-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-text">--</span>
+                        </div>
+                    </div>
+
+                    <div class="insight-card trend-insight">
+                        <div class="insight-icon">
+                            <i data-lucide="trending-up"></i>
+                        </div>
+                        <div class="insight-content">
+                            <h4 class="insight-title">Spending Trend</h4>
+                            <p class="insight-description">Loading insights...</p>
+                            <div class="insight-action">
+                                <button class="insight-btn">View Details</button>
+                            </div>
+                        </div>
+                        <div class="insight-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%"></div>
+                            </div>
+                            <span class="progress-text">--</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
 </div>
+
+<!-- Modals -->
+<!-- Add Transaction Modal -->
+<div class="modal" id="add-transaction-modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 class="modal-title">Add New Transaction</h3>
+            <button class="modal-close" id="close-transaction-modal">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="modal-content">
+            <form class="transaction-form" id="transaction-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Transaction Type</label>
+                        <div class="toggle-group">
+                            <button type="button" class="toggle-btn active" data-type="EXPENSE">
+                                <i data-lucide="minus"></i>
+                                <span>Expense</span>
+                            </button>
+                            <button type="button" class="toggle-btn" data-type="INCOME">
+                                <i data-lucide="plus"></i>
+                                <span>Income</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="transaction-amount" class="form-label">Amount</label>
+                        <div class="input-group">
+                            <input type="number" id="transaction-amount" name="amount" step="0.01" min="0.01" required class="form-input">
+                            <span class="input-suffix">лв</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="transaction-category" class="form-label">Category</label>
+                        <select id="transaction-category" name="categoryId" required class="form-select">
+                            <option value="">Select category...</option>
+                            <!-- Categories will be loaded here -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="transaction-date" class="form-label">Date</label>
+                        <input type="date" id="transaction-date" name="transactionDate" required class="form-input">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="transaction-description" class="form-label">Description</label>
+                        <textarea id="transaction-description" name="description" rows="3" placeholder="Add a note about this transaction..." class="form-textarea"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-transaction">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i data-lucide="plus"></i>
+                        <span>Add Transaction</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Budget Modal -->
+<div class="modal" id="add-budget-modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 class="modal-title">Create New Budget</h3>
+            <button class="modal-close" id="close-budget-modal">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="modal-content">
+            <form class="budget-form" id="budget-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Budget Type</label>
+                        <div class="toggle-group">
+                            <button type="button" class="toggle-btn active" data-budget-type="category">
+                                <i data-lucide="tag"></i>
+                                <span>Category Budget</span>
+                            </button>
+                            <button type="button" class="toggle-btn" data-budget-type="general">
+                                <i data-lucide="calendar"></i>
+                                <span>Monthly Budget</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row" id="category-selection">
+                    <div class="form-group">
+                        <label for="budget-category" class="form-label">Category</label>
+                        <select id="budget-category" name="categoryId" class="form-select">
+                            <option value="">Select category...</option>
+                            <!-- Expense categories will be loaded here -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="budget-amount" class="form-label">Budget Amount</label>
+                        <div class="input-group">
+                            <input type="number" id="budget-amount" name="plannedAmount" step="0.01" min="0.01" required class="form-input">
+                            <span class="input-suffix">лв</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="budget-month" class="form-label">Month</label>
+                        <input type="month" id="budget-month" name="budgetMonth" required class="form-input">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-budget">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i data-lucide="target"></i>
+                        <span>Create Budget</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script src="/static/js/shared.js"></script>
+<script src="/static/js/dashboard.js"></script>
 </body>
 </html>
