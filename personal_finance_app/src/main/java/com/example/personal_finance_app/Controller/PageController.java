@@ -31,7 +31,7 @@ public class PageController {
         if (auth != null && auth.isAuthenticated() &&
                 !auth.getName().equals("anonymousUser")) {
             System.out.println("🔍 User authenticated, redirecting to dashboard");
-            return "redirect:/static/dashboard.html";
+            return "redirect:/dashboard";
         }
 
         // Пренасочва към статичния HTML файл с параметри
@@ -56,7 +56,7 @@ public class PageController {
     }
 
     /**
-     * Email confirmation endpoint - НОВ
+     * Email confirmation endpoint
      */
     @GetMapping("/confirm-email")
     public String confirmEmail(@RequestParam String token) {
@@ -104,12 +104,110 @@ public class PageController {
     public String dashboardPage(@RequestParam(value = "confirmed", required = false) String confirmed) {
         System.out.println("🔍 Dashboard page accessed");
 
+        // Проверка за автентикация
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            System.out.println("🔍 User not authenticated, redirecting to landing");
+            return "redirect:/";
+        }
+
         String redirectUrl = "/static/dashboard.html";
 
         if ("true".equals(confirmed)) {
             redirectUrl += "?confirmed=true";
         }
 
+        System.out.println("🔍 Redirecting to dashboard: " + redirectUrl);
         return "redirect:" + redirectUrl;
+    }
+
+    /**
+     * Transactions страница
+     */
+    @GetMapping("/transactions")
+    public String transactionsPage() {
+        System.out.println("🔍 Transactions page accessed");
+
+        // Проверка за автентикация
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            System.out.println("🔍 User not authenticated, redirecting to landing");
+            return "redirect:/";
+        }
+
+        System.out.println("🔍 Redirecting to transactions page");
+        return "redirect:/static/transactions.html";
+    }
+
+    /**
+     * Budgets страница
+     */
+    @GetMapping("/budgets")
+    public String budgetsPage() {
+        System.out.println("🔍 Budgets page accessed");
+
+        // Проверка за автентикация
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            System.out.println("🔍 User not authenticated, redirecting to landing");
+            return "redirect:/";
+        }
+
+        System.out.println("🔍 Redirecting to budgets page");
+        return "redirect:/static/budgets.html";
+    }
+
+    /**
+     * Categories страница
+     */
+    @GetMapping("/categories")
+    public String categoriesPage() {
+        System.out.println("🔍 Categories page accessed");
+
+        // Проверка за автентикация
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            System.out.println("🔍 User not authenticated, redirecting to landing");
+            return "redirect:/";
+        }
+
+        System.out.println("🔍 Redirecting to categories page");
+        return "redirect:/static/categories.html";
+    }
+
+    /**
+     * Reports страница
+     */
+    @GetMapping("/reports")
+    public String reportsPage() {
+        System.out.println("🔍 Reports page accessed");
+
+        // Проверка за автентикация
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            System.out.println("🔍 User not authenticated, redirecting to landing");
+            return "redirect:/";
+        }
+
+        System.out.println("🔍 Redirecting to reports page");
+        return "redirect:/static/reports.html";
+    }
+
+    /**
+     * Settings страница
+     */
+    @GetMapping("/settings")
+    public String settingsPage() {
+        System.out.println("🔍 Settings page accessed");
+
+        // Проверка за автентикация
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            System.out.println("🔍 User not authenticated, redirecting to landing");
+            return "redirect:/";
+        }
+
+        System.out.println("🔍 Redirecting to settings page");
+        return "redirect:/static/settings.html";
     }
 }
