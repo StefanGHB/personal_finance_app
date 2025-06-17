@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budgets - PersonalFinance</title>
+    <meta name="description" content="Manage your budgets - Set spending limits and track progress">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/shared.css">
+    <link rel="stylesheet" href="/static/css/budgets.css">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+<div class="app-container">
+    <!-- Shared Sidebar Navigation -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+        <!-- Dashboard Header -->
+        <header class="dashboard-header">
+            <div class="header-left">
+                <h1>🎯 Budgets</h1>
+                <p class="page-subtitle">Set spending limits and track your financial goals</p>
+            </div>
+            <div class="header-right">
+                <!-- Notifications -->
+                <div class="notifications-dropdown">
+                    <button class="notification-btn" id="notification-btn">
+                        <i data-lucide="bell"></i>
+                        <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
+                    </button>
+                    <div class="notifications-panel" id="notifications-panel">
+                        <div class="notifications-header">
+                            <h3>Budget Alerts</h3>
+                            <button class="mark-all-read" id="mark-all-read">Mark all as read</button>
+                        </div>
+                        <div class="notifications-list" id="notifications-list">
+                            <!-- Budget alerts will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="quick-action-btn" id="add-budget-btn">
+                        <i data-lucide="plus"></i>
+                        <span>Create Budget</span>
+                    </button>
+                    <button class="quick-action-btn secondary" id="update-spent-btn">
+                        <i data-lucide="refresh-cw"></i>
+                        <span>Update Spent</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Budget Overview Section -->
+            <section class="budget-overview-section">
+                <div class="overview-grid">
+                    <!-- Total Budget Card -->
+                    <div class="summary-card">
+                        <div class="card-background">
+                            <div class="card-pattern"></div>
+                        </div>
+                        <div class="card-header">
+                            <div class="card-icon budget-icon">
+                                <i data-lucide="target"></i>
+                            </div>
+                            <div class="card-actions">
+                                <button class="card-action-btn" title="View Details">
+                                    <i data-lucide="eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <h3 class="card-title">Total Budget</h3>
+                        <div class="card-value" id="total-budget">
+                            <span class="value-amount">--</span>
+                            <span class="value-currency">€</span>
+                        </div>
+                        <div class="card-trend">
+                            <div class="trend-indicator">
+                                <i data-lucide="pie-chart"></i>
+                            </div>
+                            <span class="trend-text">Monthly planned amount</span>
+                        </div>
+                    </div>
+
+                    <!-- Total Spent Card -->
+                    <div class="summary-card">
+                        <div class="card-background">
+                            <div class="card-pattern"></div>
+                        </div>
+                        <div class="card-header">
+                            <div class="card-icon expense-icon">
+                                <i data-lucide="trending-down"></i>
+                            </div>
+                            <div class="card-actions">
+                                <button class="card-action-btn" title="Analyze Spending">
+                                    <i data-lucide="bar-chart"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <h3 class="card-title">Total Spent</h3>
+                        <div class="card-value" id="total-spent">
+                            <span class="value-amount">--</span>
+                            <span class="value-currency">€</span>
+                        </div>
+                        <div class="card-trend">
+                            <div class="trend-indicator">
+                                <i data-lucide="credit-card"></i>
+                            </div>
+                            <span class="trend-text" id="spent-trend">Current month expenses</span>
+                        </div>
+                    </div>
+
+                    <!-- Budget Health Card -->
+                    <div class="summary-card">
+                        <div class="card-background">
+                            <div class="card-pattern"></div>
+                        </div>
+                        <div class="card-header">
+                            <div class="card-icon income-icon">
+                                <i data-lucide="activity"></i>
+                            </div>
+                            <div class="card-actions">
+                                <button class="card-action-btn" title="Health Analysis">
+                                    <i data-lucide="heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <h3 class="card-title">Budget Health</h3>
+                        <div class="card-value" id="budget-health">
+                            <span class="value-percentage">--%</span>
+                            <span class="value-symbol">used</span>
+                        </div>
+                        <div class="card-trend">
+                            <div class="trend-indicator">
+                                <i data-lucide="trending-up"></i>
+                            </div>
+                            <span class="trend-text" id="health-status">Overall performance</span>
+                        </div>
+                    </div>
+
+                    <!-- Active Budgets Card -->
+                    <div class="summary-card">
+                        <div class="card-background">
+                            <div class="card-pattern"></div>
+                        </div>
+                        <div class="card-header">
+                            <div class="card-icon balance-icon">
+                                <i data-lucide="layers"></i>
+                            </div>
+                            <div class="card-actions">
+                                <button class="card-action-btn" title="Manage Budgets">
+                                    <i data-lucide="settings"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <h3 class="card-title">Active Budgets</h3>
+                        <div class="card-value" id="active-budgets">
+                            <span class="value-amount">--</span>
+                            <span class="value-currency">budgets</span>
+                        </div>
+                        <div class="card-trend">
+                            <div class="trend-indicator">
+                                <i data-lucide="check-circle"></i>
+                            </div>
+                            <span class="trend-text">Currently tracking</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Period Selector Section -->
+            <section class="period-selector-section">
+                <div class="period-container">
+                    <div class="period-header">
+                        <h3 class="period-title">Budget Period</h3>
+                        <p class="period-subtitle">Select month and year to view budgets</p>
+                    </div>
+                    <div class="period-controls">
+                        <div class="period-nav">
+                            <button class="period-nav-btn" id="prev-month">
+                                <i data-lucide="chevron-left"></i>
+                            </button>
+                            <div class="period-display">
+                                <select id="budget-month" class="period-select">
+                                    <option value="1">January</option>
+                                    <option value="2">February</option>
+                                    <option value="3">March</option>
+                                    <option value="4">April</option>
+                                    <option value="5">May</option>
+                                    <option value="6">June</option>
+                                    <option value="7">July</option>
+                                    <option value="8">August</option>
+                                    <option value="9">September</option>
+                                    <option value="10">October</option>
+                                    <option value="11">November</option>
+                                    <option value="12">December</option>
+                                </select>
+                                <select id="budget-year" class="period-select">
+                                    <option value="2024">2024</option>
+                                    <option value="2025">2025</option>
+                                    <option value="2026">2026</option>
+                                    <option value="2027">2027</option>
+                                </select>
+                            </div>
+                            <button class="period-nav-btn" id="next-month">
+                                <i data-lucide="chevron-right"></i>
+                            </button>
+                        </div>
+                        <button class="current-month-btn" id="current-month-btn">
+                            <i data-lucide="calendar"></i>
+                            <span>Current Month</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Budgets Section -->
+            <section class="budgets-section">
+                <div class="section-header">
+                    <div class="header-left">
+                        <h2 class="section-title">Budget Overview</h2>
+                        <p class="section-subtitle">Track your spending limits and progress</p>
+                    </div>
+                    <div class="section-actions">
+                        <button class="filter-btn" id="budget-filter">
+                            <i data-lucide="filter"></i>
+                            <span>Filter</span>
+                        </button>
+                        <button class="section-action-btn" id="analytics-btn">
+                            <i data-lucide="pie-chart"></i>
+                            <span>Analytics</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="budgets-container">
+                    <!-- Loading State -->
+                    <div class="loading-state" id="loading-state" style="display: none;">
+                        <div class="loading-spinner"></div>
+                        <p>Loading budgets...</p>
+                    </div>
+
+                    <!-- Budgets Grid -->
+                    <div class="budgets-grid" id="budgets-grid">
+                        <!-- Budget cards will be dynamically loaded here -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="empty-state" id="empty-state" style="display: none;">
+                        <div class="empty-icon">🎯</div>
+                        <h3>No budgets found</h3>
+                        <p>Set your first budget to start tracking your spending limits</p>
+                        <div class="empty-actions">
+                            <button class="btn btn-primary" id="create-first-budget-btn">
+                                <i data-lucide="plus"></i>
+                                <span>Create First Budget</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Budget Types Section -->
+            <section class="budget-types-section">
+                <div class="section-header">
+                    <div class="header-left">
+                        <h2 class="section-title">Budget Types</h2>
+                        <p class="section-subtitle">Choose what type of budget to create</p>
+                    </div>
+                </div>
+
+                <div class="budget-types-grid">
+                    <!-- General Budget Type -->
+                    <div class="budget-type-card general-type">
+                        <div class="type-icon">
+                            <i data-lucide="wallet"></i>
+                        </div>
+                        <h3 class="type-title">General Budget</h3>
+                        <p class="type-description">Set an overall monthly spending limit</p>
+                        <div class="type-features">
+                            <span class="feature-tag">✓ Total monthly limit</span>
+                            <span class="feature-tag">✓ Overall tracking</span>
+                        </div>
+                        <button class="type-btn" id="quick-add-general">
+                            <i data-lucide="plus"></i>
+                            <span>Create General</span>
+                        </button>
+                    </div>
+
+                    <!-- Category Budget Type -->
+                    <div class="budget-type-card category-type">
+                        <div class="type-icon">
+                            <i data-lucide="tag"></i>
+                        </div>
+                        <h3 class="type-title">Category Budget</h3>
+                        <p class="type-description">Set spending limits for specific categories</p>
+                        <div class="type-features">
+                            <span class="feature-tag">✓ Category-specific</span>
+                            <span class="feature-tag">✓ Detailed tracking</span>
+                        </div>
+                        <button class="type-btn" id="quick-add-category">
+                            <i data-lucide="plus"></i>
+                            <span>Create Category</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Budget Analytics Section -->
+            <section class="budget-analytics-section" id="analytics-section" style="display: none;">
+                <div class="section-header">
+                    <div class="header-left">
+                        <h2 class="section-title">Budget Analytics</h2>
+                        <p class="section-subtitle">Detailed spending analysis and insights</p>
+                    </div>
+                    <div class="section-actions">
+                        <button class="section-action-btn" id="close-analytics">
+                            <i data-lucide="x"></i>
+                            <span>Close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="analytics-grid">
+                    <!-- Spending Distribution Chart -->
+                    <div class="analytics-card">
+                        <div class="analytics-header">
+                            <h3>Spending Distribution</h3>
+                            <button class="analytics-action" title="Export Chart">
+                                <i data-lucide="download"></i>
+                            </button>
+                        </div>
+                        <div class="chart-container" id="spending-chart">
+                            <!-- Chart will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Budget Progress Chart -->
+                    <div class="analytics-card">
+                        <div class="analytics-header">
+                            <h3>Budget Progress</h3>
+                            <button class="analytics-action" title="View Details">
+                                <i data-lucide="maximize"></i>
+                            </button>
+                        </div>
+                        <div class="chart-container" id="progress-chart">
+                            <!-- Progress chart will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<!-- Add/Edit Budget Modal -->
+<div class="modal" id="budget-modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 class="modal-title" id="budget-modal-title">Create New Budget</h3>
+            <button class="modal-close" id="close-budget-modal">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="modal-content">
+            <form class="budget-form" id="budget-form">
+                <input type="hidden" id="budget-id" name="budgetId">
+
+                <!-- Budget Type Toggle -->
+                <div class="form-group">
+                    <label class="form-label">Budget Type</label>
+                    <div class="toggle-group">
+                        <button type="button" class="toggle-btn active" data-type="general">
+                            <i data-lucide="wallet"></i>
+                            <span>General Budget</span>
+                        </button>
+                        <button type="button" class="toggle-btn" data-type="category">
+                            <i data-lucide="tag"></i>
+                            <span>Category Budget</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Form Row: Amount & Category -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="budget-amount" class="form-label">Planned Amount *</label>
+                        <div class="input-group">
+                            <input type="number" id="budget-amount" name="plannedAmount" step="0.01" min="0.01" required class="form-input">
+                            <span class="input-suffix">€</span>
+                        </div>
+                        <div class="form-error" id="amount-error"></div>
+                    </div>
+                    <div class="form-group" id="category-group" style="display: none;">
+                        <label for="budget-category" class="form-label">Category *</label>
+                        <select id="budget-category" name="categoryId" class="form-select">
+                            <option value="">Select a category...</option>
+                            <!-- Categories will be loaded dynamically -->
+                        </select>
+                        <div class="form-error" id="category-error"></div>
+                    </div>
+                </div>
+
+                <!-- Period Selection -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="budget-month-modal" class="form-label">Month *</label>
+                        <select id="budget-month-modal" name="budgetMonth" required class="form-select">
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                        <div class="form-error" id="month-error"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="budget-year-modal" class="form-label">Year *</label>
+                        <select id="budget-year-modal" name="budgetYear" required class="form-select">
+                            <option value="2024">2024</option>
+                            <option value="2025">2025</option>
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                        </select>
+                        <div class="form-error" id="year-error"></div>
+                    </div>
+                </div>
+
+                <!-- Budget Alerts Settings -->
+                <div class="form-group full-width">
+                    <label class="form-label">Alert Settings</label>
+                    <div class="alert-settings">
+                        <div class="alert-option">
+                            <input type="checkbox" id="enable-alerts" checked>
+                            <label for="enable-alerts">Enable budget alerts</label>
+                        </div>
+                        <div class="alert-threshold">
+                            <label for="alert-threshold">Alert when reached:</label>
+                            <select id="alert-threshold" class="form-select">
+                                <option value="75">75% of budget</option>
+                                <option value="80">80% of budget</option>
+                                <option value="85">85% of budget</option>
+                                <option value="90" selected>90% of budget</option>
+                                <option value="95">95% of budget</option>
+                                <option value="100">100% of budget</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-budget-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submit-budget-btn">
+                        <i data-lucide="save"></i>
+                        <span>Save Budget</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Budget Confirmation Modal -->
+<div class="modal" id="delete-budget-modal">
+    <div class="modal-overlay"></div>
+    <div class="modal-container small-modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Delete Budget</h3>
+            <button class="modal-close" id="close-delete-budget-modal">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="modal-content">
+            <div class="delete-confirmation-content">
+                <div class="delete-icon">
+                    <i data-lucide="trash-2"></i>
+                </div>
+                <h4 id="delete-budget-title">Are you sure?</h4>
+                <p>You're about to delete this budget:</p>
+                <div class="budget-preview" id="delete-budget-preview">
+                    <!-- Budget details will be shown here -->
+                </div>
+                <p class="delete-warning">This action cannot be undone and will remove all associated alerts.</p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" id="cancel-delete-budget-btn">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-budget-btn">
+                    <i data-lucide="trash-2"></i>
+                    <span>Delete Budget</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Budget Filter Panel -->
+<div class="filter-panel" id="budget-filter-panel">
+    <div class="filter-panel-content">
+        <div class="filter-header">
+            <h3>Filter Budgets</h3>
+            <button class="filter-close" id="close-budget-filter">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        <div class="filter-body">
+            <div class="filter-group">
+                <label class="filter-label">Budget Type</label>
+                <select id="filter-budget-type" class="filter-select">
+                    <option value="">All Types</option>
+                    <option value="general">General Budgets</option>
+                    <option value="category">Category Budgets</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Status</label>
+                <select id="filter-status" class="filter-select">
+                    <option value="">All Statuses</option>
+                    <option value="under">Under Budget</option>
+                    <option value="near">Near Limit (90%+)</option>
+                    <option value="over">Over Budget</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Category</label>
+                <select id="filter-category" class="filter-select">
+                    <option value="">All Categories</option>
+                    <!-- Categories will be loaded dynamically -->
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">Amount Range</label>
+                <div class="range-inputs">
+                    <input type="number" id="filter-min-amount" placeholder="Min amount" class="filter-input">
+                    <span>to</span>
+                    <input type="number" id="filter-max-amount" placeholder="Max amount" class="filter-input">
+                </div>
+            </div>
+        </div>
+        <div class="filter-actions">
+            <button class="btn btn-secondary" id="clear-budget-filters">Clear All</button>
+            <button class="btn btn-primary" id="apply-budget-filters">Apply Filters</button>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script src="/static/js/shared.js"></script>
+<script src="/static/js/budgets.js"></script>
+</body>
+</html>

@@ -38,17 +38,22 @@
                         <i data-lucide="bell"></i>
                         <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
                     </button>
+                    <div class="notifications-panel" id="notifications-panel">
+                        <div class="notifications-header">
+                            <h3>Notifications</h3>
+                            <button class="mark-all-read" id="mark-all-read">Mark all as read</button>
+                        </div>
+                        <div class="notifications-list" id="notifications-list">
+                            <!-- Notifications will be loaded here -->
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Quick Actions -->
+                <!-- Quick Actions - Single Universal Button -->
                 <div class="quick-actions">
-                    <button class="quick-action-btn" id="add-income-btn">
-                        <i data-lucide="plus-circle"></i>
-                        <span>Add Income</span>
-                    </button>
-                    <button class="quick-action-btn" id="add-expense-btn">
-                        <i data-lucide="minus-circle"></i>
-                        <span>Add Expense</span>
+                    <button class="quick-action-btn" id="add-transaction-btn">
+                        <i data-lucide="plus"></i>
+                        <span>Add Transaction</span>
                     </button>
                 </div>
             </div>
@@ -153,13 +158,13 @@
                         <p class="section-subtitle">Your latest financial activities</p>
                     </div>
                     <div class="section-actions">
+                        <button class="filter-btn" id="transaction-filter">
+                            <i data-lucide="filter"></i>
+                            <span>Filter</span>
+                        </button>
                         <button class="section-action-btn" id="view-all-btn">
                             <i data-lucide="list"></i>
                             <span>View All</span>
-                        </button>
-                        <button class="section-action-btn primary" id="add-transaction-btn">
-                            <i data-lucide="plus"></i>
-                            <span>Add Transaction</span>
                         </button>
                     </div>
                 </div>
@@ -197,12 +202,6 @@
                     <div class="header-left">
                         <h2 class="section-title">Transaction Types</h2>
                         <p class="section-subtitle">Quick access to add different transaction types</p>
-                    </div>
-                    <div class="section-actions">
-                        <button class="section-action-btn" id="manage-categories-btn">
-                            <i data-lucide="settings"></i>
-                            <span>Manage Categories</span>
-                        </button>
                     </div>
                 </div>
 
@@ -273,7 +272,7 @@
                         <label for="transaction-amount" class="form-label">Amount *</label>
                         <div class="input-group">
                             <input type="number" id="transaction-amount" name="amount" step="0.01" min="0.01" required class="form-input">
-                            <span class="input-suffix">лв</span>
+                            <span class="input-suffix">€</span>
                         </div>
                         <div class="form-error" id="amount-error"></div>
                     </div>
