@@ -1,6 +1,5 @@
 package com.example.personal_finance_app.Service;
 
-
 import com.example.personal_finance_app.Entity.Category;
 import com.example.personal_finance_app.Entity.Transaction;
 import com.example.personal_finance_app.Entity.User;
@@ -10,7 +9,7 @@ import com.example.personal_finance_app.Repository.TransactionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -30,6 +29,10 @@ public class TransactionService {
     private final UserService userService;
     private final CategoryService categoryService;
 
+    // ===== ИЗПОЛЗВАМЕ ApplicationContext ЗА LAZY LOADING =====
+    @Autowired
+    private ApplicationContext applicationContext;
+
     @Autowired
     public TransactionService(TransactionRepository transactionRepository,
                               UserService userService,
@@ -40,7 +43,14 @@ public class TransactionService {
     }
 
     /**
-     * Създаване на нова транзакция
+     * Lazy injection на BudgetService за избягване на circular dependency
+     */
+    private BudgetService getBudgetService() {
+        return applicationContext.getBean(BudgetService.class);
+    }
+
+    /**
+     * Създаване на нова транзакция - ОБНОВЕНА С AUTO-UPDATE
      */
     public Transaction createTransaction(Long userId, Long categoryId, BigDecimal amount,
                                          String description, TransactionType type, LocalDate transactionDate) {
@@ -63,11 +73,16 @@ public class TransactionService {
         Transaction savedTransaction = transactionRepository.save(transaction);
         logger.info("Successfully created transaction with ID: {}", savedTransaction.getId());
 
+        // ===== АВТОМАТИЧНО ОБНОВЯВАНЕ НА БЮДЖЕТИ =====
+        if (TransactionType.EXPENSE.equals(type)) {
+            updateBudgetsAsync(userId, savedTransaction.getTransactionDate());
+        }
+
         return savedTransaction;
     }
 
     /**
-     * Обновяване на транзакция
+     * Обновяване на транзакция - ОБНОВЕНА С AUTO-UPDATE
      */
     public Transaction updateTransaction(Long userId, Long transactionId, Long categoryId,
                                          BigDecimal amount, String description, LocalDate transactionDate) {
@@ -79,6 +94,11 @@ public class TransactionService {
         validateTransactionInput(amount, transaction.getType(), transactionDate);
         validateCategoryType(category, transaction.getType());
 
+        // ===== ЗАПАЗВАНЕ НА СТАРИ СТОЙНОСТИ ЗА BUDGET UPDATE =====
+        Long oldCategoryId = transaction.getCategory().getId();
+        LocalDate oldTransactionDate = transaction.getTransactionDate();
+        TransactionType transactionType = transaction.getType();
+
         transaction.setCategory(category);
         transaction.setAmount(amount);
         transaction.setDescription(StringUtils.hasText(description) ? description.trim() : null);
@@ -87,20 +107,73 @@ public class TransactionService {
         Transaction updatedTransaction = transactionRepository.save(transaction);
         logger.info("Successfully updated transaction ID: {}", transactionId);
 
+        // ===== АВТОМАТИЧНО ОБНОВЯВАНЕ НА БЮДЖЕТИ =====
+        if (TransactionType.EXPENSE.equals(transactionType)) {
+            updateBudgetsForModifiedTransaction(userId, oldTransactionDate, updatedTransaction.getTransactionDate());
+        }
+
         return updatedTransaction;
     }
 
     /**
-     * Изтриване на транзакция
+     * Изтриване на транзакция - ОБНОВЕНА С AUTO-UPDATE
      */
     public void deleteTransaction(Long userId, Long transactionId) {
         logger.info("Deleting transaction ID: {} for user ID: {}", transactionId, userId);
 
         Transaction transaction = findUserTransaction(userId, transactionId);
-        transactionRepository.delete(transaction);
 
+        // ===== ЗАПАЗВАНЕ НА СТОЙНОСТИ ЗА BUDGET UPDATE =====
+        LocalDate transactionDate = transaction.getTransactionDate();
+        TransactionType type = transaction.getType();
+
+        transactionRepository.delete(transaction);
         logger.info("Successfully deleted transaction ID: {}", transactionId);
+
+        // ===== АВТОМАТИЧНО ОБНОВЯВАНЕ НА БЮДЖЕТИ =====
+        if (TransactionType.EXPENSE.equals(type)) {
+            updateBudgetsAsync(userId, transactionDate);
+        }
     }
+
+    /**
+     * Асинхронно обновяване на бюджети за да избегнем блокиране
+     */
+    private void updateBudgetsAsync(Long userId, LocalDate transactionDate) {
+        try {
+            BudgetService budgetService = getBudgetService();
+            budgetService.updateSpentAmounts(userId,
+                    transactionDate.getYear(),
+                    transactionDate.getMonthValue());
+            logger.info("Auto-updated budgets for period {}-{}",
+                    transactionDate.getYear(), transactionDate.getMonthValue());
+        } catch (Exception e) {
+            logger.warn("Failed to auto-update budgets for date {}: {}", transactionDate, e.getMessage());
+        }
+    }
+
+    /**
+     * Обновяване на бюджети за модифицирана транзакция
+     */
+    private void updateBudgetsForModifiedTransaction(Long userId, LocalDate oldDate, LocalDate newDate) {
+        try {
+            BudgetService budgetService = getBudgetService();
+
+            // Обновяване на старият период
+            budgetService.updateSpentAmounts(userId, oldDate.getYear(), oldDate.getMonthValue());
+
+            // Обновяване на новият период (ако е различен)
+            if (oldDate.getYear() != newDate.getYear() || oldDate.getMonthValue() != newDate.getMonthValue()) {
+                budgetService.updateSpentAmounts(userId, newDate.getYear(), newDate.getMonthValue());
+            }
+
+            logger.info("Auto-updated budgets for modified transaction periods");
+        } catch (Exception e) {
+            logger.warn("Failed to auto-update budgets for modified transaction: {}", e.getMessage());
+        }
+    }
+
+    // ===== ВСИЧКИ ОСТАНАЛИ МЕТОДИ ОСТАВАТ НЕПРОМЕНЕНИ =====
 
     /**
      * Намиране на транзакция по ID

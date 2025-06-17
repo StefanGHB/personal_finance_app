@@ -7,10 +7,10 @@ import com.example.personal_finance_app.Entity.User;
 import com.example.personal_finance_app.Enum.TransactionType;
 import com.example.personal_finance_app.Exeption.BudgetNotFoundException;
 import com.example.personal_finance_app.Repository.BudgetRepository;
+import com.example.personal_finance_app.Repository.TransactionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,20 +28,22 @@ public class BudgetService {
     private final BudgetRepository budgetRepository;
     private final UserService userService;
     private final CategoryService categoryService;
-    private final TransactionService transactionService;
     private final BudgetAlertService budgetAlertService;
+
+    // ===== ДИРЕКТЕН ДОСТЪП ДО TRANSACTION REPOSITORY ЗА ИЗБЯГВАНЕ НА CIRCULAR DEPENDENCY =====
+    private final TransactionRepository transactionRepository;
 
     @Autowired
     public BudgetService(BudgetRepository budgetRepository,
                          UserService userService,
                          CategoryService categoryService,
-                         TransactionService transactionService,
-                         BudgetAlertService budgetAlertService) {
+                         BudgetAlertService budgetAlertService,
+                         TransactionRepository transactionRepository) {
         this.budgetRepository = budgetRepository;
         this.userService = userService;
         this.categoryService = categoryService;
-        this.transactionService = transactionService;
         this.budgetAlertService = budgetAlertService;
+        this.transactionRepository = transactionRepository;
     }
 
     /**
@@ -219,7 +221,7 @@ public class BudgetService {
     }
 
     /**
-     * Обновяване на изразходваните суми за всички бюджети на потребител
+     * Обновяване на изразходваните суми за всички бюджети на потребител - ОБНОВЕНА
      */
     public void updateSpentAmounts(Long userId, Integer year, Integer month) {
         logger.info("Updating spent amounts for user ID: {} for period {}-{}", userId, year, month);
@@ -230,11 +232,17 @@ public class BudgetService {
             BigDecimal currentSpent = calculateCurrentSpentAmount(userId,
                     budget.getCategory() != null ? budget.getCategory().getId() : null, year, month);
 
-            budget.setSpentAmount(currentSpent);
-            budgetRepository.save(budget);
+            // ===== ПРОВЕРКА ДАЛИ СУМАТА СЕ Е ПРОМЕНИЛА =====
+            if (budget.getSpentAmount().compareTo(currentSpent) != 0) {
+                budget.setSpentAmount(currentSpent);
+                budgetRepository.save(budget);
 
-            // Проверка за алерти
-            checkBudgetAlerts(budget);
+                // Проверка за алерти само ако сумата се е променила
+                checkBudgetAlerts(budget);
+
+                logger.debug("Updated spent amount for budget ID: {} from {} to {}",
+                        budget.getId(), budget.getSpentAmount(), currentSpent);
+            }
         }
 
         logger.info("Successfully updated spent amounts for {} budgets", budgets.size());
@@ -254,9 +262,14 @@ public class BudgetService {
         }
     }
 
-    // Private helper methods
+    // ===== PRIVATE HELPER METHODS - ОБНОВЕНИ ЗА ИЗБЯГВАНЕ НА CIRCULAR DEPENDENCY =====
+
+    /**
+     * Изчисляване на текуща изразходвана сума - ИЗПОЛЗВА ДИРЕКТНО TRANSACTION REPOSITORY
+     */
     private BigDecimal calculateCurrentSpentAmount(Long userId, Long categoryId, Integer year, Integer month) {
-        List<Transaction> transactions = transactionService.findUserTransactionsByMonth(userId, year, month);
+        // Използваме директно TransactionRepository вместо TransactionService
+        List<Transaction> transactions = transactionRepository.findByUserIdAndYearAndMonth(userId, year, month);
 
         return transactions.stream()
                 .filter(t -> t.getType() == TransactionType.EXPENSE)
