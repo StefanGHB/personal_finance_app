@@ -1,4 +1,400 @@
 /* ===================================
+   ENHANCED DROPDOWN & SCROLL STYLING - COMPLETELY FIXED
+   ================================== */
+
+/* Standard Select Dropdowns - Base Styling */
+.period-select,
+.form-select,
+.filter-select {
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1rem;
+  padding-right: 2rem;
+  min-height: 42px;
+}
+
+/* ✅ CRITICAL FIX: Enhanced Category Dropdown Scroller */
+.form-select.enhanced-dropdown-scroller,
+.filter-select.enhanced-dropdown-scroller {
+  /* FIXED: Force dropdown to stay open and show exactly 5 options */
+  size: 5 !important;
+  appearance: listbox !important;
+  background-image: none !important;
+  padding-right: 0.75rem !important;
+  height: auto !important;
+  overflow-y: auto !important;
+  max-height: 240px !important; /* 5 options × 48px per option */
+
+  /* Enhanced scroller visual styling */
+  background: linear-gradient(135deg, rgba(31, 41, 55, 0.95) 0%, rgba(17, 24, 39, 0.9) 100%);
+  border: 2px solid var(--accent-purple);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.2);
+
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #6b46c1 #374151; /* ✅ Softer purple scrollbar */
+}
+
+/* ✅ NEUTRAL STATE: Reset to normal when clicking away */
+.form-select.enhanced-dropdown-scroller:not(:focus),
+.filter-select.enhanced-dropdown-scroller:not(:focus) {
+  border-color: var(--border-glass) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* ✅ DEFAULT OPTION STYLING: Neutral state for default option */
+.form-select.enhanced-dropdown-scroller option[value=""],
+.filter-select.enhanced-dropdown-scroller option[value=""] {
+  background-color: #111827 !important; /* ✅ Darker background for default */
+  color: #9ca3af !important; /* ✅ Muted text color */
+  font-style: italic !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important; /* ✅ Slightly more visible separator */
+}
+
+/* ✅ DEFAULT OPTION HOVER */
+.form-select.enhanced-dropdown-scroller option[value=""]:hover,
+.filter-select.enhanced-dropdown-scroller option[value=""]:hover {
+  background-color: #374151 !important; /* ✅ Subtle hover for default */
+  color: #d1d5db !important;
+  transform: none !important; /* ✅ No transform for default option */
+}
+
+/* ✅ WEBKIT SCROLLBAR: Softer purple scroller */
+.form-select.enhanced-dropdown-scroller::-webkit-scrollbar,
+.filter-select.enhanced-dropdown-scroller::-webkit-scrollbar {
+  width: 8px;
+}
+
+.form-select.enhanced-dropdown-scroller::-webkit-scrollbar-track,
+.filter-select.enhanced-dropdown-scroller::-webkit-scrollbar-track {
+  background: #374151;
+  border-radius: 4px;
+}
+
+.form-select.enhanced-dropdown-scroller::-webkit-scrollbar-thumb,
+.filter-select.enhanced-dropdown-scroller::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #6b46c1 0%, #5b21b6 100%); /* ✅ Softer purple gradient */
+  border-radius: 4px;
+  min-height: 20px;
+  border: 1px solid #4b5563;
+}
+
+.form-select.enhanced-dropdown-scroller::-webkit-scrollbar-thumb:hover,
+.filter-select.enhanced-dropdown-scroller::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #6b46c1 100%); /* ✅ Slightly brighter on hover but still soft */
+  box-shadow: 0 0 6px rgba(107, 70, 193, 0.4); /* ✅ Much softer glow */
+}
+
+/* ✅ OPTION STYLING: Perfect for scroller with separators and deselect support */
+.form-select.enhanced-dropdown-scroller option,
+.filter-select.enhanced-dropdown-scroller option {
+  background-color: #1f2937 !important;
+  color: #ffffff !important;
+  padding: 12px 16px !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important; /* ✅ Subtle separator */
+  font-size: 0.925rem !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  height: 48px !important;
+  display: flex !important;
+  align-items: center !important;
+  margin: 0 !important; /* ✅ Removed margin for cleaner separators */
+  border-radius: 0 !important; /* ✅ Sharp edges for clean lines */
+  transition: all 0.2s ease !important;
+  cursor: pointer !important; /* ✅ Better cursor indication */
+}
+
+/* ✅ Remove border from last option */
+.form-select.enhanced-dropdown-scroller option:last-child,
+.filter-select.enhanced-dropdown-scroller option:last-child {
+  border-bottom: none !important;
+}
+
+/* ✅ First option gets top rounded corners */
+.form-select.enhanced-dropdown-scroller option:first-child,
+.filter-select.enhanced-dropdown-scroller option:first-child {
+  border-top-left-radius: 6px !important;
+  border-top-right-radius: 6px !important;
+}
+
+/* ✅ Last option gets bottom rounded corners */
+.form-select.enhanced-dropdown-scroller option:last-child,
+.filter-select.enhanced-dropdown-scroller option:last-child {
+  border-bottom-left-radius: 6px !important;
+  border-bottom-right-radius: 6px !important;
+}
+
+.form-select.enhanced-dropdown-scroller option:hover,
+.filter-select.enhanced-dropdown-scroller option:hover {
+  background-color: #6b46c1 !important; /* ✅ Softer purple */
+  color: white !important;
+  transform: translateX(2px) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.12) !important; /* ✅ Slightly more visible on hover */
+}
+
+/* ✅ IMPROVED: Selected state with clear visual feedback and deselect hint */
+.form-select.enhanced-dropdown-scroller option:checked,
+.filter-select.enhanced-dropdown-scroller option:checked,
+.form-select.enhanced-dropdown-scroller option:selected,
+.filter-select.enhanced-dropdown-scroller option:selected {
+  background-color: #5b21b6 !important; /* ✅ Deeper, less bright purple */
+  color: white !important;
+  font-weight: 600 !important;
+  box-shadow: inset 3px 0 0 #7c3aed !important; /* ✅ Softer accent */
+  border-bottom-color: rgba(255, 255, 255, 0.15) !important;
+  position: relative !important;
+}
+
+/* ✅ ADD: Visual hint for deselection on selected options */
+.form-select.enhanced-dropdown-scroller option:checked::after,
+.filter-select.enhanced-dropdown-scroller option:checked::after,
+.form-select.enhanced-dropdown-scroller option:selected::after,
+.filter-select.enhanced-dropdown-scroller option:selected::after {
+  content: '✓' !important;
+  position: absolute !important;
+  right: 12px !important;
+  color: #a855f7 !important;
+  font-weight: bold !important;
+  font-size: 0.8rem !important;
+}
+
+/* ✅ HOVER on selected option shows deselect hint */
+.form-select.enhanced-dropdown-scroller option:checked:hover::after,
+.filter-select.enhanced-dropdown-scroller option:checked:hover::after,
+.form-select.enhanced-dropdown-scroller option:selected:hover::after,
+.filter-select.enhanced-dropdown-scroller option:selected:hover::after {
+  content: '✗' !important;
+  color: #ef4444 !important;
+}
+
+/* ✅ UPDATED: Enhanced dropdown scroller - neutral when not focused */
+.form-select.enhanced-dropdown-scroller:hover:not(.category-selected),
+.filter-select.enhanced-dropdown-scroller:hover:not(.category-selected) {
+  border-color: #7c3aed;
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.15);
+  transform: translateY(-1px);
+}
+
+.form-select.enhanced-dropdown-scroller:focus:not(.category-selected),
+.filter-select.enhanced-dropdown-scroller:focus:not(.category-selected) {
+  outline: none;
+  border-color: #6b46c1;
+  box-shadow: 0 0 0 3px rgba(107, 70, 193, 0.12), 0 8px 20px rgba(139, 92, 246, 0.2);
+}
+
+/* ✅ STANDARD DROPDOWN: Normal single-click behavior */
+.form-select:not(.enhanced-dropdown-scroller),
+.filter-select:not(.enhanced-dropdown-scroller) {
+  /* Keep standard dropdown behavior */
+  size: unset !important;
+  appearance: none !important;
+  height: auto !important;
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+/* Standard dropdown options (≤5 total options) */
+.period-select option,
+.form-select:not(.enhanced-dropdown-scroller) option,
+.filter-select:not(.enhanced-dropdown-scroller) option {
+  background-color: #1f2937 !important;
+  color: #ffffff !important;
+  padding: 8px 12px !important;
+  border: none !important;
+  font-size: 0.925rem !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+}
+
+.period-select option:hover,
+.form-select:not(.enhanced-dropdown-scroller) option:hover,
+.filter-select:not(.enhanced-dropdown-scroller) option:hover {
+  background-color: #8b5cf6 !important;
+  color: white !important;
+}
+
+.period-select option:checked,
+.form-select:not(.enhanced-dropdown-scroller) option:checked,
+.filter-select:not(.enhanced-dropdown-scroller) option:checked {
+  background-color: #7c3aed !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* Enhanced dropdown hover effect for standard dropdowns */
+.period-select:hover,
+.form-select:not(.enhanced-dropdown-scroller):hover,
+.filter-select:not(.enhanced-dropdown-scroller):hover {
+  background: var(--surface-glass-hover);
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+}
+
+.period-select:focus,
+.form-select:not(.enhanced-dropdown-scroller):focus,
+.filter-select:not(.enhanced-dropdown-scroller):focus {
+  outline: none;
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ===================================
+   ✅ NEW: Category Selection Styling - Clean Deselect Support
+   ================================== */
+
+/* ✅ Category selected state - subtle visual feedback */
+.form-select.category-selected,
+.filter-select.category-selected {
+  color: var(--selected-category-color) !important;
+  font-weight: 600 !important;
+  border-color: var(--selected-category-color) !important;
+  /* NO background color - keeps it clean */
+}
+
+/* ✅ Focus state for selected categories */
+.form-select.category-selected:focus,
+.filter-select.category-selected:focus {
+  outline: none;
+  border-color: var(--selected-category-color) !important;
+  box-shadow: 0 0 0 3px rgba(var(--selected-category-color-rgb), 0.15) !important;
+}
+
+/* ✅ Selected option styling inside dropdown */
+.form-select.category-selected option:checked,
+.filter-select.category-selected option:checked {
+  background-color: var(--selected-category-color) !important;
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* ✅ Default option styling - always neutral */
+.form-select option[value=""],
+.filter-select option[value=""] {
+  color: #9ca3af !important;
+  font-style: italic !important;
+  background-color: #111827 !important;
+}
+
+/* ✅ Prevent "Select category..." from getting colored */
+.form-select option[value=""]:hover,
+.filter-select option[value=""]:hover,
+.form-select option[value=""]:focus,
+.filter-select option[value=""]:focus,
+.form-select option[value=""]:selected,
+.filter-select option[value=""]:selected {
+  color: #9ca3af !important;
+  background-color: #374151 !important;
+  font-weight: normal !important;
+}
+
+/* ===================================
+   MOBILE RESPONSIVE FOR ENHANCED SCROLLER
+   ================================== */
+@media (max-width: 768px) {
+  .form-select.enhanced-dropdown-scroller,
+  .filter-select.enhanced-dropdown-scroller {
+    max-height: 200px; /* Smaller on mobile */
+    font-size: 0.875rem;
+  }
+
+  .form-select.enhanced-dropdown-scroller::-webkit-scrollbar,
+  .filter-select.enhanced-dropdown-scroller::-webkit-scrollbar {
+    width: 6px; /* Thinner on mobile */
+  }
+
+  .form-select.enhanced-dropdown-scroller option,
+  .filter-select.enhanced-dropdown-scroller option {
+    height: 44px !important; /* Slightly smaller on mobile */
+    padding: 10px 14px !important;
+    font-size: 0.875rem !important;
+  }
+}
+
+/* ===================================
+   FORM GROUP IMPROVEMENTS
+   ================================== */
+.form-group {
+  position: relative;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+/* Enhanced input styling for form consistency */
+.form-input,
+.form-textarea {
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 0.875rem 1rem;
+  color: var(--text-primary);
+  font-size: 0.925rem;
+  transition: all var(--duration-fast) ease;
+  width: 100%;
+  min-height: 42px;
+}
+
+/* ✅ REMOVE NUMBER INPUT ARROWS - No spinners for amount fields */
+.form-input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+.form-input[type="number"]::-webkit-outer-spin-button,
+.form-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none; /* Chrome, Safari, Edge */
+  margin: 0;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: var(--surface-glass-hover);
+}
+
+/* ===================================
+   DROPDOWN ICON ANIMATIONS
+   ================================== */
+.form-select:not(.enhanced-dropdown-scroller)::after {
+  content: '';
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid var(--text-secondary);
+  pointer-events: none;
+  transition: transform 0.2s ease;
+}
+
+.form-select:not(.enhanced-dropdown-scroller):focus::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+/* ===================================
    INNOVATIVE ANALYTICS - COMPLETELY NEW APPROACH
    ================================== */
 
@@ -515,7 +911,9 @@
   .score-circle .score-value {
     font-size: 1.1rem;
   }
-}/* FIXED: Dummy cards for filter stability */
+}
+
+/* FIXED: Dummy cards for filter stability */
 .dummy-card {
   background: var(--surface-glass);
   border: 2px dashed var(--border-glass);
@@ -583,7 +981,9 @@
 .dummy-btn i {
   width: 16px;
   height: 16px;
-}/* ===================================
+}
+
+/* ===================================
    FIXED BUDGETS CSS - PERFECT CAROUSEL & NEW ANALYTICS
    ================================== */
 
@@ -717,7 +1117,10 @@ body {
   gap: 1rem;
 }
 
-/* Notifications */
+/* ===================================
+   ✅ FUNCTIONAL NOTIFICATIONS DROPDOWN - CLEAN & COMPACT
+   ================================== */
+
 .notifications-dropdown {
   position: relative;
 }
@@ -736,8 +1139,13 @@ body {
 .notification-btn:hover {
   background: var(--surface-glass-hover);
   color: var(--text-primary);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ✅ REMOVED: No special styling when notifications panel is active */
+.notification-btn:focus {
+  outline: none;
 }
 
 .notification-badge {
@@ -752,12 +1160,13 @@ body {
   border-radius: 1rem;
   min-width: 1.25rem;
   text-align: center;
-  box-shadow: 0 0 12px rgba(244, 63, 94, 0.4);
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.4);
 }
 
+/* ✅ COMPACT DROPDOWN PANEL */
 .notifications-panel {
   position: absolute;
-  top: calc(100% + 0.5rem);
+  top: calc(100% + 0.75rem);
   right: 0;
   width: 380px;
   background: var(--bg-modal);
@@ -768,28 +1177,33 @@ body {
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-10px);
+  transform: translateY(-10px) scale(0.95);
   transition: all var(--duration-normal) ease;
+  max-height: 500px;
+  overflow: hidden;
 }
 
 .notifications-panel.active {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
+/* ✅ CLEAN HEADER */
 .notifications-header {
-  padding: 1rem 1.25rem;
+  padding: 1rem 1.25rem 0.75rem;
   border-bottom: 1px solid var(--border-glass);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background: var(--surface-glass);
 }
 
 .notifications-header h3 {
   font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
+  margin: 0;
 }
 
 .mark-all-read {
@@ -797,6 +1211,7 @@ body {
   border: none;
   color: var(--accent-cyan);
   font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
   padding: 0.25rem 0.5rem;
   border-radius: var(--radius-md);
@@ -805,6 +1220,210 @@ body {
 
 .mark-all-read:hover {
   background: var(--surface-glass);
+  color: var(--accent-cyan);
+}
+
+/* ✅ FUNCTIONAL NOTIFICATIONS LIST */
+.notifications-list {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 0;
+
+  /* ✅ PURPLE SCROLLBAR ONLY WHEN NEEDED (>3 items) */
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-purple) transparent;
+}
+
+/* ✅ WEBKIT PURPLE SCROLLBAR */
+.notifications-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notifications-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notifications-list::-webkit-scrollbar-thumb {
+  background: var(--accent-purple);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.notifications-list::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed;
+}
+
+/* ✅ Hide scrollbar when there are 3 or fewer notifications */
+.notifications-list.few-items {
+  overflow-y: hidden;
+}
+
+.notifications-list.few-items::-webkit-scrollbar {
+  display: none;
+}
+
+/* ✅ Show scrollbar only when there are more than 3 notifications */
+.notifications-list.many-items {
+  overflow-y: auto;
+}
+
+.notifications-list.many-items::-webkit-scrollbar {
+  display: block;
+}
+
+/* ✅ COMPACT NOTIFICATION ITEMS */
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--border-glass);
+  cursor: pointer;
+  transition: all var(--duration-fast) ease;
+  background: transparent;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item:hover {
+  background: var(--surface-glass);
+}
+
+.notification-item.unread {
+  background: rgba(139, 92, 246, 0.05);
+  border-left: 3px solid var(--accent-purple);
+}
+
+.notification-item.unread:hover {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+/* ✅ CLEAN NOTIFICATION ICONS */
+.notification-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+}
+
+.notification-icon.info {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary-500);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.notification-icon.warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-amber);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.notification-icon.success {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-emerald);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.notification-icon.error,
+.notification-icon.danger {
+  background: rgba(244, 63, 94, 0.15);
+  color: var(--accent-rose);
+  border-color: rgba(244, 63, 94, 0.2);
+}
+
+.notification-icon i {
+  width: 16px;
+  height: 16px;
+}
+
+/* ✅ COMPACT NOTIFICATION CONTENT */
+.notification-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  line-height: 1.3;
+}
+
+.notification-details {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: 0.375rem;
+}
+
+.notification-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.notification-category {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--accent-purple);
+  background: rgba(139, 92, 246, 0.1);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.notification-period {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  background: var(--surface-glass);
+  padding: 0.125rem 0.375rem;
+  border-radius: var(--radius-sm);
+}
+
+.notification-time {
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+/* ✅ CLEAN EMPTY STATE */
+.no-notifications {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.no-notifications i {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.6;
+  color: var(--text-tertiary);
+}
+
+.no-notifications p {
+  font-size: 0.925rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.no-notifications-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  line-height: 1.3;
 }
 
 /* Quick Actions */
@@ -960,10 +1579,11 @@ body {
   box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
 }
 
+/* FIXED: Consistent icon sizes for all cards */
 .card-icon i {
   color: white;
-  width: 24px;           /* FIXED: Consistent icon size */
-  height: 24px;          /* FIXED: Consistent icon size */
+  width: 24px;
+  height: 24px;
 }
 
 .card-actions {
@@ -1150,36 +1770,6 @@ body {
   gap: 0.75rem;
 }
 
-.period-select {
-  background: var(--surface-glass);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-md);
-  padding: 0.5rem 0.75rem;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--duration-fast) ease;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 0.5rem center;
-  background-size: 1rem;
-  padding-right: 2rem;
-}
-
-.period-select:focus {
-  outline: none;
-  border-color: var(--primary-500);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.period-select option {
-  background-color: #1f2937 !important;
-  color: #ffffff !important;
-  padding: 0.5rem;
-}
-
 .current-month-btn {
   display: flex;
   align-items: center;
@@ -1228,6 +1818,10 @@ body {
   gap: 0.75rem;
 }
 
+/* ===================================
+   ENHANCED HOVER EFFECTS FOR FILTER & ANALYTICS BUTTONS
+   ================================== */
+
 .section-action-btn,
 .filter-btn {
   display: flex;
@@ -1242,14 +1836,68 @@ body {
   cursor: pointer;
   transition: all var(--duration-normal) ease;
   text-decoration: none;
+  position: relative;
+  overflow: hidden;
 }
 
+/* Enhanced hover effects */
 .section-action-btn:hover,
 .filter-btn:hover {
   background: var(--surface-glass-hover);
   color: var(--text-primary);
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+  border-color: var(--accent-purple);
+}
+
+/* Shimmer effect on hover */
+.section-action-btn::before,
+.filter-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+  transition: left 0.6s ease;
+}
+
+.section-action-btn:hover::before,
+.filter-btn:hover::before {
+  left: 100%;
+}
+
+/* Special styling for Analytics button */
+.section-action-btn:hover {
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+  border-color: var(--accent-purple);
+}
+
+/* Special styling for Filter button */
+.filter-btn:hover {
+  box-shadow: 0 8px 25px rgba(6, 182, 212, 0.4);
+  border-color: var(--accent-cyan);
+}
+
+/* Active state for buttons */
+.section-action-btn:active,
+.filter-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
+}
+
+/* Glowing border animation */
+@keyframes glow-border {
+  0% { box-shadow: 0 0 5px rgba(139, 92, 246, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.6), 0 0 30px rgba(139, 92, 246, 0.3); }
+  100% { box-shadow: 0 0 5px rgba(139, 92, 246, 0.3); }
+}
+
+.section-action-btn:focus,
+.filter-btn:focus {
+  outline: none;
+  animation: glow-border 2s infinite;
 }
 
 .budgets-container {
@@ -2404,55 +3052,6 @@ body {
   width: 100%;
 }
 
-.form-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.form-input,
-.form-select,
-.form-textarea {
-  background: var(--surface-glass);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-lg);
-  padding: 0.875rem 1rem;
-  color: var(--text-primary);
-  font-size: 0.925rem;
-  transition: all var(--duration-fast) ease;
-  width: 100%;
-}
-
-.form-select {
-  background: var(--surface-glass) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e") no-repeat right 0.75rem center;
-  background-size: 1.25rem;
-  appearance: none;
-  cursor: pointer;
-}
-
-.form-select option {
-  background-color: #1f2937 !important;
-  color: #ffffff !important;
-  padding: 0.75rem 1rem;
-  border: none;
-  font-size: 0.925rem;
-  font-weight: 500;
-}
-
-.form-select option:hover,
-.form-select option:focus {
-  background-color: #3b82f6 !important;
-  color: white !important;
-}
-
-.form-input:focus,
-.form-select:focus {
-  outline: none;
-  border-color: var(--primary-500);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  background: var(--surface-glass-hover);
-}
-
 .input-group {
   position: relative;
   display: flex;
@@ -2686,7 +3285,6 @@ body {
   color: var(--text-secondary);
 }
 
-.filter-select,
 .filter-input {
   background: var(--surface-glass);
   border: 1px solid var(--border-glass);
@@ -2702,33 +3300,15 @@ body {
 .filter-input[type="number"] {
   min: 0;
   step: 0.01;
+  -moz-appearance: textfield; /* ✅ Firefox - remove arrows */
 }
 
 .filter-input[type="number"]::-webkit-outer-spin-button,
 .filter-input[type="number"]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
+  -webkit-appearance: none; /* ✅ Chrome, Safari, Edge - remove arrows */
   margin: 0;
 }
 
-.filter-select {
-  appearance: none;
-  cursor: pointer;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 1rem;
-  padding-right: 2.5rem;
-}
-
-.filter-select option {
-  background-color: #1f2937 !important;
-  color: #ffffff !important;
-  padding: 8px 12px !important;
-  font-size: 0.925rem;
-  font-weight: 500;
-}
-
-.filter-select:focus,
 .filter-input:focus {
   outline: none;
   border-color: var(--primary-500);
@@ -2863,106 +3443,6 @@ body {
 .summary-spent {
   color: var(--text-tertiary);
   font-size: 0.875rem;
-}
-
-/* ===================================
-   NOTIFICATIONS LIST
-   ================================== */
-
-.notifications-list {
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.notification-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem;
-  border-bottom: 1px solid var(--border-glass);
-  cursor: pointer;
-  transition: all var(--duration-fast) ease;
-}
-
-.notification-item:last-child {
-  border-bottom: none;
-}
-
-.notification-item:hover {
-  background: var(--surface-glass);
-}
-
-.notification-item.unread {
-  background: rgba(59, 130, 246, 0.05);
-  border-left: 3px solid var(--primary-500);
-}
-
-.notification-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  background: var(--surface-glass);
-  border: 1px solid var(--border-glass);
-}
-
-.notification-icon.warning {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  border-color: rgba(245, 158, 11, 0.3);
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
-}
-
-.notification-icon.danger {
-  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
-  border-color: rgba(244, 63, 94, 0.3);
-  box-shadow: 0 0 20px rgba(244, 63, 94, 0.3);
-}
-
-.notification-icon i {
-  width: 16px;
-  height: 16px;
-  color: white;
-}
-
-.notification-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.notification-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 0.25rem;
-}
-
-.notification-details {
-  font-size: 0.825rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.25rem;
-  line-height: 1.4;
-}
-
-.notification-time {
-  font-size: 0.75rem;
-  color: var(--text-tertiary);
-}
-
-.no-notifications {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem;
-  color: var(--text-tertiary);
-}
-
-.no-notifications i {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-  opacity: 0.5;
 }
 
 /* ===================================
@@ -3150,6 +3630,12 @@ body {
     right: -100%;
   }
 
+  /* ✅ RESPONSIVE: Notifications panel on tablets */
+  .notifications-panel {
+    width: 100%;
+    right: -100%;
+  }
+
   .period-container {
     flex-direction: column;
     align-items: flex-start;
@@ -3215,10 +3701,32 @@ body {
     width: 100%;
   }
 
+  /* ✅ RESPONSIVE: Notifications panel adjustments */
   .notifications-panel {
-    width: 100%;
-    right: auto;
-    left: 0;
+    width: 320px;
+    max-height: 400px;
+  }
+
+  .notification-item {
+    padding: 0.75rem 1rem;
+  }
+
+  .notification-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .notification-icon i {
+    width: 14px;
+    height: 14px;
+  }
+
+  .notification-title {
+    font-size: 0.8rem;
+  }
+
+  .notification-details {
+    font-size: 0.75rem;
   }
 
   .period-nav {
@@ -3331,6 +3839,33 @@ body {
   .progress-grid {
     max-height: 200px;
   }
+
+  /* ✅ RESPONSIVE: Small mobile notifications */
+  .notifications-panel {
+    width: 300px;
+    right: -10px;
+  }
+
+  .notifications-header {
+    padding: 0.875rem 1rem 0.625rem;
+  }
+
+  .notifications-header h3 {
+    font-size: 0.925rem;
+  }
+
+  .notification-item {
+    padding: 0.625rem 0.875rem;
+    gap: 0.625rem;
+  }
+
+  .no-notifications {
+    padding: 1.5rem 1rem;
+  }
+
+  .no-notifications i {
+    font-size: 1.75rem;
+  }
 }
 
 /* ===================================
@@ -3344,13 +3879,16 @@ body {
   .budget-card,
   .budgets-grid,
   .toast,
-  .sync-notification {
+  .sync-notification,
+  .notifications-panel,
+  .notification-item {
     transition: none !important;
     animation: none !important;
   }
 
   .spent-bar::after,
-  .progress-fill::after {
+  .progress-fill::after,
+  .notification-icon::before {
     animation: none !important;
   }
 }
@@ -3360,7 +3898,9 @@ body {
 .budget-card:focus,
 .btn:focus,
 .form-input:focus,
-.form-select:focus {
+.form-select:focus,
+.notification-btn:focus,
+.notification-item:focus {
   outline: 3px solid var(--primary-500);
   outline-offset: 2px;
 }
@@ -3370,7 +3910,9 @@ body {
   .carousel-arrow,
   .budget-card,
   .spending-card,
-  .progress-card {
+  .progress-card,
+  .notifications-panel,
+  .notification-item {
     border: 2px solid var(--text-primary);
   }
 
@@ -3385,7 +3927,9 @@ body {
   .carousel-arrow,
   .budget-actions,
   .toast,
-  .sync-notification {
+  .sync-notification,
+  .notifications-panel,
+  .notification-btn {
     display: none !important;
   }
 

@@ -1,7 +1,13 @@
 /**
- * COMPLETE FIXED Budgets JavaScript - Perfect Carousel & Innovative Analytics
- * FIXED: All carousel issues, filter stability, English translations, modern icons
- * NEW: Completely different analytics approach with efficiency & health scores
+ * COMPLETE FIXED Budgets JavaScript - Perfect Carousel & Fixed Analytics
+ * ✅ UPDATED: English notifications with smart time logic and purple scrollbar
+ * ✅ FIXED: All Bulgarian messages translated to English
+ * ✅ NEW: Smart time updates (15min <1h, hourly 1h-1d, hide >1d)
+ * ✅ REMOVED: Emoji prefixes from notification messages
+ * FIXED: General Budget logic, analytics calculations, duplicate prevention
+ * NEW: Dynamic dropdown sizing for exactly 5 visible options
+ * FIXED: Enhanced category dropdown scroller functionality
+ * COMPLETELY FIXED: Category deselect functionality with visual feedback
  */
 
 class BudgetsManager {
@@ -13,6 +19,7 @@ class BudgetsManager {
         this.notifications = [];
         this.currentBudget = null;
         this.isEditing = false;
+        this.timeUpdateInterval = null;
         this.currentPeriod = {
             year: new Date().getFullYear(),
             month: new Date().getMonth() + 1
@@ -34,9 +41,9 @@ class BudgetsManager {
         // FIXED: Perfect Carousel State - Always 2 cards visible
         this.carousel = {
             currentIndex: 0,
-            cardsPerView: 2,  // Always exactly 2 cards
+            cardsPerView: 2,
             totalCards: 0,
-            cardWidth: 390,   // ADJUSTED: Better fit to prevent third card showing
+            cardWidth: 390,
             isInitialized: false
         };
 
@@ -48,7 +55,6 @@ class BudgetsManager {
             console.log('🚀 Initializing Budgets Manager...');
             this.showToast('Loading budgets...', 'info');
 
-            // FIXED: Only clean up if this is a fresh page load
             if (!this.carousel.isInitialized) {
                 this.cleanupExistingCarousel();
             }
@@ -63,6 +69,7 @@ class BudgetsManager {
             ]);
 
             this.setupCrossTabSync();
+            this.startSmartTimeUpdates();
 
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
@@ -77,10 +84,57 @@ class BudgetsManager {
     }
 
     /**
+     * ✅ NEW: Smart time update system for notifications
+     * - Every 15 minutes for notifications < 1 hour old
+     * - Every hour for notifications 1 hour - 1 day old
+     * - Hide notifications > 1 day old
+     */
+    startSmartTimeUpdates() {
+        // Clear existing interval
+        if (this.timeUpdateInterval) {
+            clearInterval(this.timeUpdateInterval);
+        }
+
+        // Update every 15 minutes (smart logic inside)
+        this.timeUpdateInterval = setInterval(() => {
+            this.updateNotificationTimes();
+        }, 15 * 60 * 1000); // 15 minutes
+
+        console.log('🕒 Smart time update system started');
+    }
+
+    /**
+     * ✅ NEW: Update notification times and filter old ones
+     */
+    updateNotificationTimes() {
+        const now = new Date();
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+        // Filter out notifications older than 1 day
+        const oldCount = this.notifications.length;
+        this.notifications = this.notifications.filter(notification => {
+            const notificationDate = new Date(notification.createdAt);
+            return notificationDate > oneDayAgo;
+        });
+
+        const newCount = this.notifications.length;
+        if (oldCount !== newCount) {
+            console.log(`🗑️ Removed ${oldCount - newCount} old notifications (>1 day)`);
+        }
+
+        // Update badge and re-render if panel is open
+        this.updateNotificationBadge();
+
+        const panel = document.getElementById('notifications-panel');
+        if (panel && panel.classList.contains('active')) {
+            this.renderNotifications();
+        }
+    }
+
+    /**
      * FIXED: Clean up any existing carousel elements completely
      */
     cleanupExistingCarousel() {
-        // Remove all existing carousel wrappers
         document.querySelectorAll('.perfect-carousel-wrapper').forEach(wrapper => {
             const gridContainer = wrapper.querySelector('#budgets-grid');
             if (gridContainer && wrapper.parentNode) {
@@ -89,24 +143,19 @@ class BudgetsManager {
             }
         });
 
-        // Remove any stray arrows
         document.querySelectorAll('.carousel-arrow').forEach(arrow => arrow.remove());
-
-        // Reset initialization flag
         this.carousel.isInitialized = false;
 
         console.log('🧹 Cleaned up existing carousel elements');
     }
 
     setupCrossTabSync() {
-        // FIXED: Only refresh data, NOT carousel on focus
         window.addEventListener('focus', () => {
             const lastRefresh = localStorage.getItem('budgetsLastRefresh');
             const now = Date.now();
 
             if (!lastRefresh || (now - parseInt(lastRefresh)) > 30000) {
                 console.log('🔄 Auto-refreshing budget DATA only after window focus');
-                // FIXED: Only refresh data, don't recreate carousel
                 this.refreshDataOnly();
                 localStorage.setItem('budgetsLastRefresh', now.toString());
             }
@@ -115,7 +164,6 @@ class BudgetsManager {
         window.addEventListener('storage', (e) => {
             if (e.key === 'transactionUpdated' && e.newValue) {
                 console.log('🔄 Refreshing budgets after transaction update from other tab');
-                // FIXED: Only refresh data, don't recreate carousel
                 this.refreshDataOnly();
                 localStorage.removeItem('transactionUpdated');
                 this.showSyncNotification('Budgets updated from transaction changes');
@@ -126,7 +174,6 @@ class BudgetsManager {
             localStorage.setItem('budgetUpdated', Date.now().toString());
         });
 
-        // FIXED: Handle visibility change without carousel recreation
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
                 console.log('👁️ Page became visible - checking carousel state');
@@ -178,7 +225,6 @@ class BudgetsManager {
             ['create-first-budget-btn', 'click', () => this.openBudgetModal()],
             ['quick-add-general', 'click', () => this.openBudgetModal('general')],
             ['quick-add-category', 'click', () => this.openBudgetModal('category')]
-            // REMOVED: update-spent-btn - not needed
         ]);
 
         // Modal controls
@@ -226,7 +272,7 @@ class BudgetsManager {
             ['clear-budget-filters', 'click', () => this.clearFilters()]
         ]);
 
-        // FIXED: Carousel controls
+        // Carousel controls
         this.addEventListeners([
             ['carousel-prev', 'click', () => this.carouselPrev()],
             ['carousel-next', 'click', () => this.carouselNext()]
@@ -252,7 +298,6 @@ class BudgetsManager {
                 this.closeAllModals();
             }
 
-            // Keyboard shortcuts for carousel and other actions
             if (e.ctrlKey || e.metaKey) {
                 switch (e.key) {
                     case 'n':
@@ -389,13 +434,15 @@ class BudgetsManager {
             'Училище': 'School',
             'Университет': 'University',
             'Курсове': 'Courses',
-            // ADDED: Budget alert translations
             'Общ бюджет': 'General Budget'
         };
 
         return translations[bulgName] || bulgName;
     }
 
+    /**
+     * ✅ COMPLETELY FIXED: Category dropdown with perfect deselect functionality
+     */
     populateCategorySelects() {
         const selects = ['budget-category', 'filter-category'];
 
@@ -403,12 +450,23 @@ class BudgetsManager {
             const select = document.getElementById(selectId);
             if (!select) return;
 
-            if (selectId === 'budget-category') {
-                select.innerHTML = '<option value="">Select a category...</option>';
-            } else {
-                select.innerHTML = '<option value="">All Categories</option>';
-            }
+            // Clear existing options and reset all attributes
+            select.innerHTML = '';
+            select.removeAttribute('size');
+            select.classList.remove('enhanced-dropdown-scroller');
 
+            // Add default option
+            const defaultOption = document.createElement('option');
+            if (selectId === 'budget-category') {
+                defaultOption.value = '';
+                defaultOption.textContent = 'Select a category...';
+            } else {
+                defaultOption.value = '';
+                defaultOption.textContent = 'All Categories';
+            }
+            select.appendChild(defaultOption);
+
+            // Add category options
             this.categories.forEach(category => {
                 const option = document.createElement('option');
                 option.value = category.id;
@@ -416,7 +474,140 @@ class BudgetsManager {
                 option.style.color = category.color || '#6366f1';
                 select.appendChild(option);
             });
+
+            // ✅ PERFECT LOGIC: Apply scroller if more than 5 total options
+            const totalOptions = select.options.length;
+
+            if (totalOptions > 5) {
+                console.log(`📏 Activating scroller for ${selectId}: ${totalOptions} options (${totalOptions - 1} categories + default)`);
+                this.activateEnhancedDropdownScroller(select);
+            } else {
+                console.log(`📏 Standard dropdown for ${selectId}: ${totalOptions} options (no scroller needed)`);
+                this.removeDropdownScrollBehavior(select);
+            }
+
+            // ✅ FIXED: Add proper deselect functionality
+            this.addCleanDeselectFunctionality(select);
         });
+    }
+
+    /**
+     * ✅ COMPLETELY NEW APPROACH: Clean deselect functionality without visual conflicts
+     */
+    addCleanDeselectFunctionality(selectElement) {
+        if (!selectElement) return;
+
+        console.log('🎯 Adding NEW clean deselect functionality...');
+
+        // Remove any existing event listeners to prevent duplicates
+        const newSelect = selectElement.cloneNode(true);
+        selectElement.parentNode.replaceChild(newSelect, selectElement);
+        selectElement = newSelect;
+
+        let previousSelectedValue = '';
+        let clickStartValue = '';
+
+        // ✅ NEW APPROACH: Track selection state without touching styles
+        selectElement.addEventListener('focus', (e) => {
+            previousSelectedValue = selectElement.value;
+            console.log('🎯 Focus - Previous value recorded:', previousSelectedValue);
+        });
+
+        selectElement.addEventListener('mousedown', (e) => {
+            clickStartValue = selectElement.value;
+            console.log('🖱️ Mouse down - Click start value:', clickStartValue);
+        });
+
+        // ✅ MAIN DESELECT LOGIC: Simple and clean
+        selectElement.addEventListener('change', (e) => {
+            const currentValue = selectElement.value;
+
+            // If user selected the same value that was already selected, deselect it
+            if (clickStartValue !== '' && currentValue === clickStartValue && currentValue === previousSelectedValue) {
+                console.log('🔄 Same option clicked twice, deselecting:', currentValue);
+
+                // Reset to empty value
+                selectElement.value = '';
+
+                // Trigger another change event for any dependent logic
+                setTimeout(() => {
+                    const resetEvent = new Event('change', { bubbles: true });
+                    selectElement.dispatchEvent(resetEvent);
+                }, 10);
+            }
+
+            // Update tracking values
+            previousSelectedValue = selectElement.value;
+            console.log('✅ Selection changed to:', selectElement.value);
+        });
+
+        // ✅ SEPARATE STYLING: Handle visual feedback independently
+        selectElement.addEventListener('change', (e) => {
+            this.handleCategorySelectionStyling(selectElement);
+        });
+
+        console.log('✅ NEW deselect functionality added - clean and simple');
+    }
+
+    /**
+     * ✅ NEW METHOD: Handle category selection styling separately
+     */
+    handleCategorySelectionStyling(selectElement) {
+        const value = selectElement.value;
+
+        if (value === '') {
+            // ✅ CLEAN RESET: No styles at all when nothing selected
+            selectElement.className = selectElement.className.replace(/\s*category-selected\s*/g, '');
+            console.log('✅ Category deselected - clean styling reset');
+        } else {
+            // ✅ VISUAL FEEDBACK: Add class instead of inline styles
+            if (!selectElement.classList.contains('category-selected')) {
+                selectElement.classList.add('category-selected');
+            }
+
+            // Set CSS custom property for the color
+            const selectedCategory = this.categories.find(cat => cat.id == value);
+            if (selectedCategory && selectedCategory.color) {
+                selectElement.style.setProperty('--selected-category-color', selectedCategory.color);
+                console.log('🎨 Category selected, set CSS variable:', selectedCategory.color);
+            }
+        }
+    }
+
+    /**
+     * ✅ ENHANCED: Activate enhanced dropdown scroller with proper size attribute
+     */
+    activateEnhancedDropdownScroller(selectElement) {
+        if (!selectElement) return;
+
+        console.log('🎨 Setting up enhanced dropdown scroller...');
+
+        // ✅ CRITICAL FIX: Set size attribute to exactly 5 for visible options
+        selectElement.setAttribute('size', '5');
+        selectElement.classList.add('enhanced-dropdown-scroller');
+
+        // ✅ FIXED: Ensure dropdown stays open and shows exactly 5 options
+        selectElement.style.height = 'auto';
+        selectElement.style.overflow = 'auto';
+
+        console.log('✅ Enhanced dropdown scroller activated with size=5');
+    }
+
+    /**
+     * ✅ ENHANCED: Remove scroll behavior for standard dropdowns
+     */
+    removeDropdownScrollBehavior(selectElement) {
+        if (!selectElement) return;
+
+        console.log('🎨 Removing dropdown scroller behavior...');
+
+        // ✅ CRITICAL FIX: Remove size attribute for standard dropdowns
+        selectElement.removeAttribute('size');
+        selectElement.classList.remove('enhanced-dropdown-scroller');
+        selectElement.style.height = '';
+        selectElement.style.overflow = '';
+
+        console.log('✅ Standard dropdown layout restored');
     }
 
     async loadBudgetsForCurrentPeriod() {
@@ -438,16 +629,23 @@ class BudgetsManager {
         }
     }
 
+    /**
+     * FIXED: Summary calculation with proper General Budget logic
+     */
     calculateSummaryDataFixed() {
         const generalBudgets = this.budgets.filter(b => b.isGeneralBudget);
         const categoryBudgets = this.budgets.filter(b => b.isCategoryBudget);
+
+        // FIXED LOGIC: Calculate total spent from ALL budgets
+        const totalSpentFromAllBudgets = this.budgets.reduce((sum, budget) =>
+            sum + parseFloat(budget.spentAmount || 0), 0);
 
         // FIXED LOGIC: If General Budget exists, use ONLY that for totals
         if (generalBudgets.length > 0) {
             const generalBudget = generalBudgets[0];
             this.summaryData = {
                 totalBudget: parseFloat(generalBudget.plannedAmount || 0),
-                totalSpent: parseFloat(generalBudget.spentAmount || 0),
+                totalSpent: totalSpentFromAllBudgets,
                 activeBudgets: this.budgets.length,
                 budgetHealth: 0
             };
@@ -455,7 +653,7 @@ class BudgetsManager {
             // No general budget - sum category budgets
             this.summaryData = {
                 totalBudget: categoryBudgets.reduce((sum, budget) => sum + parseFloat(budget.plannedAmount || 0), 0),
-                totalSpent: categoryBudgets.reduce((sum, budget) => sum + parseFloat(budget.spentAmount || 0), 0),
+                totalSpent: totalSpentFromAllBudgets,
                 activeBudgets: categoryBudgets.length,
                 budgetHealth: 0
             };
@@ -558,7 +756,6 @@ class BudgetsManager {
             filtered = filtered.filter(b => parseFloat(b.plannedAmount) <= this.currentFilter.maxAmount);
         }
 
-        // FIXED: Ensure at least 2 dummy cards if filtered results are less than 2
         this.filteredBudgets = filtered;
 
         // FIXED: If less than 2 results, add dummy cards to maintain carousel structure
@@ -608,11 +805,8 @@ class BudgetsManager {
         if (!container) return;
 
         if (loadingState) loadingState.style.display = 'none';
-
-        // FIXED: Always hide empty state when we have filter results (including dummy cards)
         if (emptyState) emptyState.style.display = 'none';
 
-        // FIXED: Always setup carousel wrapper, even for dummy cards
         const existingWrapper = document.querySelector('.perfect-carousel-wrapper');
         const existingArrows = document.querySelectorAll('.carousel-arrow');
 
@@ -623,27 +817,20 @@ class BudgetsManager {
             console.log('✅ Carousel already exists, keeping it intact');
         }
 
-        // Update carousel state
         this.carousel.totalCards = this.filteredBudgets.length;
         this.carousel.currentIndex = Math.min(this.carousel.currentIndex,
             Math.max(0, this.carousel.totalCards - this.carousel.cardsPerView));
 
-        // Render all cards (this is safe to do)
         container.innerHTML = this.filteredBudgets.map(budget =>
             this.createBudgetCardHTML(budget)
         ).join('');
 
-        // FIXED: Always ensure container is visible and in carousel
         container.style.display = 'flex';
 
-        // Apply layout and controls
         this.applyPerfectCarouselLayout();
         this.updateCarouselControls();
-
-        // FIXED: Always show arrows, but disable them if we have dummy cards
         this.ensureArrowsVisible();
 
-        // Add click handlers
         container.querySelectorAll('.budget-card').forEach(card => {
             const budgetId = card.dataset.budgetId;
             if (!budgetId.startsWith('dummy-')) {
@@ -667,33 +854,26 @@ class BudgetsManager {
         const nextBtn = document.getElementById('carousel-next');
 
         if (wrapper && prevBtn && nextBtn) {
-            // Always show the wrapper as flex
             wrapper.style.display = 'flex';
-
-            // Always show arrows
             prevBtn.style.display = 'flex';
             nextBtn.style.display = 'flex';
 
-            // Check if we have only dummy cards
             const hasDummyCards = this.filteredBudgets.some(card => card.isDummy);
             const hasRealCards = this.filteredBudgets.some(card => !card.isDummy);
 
             if (hasDummyCards && !hasRealCards) {
-                // Only dummy cards - disable arrows but keep them visible
                 prevBtn.disabled = true;
                 nextBtn.disabled = true;
                 prevBtn.style.opacity = '0.5';
                 nextBtn.style.opacity = '0.5';
                 console.log('🎠 Arrows disabled (only dummy cards)');
             } else if (this.carousel.totalCards <= this.carousel.cardsPerView) {
-                // 2 or less real cards - disable arrows but keep them visible
                 prevBtn.disabled = true;
                 nextBtn.disabled = true;
                 prevBtn.style.opacity = '0.5';
                 nextBtn.style.opacity = '0.5';
                 console.log('🎠 Arrows disabled (2 or less cards)');
             } else {
-                // Multiple real cards - enable arrows normally
                 prevBtn.style.opacity = '1';
                 nextBtn.style.opacity = '1';
                 this.updateCarouselControls();
@@ -709,21 +889,17 @@ class BudgetsManager {
         const container = document.getElementById('budgets-grid');
         const budgetsContainer = container.parentElement;
 
-        // FIXED: Always remove any existing carousel wrappers first
         const existingWrappers = document.querySelectorAll('.perfect-carousel-wrapper');
         existingWrappers.forEach(wrapper => {
             const gridContainer = wrapper.querySelector('#budgets-grid');
             if (gridContainer && wrapper.parentNode) {
-                // Move the grid back to its original parent before removing wrapper
                 wrapper.parentNode.insertBefore(gridContainer, wrapper);
                 wrapper.remove();
             }
         });
 
-        // FIXED: Clean up any stray carousel arrows
         document.querySelectorAll('.carousel-arrow').forEach(arrow => arrow.remove());
 
-        // Now create fresh carousel wrapper
         const carouselWrapper = document.createElement('div');
         carouselWrapper.className = 'perfect-carousel-wrapper';
         carouselWrapper.innerHTML = `
@@ -740,34 +916,28 @@ class BudgetsManager {
             </button>
         `;
 
-        // Insert the new wrapper
         budgetsContainer.insertBefore(carouselWrapper, container);
         const carouselTrack = carouselWrapper.querySelector('.carousel-track');
         carouselTrack.appendChild(container);
 
-        // FIXED: Add event listeners with proper cleanup
         const prevBtn = document.getElementById('carousel-prev');
         const nextBtn = document.getElementById('carousel-next');
 
         if (prevBtn && nextBtn) {
-            // Remove any existing listeners by cloning
             const newPrevBtn = prevBtn.cloneNode(true);
             const newNextBtn = nextBtn.cloneNode(true);
 
             prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
             nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
 
-            // Add fresh listeners
             newPrevBtn.addEventListener('click', () => this.carouselPrev());
             newNextBtn.addEventListener('click', () => this.carouselNext());
         }
 
-        // Mark as initialized
         this.carousel.isInitialized = true;
 
         console.log('✅ Carousel completely reset with exactly 2 arrows');
 
-        // Refresh Lucide icons
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
@@ -780,13 +950,11 @@ class BudgetsManager {
         const container = document.getElementById('budgets-grid');
         if (!container) return;
 
-        // FIXED: Perfect carousel styles
         container.style.display = 'flex';
         container.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
         container.style.gap = '1.5rem';
         container.style.width = 'fit-content';
 
-        // FIXED: Calculate perfect offset - always show exactly 2 cards
         const offset = this.carousel.currentIndex * this.carousel.cardWidth;
         container.style.transform = `translateX(-${offset}px)`;
     }
@@ -801,23 +969,19 @@ class BudgetsManager {
 
         if (!prevBtn || !nextBtn || !wrapper) return;
 
-        // FIXED: Always show wrapper and arrows
         wrapper.style.display = 'flex';
         prevBtn.style.display = 'flex';
         nextBtn.style.display = 'flex';
 
-        // Check if we have real cards that can be navigated
         const realCards = this.filteredBudgets.filter(card => !card.isDummy);
 
         if (realCards.length <= this.carousel.cardsPerView) {
-            // Not enough real cards for navigation
             prevBtn.disabled = true;
             nextBtn.disabled = true;
             prevBtn.style.opacity = '0.5';
             nextBtn.style.opacity = '0.5';
             console.log('🎠 Navigation disabled: not enough cards');
         } else {
-            // Normal navigation for real cards
             prevBtn.style.opacity = '1';
             nextBtn.style.opacity = '1';
 
@@ -843,7 +1007,6 @@ class BudgetsManager {
      * FIXED: Carousel navigation with dummy card awareness
      */
     carouselPrev() {
-        // Only navigate if we have real cards to show
         const realCards = this.filteredBudgets.filter(card => !card.isDummy);
         if (realCards.length <= this.carousel.cardsPerView) {
             console.log('⬅️ Navigation disabled: not enough real cards');
@@ -859,7 +1022,6 @@ class BudgetsManager {
     }
 
     carouselNext() {
-        // Only navigate if we have real cards to show
         const realCards = this.filteredBudgets.filter(card => !card.isDummy);
         if (realCards.length <= this.carousel.cardsPerView) {
             console.log('➡️ Navigation disabled: not enough real cards');
@@ -986,7 +1148,7 @@ class BudgetsManager {
     }
 
     /**
-     * NEW: COMPLETELY DIFFERENT Analytics - Budget Trends & Insights
+     * FIXED: Analytics with proper General Budget handling and top categories
      */
     toggleAnalytics() {
         const section = document.getElementById('analytics-section');
@@ -1032,7 +1194,7 @@ class BudgetsManager {
     }
 
     /**
-     * NEW: Completely different analytics - Budget Trends & Efficiency
+     * FIXED: Analytics with General Budget logic and top 3 categories
      */
     renderInnovativeAnalytics() {
         console.log('📊 Rendering innovative budget analytics...');
@@ -1052,18 +1214,19 @@ class BudgetsManager {
     }
 
     /**
-     * NEW: Budget Efficiency Analysis
+     * FIXED: Budget Efficiency Analysis without General Budget
      */
     renderBudgetEfficiencyAnalysis(container) {
+        // FIXED: Exclude General Budget from efficiency analysis
         const budgetData = this.budgets
-            .filter(b => parseFloat(b.plannedAmount) > 0)
+            .filter(b => !b.isGeneralBudget && parseFloat(b.plannedAmount) > 0)
             .map(b => ({
-                name: b.isGeneralBudget ? 'General Budget' : this.translateCategoryName(b.categoryName),
+                name: this.translateCategoryName(b.categoryName),
                 planned: parseFloat(b.plannedAmount),
                 spent: parseFloat(b.spentAmount),
                 efficiency: parseFloat(b.plannedAmount) > 0 ? (parseFloat(b.spentAmount) / parseFloat(b.plannedAmount)) * 100 : 0,
                 color: b.categoryColor || '#6366f1',
-                isGeneral: b.isGeneralBudget
+                isGeneral: false
             }))
             .sort((a, b) => b.efficiency - a.efficiency);
 
@@ -1075,7 +1238,7 @@ class BudgetsManager {
             chartHTML += `
                 <div class="analytics-header">
                     <div class="header-info">
-                        <h4><i data-lucide="trending-up"></i> Budget Efficiency</h4>
+                        <h4><i data-lucide="trending-up"></i> Category Budget Efficiency</h4>
                         <div class="efficiency-score">
                             <span class="score-label">Average Efficiency:</span>
                             <span class="score-value ${avgEfficiency > 100 ? 'over' : avgEfficiency > 80 ? 'high' : 'good'}">${avgEfficiency.toFixed(1)}%</span>
@@ -1096,7 +1259,7 @@ class BudgetsManager {
                         <div class="efficiency-header">
                             <div class="budget-label">
                                 <div class="label-icon" style="background-color: ${budget.color}">
-                                    <i data-lucide="${budget.isGeneral ? 'wallet' : 'tag'}"></i>
+                                    <i data-lucide="tag"></i>
                                 </div>
                                 <span class="label-text">${budget.name}</span>
                             </div>
@@ -1135,8 +1298,8 @@ class BudgetsManager {
             chartHTML += `
                 <div class="analytics-empty">
                     <div class="empty-icon"><i data-lucide="trending-up"></i></div>
-                    <h4>No Budget Efficiency Data</h4>
-                    <p>Create budgets to see efficiency analysis</p>
+                    <h4>No Category Budget Data</h4>
+                    <p>Create category budgets to see efficiency analysis</p>
                 </div>
             `;
         }
@@ -1150,14 +1313,15 @@ class BudgetsManager {
     }
 
     /**
-     * NEW: Budget Trends Analysis
+     * FIXED: Budget Trends Analysis with proper General Budget logic
      */
     renderBudgetTrendsAnalysis(container) {
         let trendsHTML = '<div class="innovative-analytics-container">';
 
         if (this.budgets.length > 0) {
-            const totalPlanned = this.budgets.reduce((sum, b) => sum + parseFloat(b.plannedAmount), 0);
-            const totalSpent = this.budgets.reduce((sum, b) => sum + parseFloat(b.spentAmount), 0);
+            // FIXED: Use summary data that already has proper General Budget logic
+            const totalPlanned = this.summaryData.totalBudget;
+            const totalSpent = this.summaryData.totalSpent;
             const totalRemaining = totalPlanned - totalSpent;
 
             trendsHTML += `
@@ -1180,30 +1344,62 @@ class BudgetsManager {
 
             trendsHTML += '<div class="trends-grid">';
 
-            // Budget Distribution Pie
+            // ✅ FIXED: Top 3 spending categories with proper calculation
+            const categoryBudgets = this.budgets.filter(b => !b.isGeneralBudget && parseFloat(b.spentAmount) > 0);
+            const topCategories = categoryBudgets
+                .sort((a, b) => parseFloat(b.spentAmount) - parseFloat(a.spentAmount))
+                .slice(0, 3);
+
+            // ✅ FIXED: Calculate total spent from ONLY category budgets for percentage calculation
+            const categoryTotalSpent = categoryBudgets.reduce((sum, budget) =>
+                sum + parseFloat(budget.spentAmount || 0), 0);
+
+            console.log('📊 Analytics Debug:', {
+                totalCategoryBudgets: categoryBudgets.length,
+                topCategories: topCategories.length,
+                categoryTotalSpent: categoryTotalSpent,
+                budgetsData: categoryBudgets.map(b => ({
+                    name: b.categoryName,
+                    spent: b.spentAmount
+                }))
+            });
+
             trendsHTML += `
                 <div class="trend-card distribution-card">
-                    <h5><i data-lucide="pie-chart"></i> Budget Distribution</h5>
+                    <h5><i data-lucide="pie-chart"></i> Top Spending Categories</h5>
                     <div class="distribution-chart">
                         <div class="chart-center">
-                            <div class="center-value">€${totalPlanned.toFixed(0)}</div>
-                            <div class="center-label">Total Budget</div>
+                            <div class="center-value">€${categoryTotalSpent.toFixed(0)}</div>
+                            <div class="center-label">Category Spending</div>
                         </div>
                         <div class="distribution-items">
             `;
 
-            this.budgets.forEach((budget, index) => {
-                const percentage = totalPlanned > 0 ? (parseFloat(budget.plannedAmount) / totalPlanned) * 100 : 0;
-                const categoryName = budget.isGeneralBudget ? 'General' : this.translateCategoryName(budget.categoryName).substring(0, 10);
+            if (topCategories.length > 0) {
+                topCategories.forEach((budget, index) => {
+                    // ✅ FIXED: Calculate percentage based on category spending only
+                    const percentage = categoryTotalSpent > 0 ? (parseFloat(budget.spentAmount) / categoryTotalSpent) * 100 : 0;
+                    const categoryName = this.translateCategoryName(budget.categoryName).substring(0, 15);
 
+                    console.log(`📊 Category ${categoryName}: €${budget.spentAmount} = ${percentage.toFixed(1)}%`);
+
+                    trendsHTML += `
+                        <div class="distribution-item">
+                            <div class="item-color" style="background-color: ${budget.categoryColor || '#6366f1'}"></div>
+                            <span class="item-name">${categoryName}</span>
+                            <span class="item-percentage">${percentage.toFixed(1)}%</span>
+                        </div>
+                    `;
+                });
+            } else {
                 trendsHTML += `
                     <div class="distribution-item">
-                        <div class="item-color" style="background-color: ${budget.categoryColor || '#6366f1'}"></div>
-                        <span class="item-name">${categoryName}</span>
-                        <span class="item-percentage">${percentage.toFixed(1)}%</span>
+                        <div class="item-color" style="background-color: #6366f1"></div>
+                        <span class="item-name">No category spending data</span>
+                        <span class="item-percentage">0%</span>
                     </div>
                 `;
-            });
+            }
 
             trendsHTML += `
                         </div>
@@ -1317,12 +1513,25 @@ class BudgetsManager {
         if (yearSelect) yearSelect.value = this.currentPeriod.year;
     }
 
+    /**
+     * FIXED: Check for existing General Budget before opening modal
+     */
     openBudgetModal(type = null, budget = null) {
         const modal = document.getElementById('budget-modal');
         const form = document.getElementById('budget-form');
         const title = document.getElementById('budget-modal-title');
 
         if (!modal || !form) return;
+
+        // FIXED: Prevent creating second General Budget
+        if (type === 'general' && !budget) {
+            const existingGeneralBudget = this.budgets.find(b => b.isGeneralBudget);
+            if (existingGeneralBudget) {
+                this.showToast('You already have a General Budget for this month. Edit the existing one instead.', 'warning');
+                console.log('❌ Prevented creating second General Budget');
+                return;
+            }
+        }
 
         form.reset();
         this.clearFormErrors();
@@ -1382,6 +1591,16 @@ class BudgetsManager {
     }
 
     handleBudgetTypeToggle(clickedBtn) {
+        // FIXED: Check for existing General Budget when switching to general type
+        if (clickedBtn.dataset.type === 'general' && !this.isEditing) {
+            const existingGeneralBudget = this.budgets.find(b => b.isGeneralBudget);
+            if (existingGeneralBudget) {
+                this.showToast('You already have a General Budget for this month. Edit the existing one instead.', 'warning');
+                console.log('❌ Prevented switching to General Budget type');
+                return;
+            }
+        }
+
         document.querySelectorAll('.toggle-btn').forEach(btn => {
             btn.classList.remove('active');
         });
@@ -1425,6 +1644,15 @@ class BudgetsManager {
             const formData = new FormData(form);
             const budgetData = this.prepareBudgetData(formData);
 
+            // FIXED: Final check for General Budget duplication
+            if (budgetData.type === 'general' && !this.isEditing) {
+                const existingGeneralBudget = this.budgets.find(b => b.isGeneralBudget);
+                if (existingGeneralBudget) {
+                    this.showToast('You already have a General Budget for this month.', 'error');
+                    return;
+                }
+            }
+
             let result;
             if (this.isEditing) {
                 result = await this.updateBudget(this.currentBudget.id, budgetData);
@@ -1447,7 +1675,7 @@ class BudgetsManager {
             }
 
             this.signalBudgetUpdate();
-            await this.refreshDataOnly(); // FIXED: Only refresh data, not carousel
+            await this.refreshDataOnly();
             this.closeBudgetModal();
 
             console.log(`✅ Budget ${this.isEditing ? 'updated' : 'created'} successfully`);
@@ -1482,6 +1710,30 @@ class BudgetsManager {
         if (!form.budgetMonth.value || !form.budgetYear.value) {
             this.showFieldError('month-error', 'Period is required');
             isValid = false;
+        }
+
+        // Category budget validation against General Budget
+        if (activeBudgetType === 'category' && amount && parseFloat(amount) > 0) {
+            const generalBudget = this.budgets.find(b => b.isGeneralBudget);
+
+            if (generalBudget) {
+                const generalPlanned = parseFloat(generalBudget.plannedAmount || 0);
+
+                const currentBudgetId = this.isEditing ? this.currentBudget.id : null;
+                const existingCategoryTotal = this.budgets
+                    .filter(b => b.isCategoryBudget && b.id !== currentBudgetId)
+                    .reduce((sum, budget) => sum + parseFloat(budget.plannedAmount || 0), 0);
+
+                const newAmount = parseFloat(amount);
+                const totalAfterChange = existingCategoryTotal + newAmount;
+
+                if (totalAfterChange > generalPlanned) {
+                    const maxAllowed = generalPlanned - existingCategoryTotal;
+                    this.showFieldError('amount-error',
+                        `Amount exceeds General Budget limit. Maximum allowed: €${maxAllowed.toFixed(2)}`);
+                    isValid = false;
+                }
+            }
         }
 
         return isValid;
@@ -1558,32 +1810,51 @@ class BudgetsManager {
         console.log(`🗑️ Showing delete confirmation for budget ${budget.id}`);
     }
 
+    /**
+     * ✅ FIXED: Confirm delete budget with proper success message
+     */
     async confirmDeleteBudget() {
         if (!this.currentBudget) return;
 
         const deleteBtn = document.getElementById('confirm-delete-budget-btn');
+        const budgetName = this.currentBudget.categoryName || 'General Budget';
 
         try {
             this.setButtonLoading(deleteBtn, true);
 
-            await this.fetchAPI(`/budgets/${this.currentBudget.id}`, 'DELETE');
+            // ✅ FIXED: Catch potential JSON parsing errors but treat as success
+            try {
+                await this.fetchAPI(`/budgets/${this.currentBudget.id}`, 'DELETE');
+            } catch (fetchError) {
+                // If it's a JSON parsing error but the HTTP status was OK, treat as success
+                if (fetchError.message.includes('Unexpected end of JSON input') ||
+                    fetchError.message.includes('SyntaxError') ||
+                    fetchError.message.includes('Unexpected token')) {
+                    console.log('✅ Delete successful (server returned empty response)');
+                    // Continue to success handling
+                } else {
+                    // Real error, re-throw it
+                    throw fetchError;
+                }
+            }
 
-            this.showToast('Budget deleted successfully!', 'success');
+            // ✅ SUCCESS - Show proper success message
+            this.showToast(`Budget "${this.translateCategoryName(budgetName)}" deleted successfully!`, 'success');
 
             this.addNotification({
                 title: 'Budget Deleted',
-                message: `Budget for ${this.currentBudget.categoryName || 'General'} has been removed`,
+                message: `Budget for ${this.translateCategoryName(budgetName)} has been removed`,
                 type: 'warning'
             });
 
             this.signalBudgetUpdate();
-            await this.refreshDataOnly(); // FIXED: Only refresh data, not carousel
+            await this.loadBudgetsForCurrentPeriod();
             this.closeDeleteModal();
 
-            console.log(`✅ Budget ${this.currentBudget.id} deleted successfully`);
+            console.log(`✅ Budget deletion completed successfully for: ${budgetName}`);
 
         } catch (error) {
-            console.error('❌ Failed to delete budget:', error);
+            console.error(`❌ Failed to delete budget "${budgetName}":`, error);
             this.showToast('Failed to delete budget. Please try again.', 'error');
         } finally {
             this.setButtonLoading(deleteBtn, false);
@@ -1650,7 +1921,6 @@ class BudgetsManager {
 
         this.applyFiltersAndRender();
         this.closeFilterPanel();
-
     }
 
     clearFilters() {
@@ -1696,11 +1966,121 @@ class BudgetsManager {
     async loadNotifications() {
         try {
             const alerts = await this.fetchAPI('/alerts');
-            this.notifications = alerts;
+            this.notifications = alerts.map(notification => {
+                // ✅ TRANSLATE: Convert all Bulgarian messages to English
+                return {
+                    ...notification,
+                    message: this.translateNotificationMessage(notification.message),
+                    title: this.translateNotificationTitle(notification.title)
+                };
+            });
         } catch (error) {
             console.error('❌ Failed to load notifications:', error);
             this.notifications = [];
         }
+    }
+
+    /**
+     * ✅ NEW: Translate Bulgarian notification titles to English
+     */
+    translateNotificationTitle(title) {
+        if (!title) return 'Budget Alert';
+
+        const translations = {
+            'Предупреждение за бюджет': 'Budget Warning',
+            'Бюджет превишен': 'Budget Exceeded',
+            'Бюджетно предупреждение': 'Budget Alert',
+            'Лимит на бюджета': 'Budget Limit',
+            'Общ бюджет': 'General Budget',
+            'Категориен бюджет': 'Category Budget',
+            'Внимание': 'Attention',
+            'Предупреждение': 'Warning',
+            'Грешка': 'Error',
+            'Информация': 'Information'
+        };
+
+        let translatedTitle = title;
+        Object.entries(translations).forEach(([bulgarian, english]) => {
+            translatedTitle = translatedTitle.replace(new RegExp(bulgarian, 'gi'), english);
+        });
+
+        return translatedTitle;
+    }
+
+    /**
+     * ✅ UPDATED: Translate Bulgarian notification messages to English and remove emojis
+     */
+    translateNotificationMessage(message) {
+        if (!message) return 'Budget notification';
+
+        // ✅ REMOVE: All emoji prefixes from the message
+        let cleanMessage = message.replace(/^[⚠️🚨📊💰🔔📈📉💸🎯❌✅ℹ️]+\s*/g, '');
+
+        const translations = {
+            // Main message patterns
+            'Бюджетът е превишен': 'Budget exceeded',
+            'Бюджетът беше превишен': 'Budget has been exceeded',
+            'Превишен бюджет': 'Budget exceeded',
+            'Близо до лимита на бюджета': 'Near budget limit',
+            'Бюджетът се приближава към лимита': 'Budget approaching limit',
+            'Предупреждение за бюджет': 'Budget warning',
+            'Общият бюджет е превишен': 'General budget exceeded',
+            'Общият бюджет се приближава към лимита': 'General budget near limit',
+            'Категорийният бюджет е превишен': 'Category budget exceeded',
+            'Категорийният бюджет се приближава към лимита': 'Category budget near limit',
+
+            // Threshold messages
+            'достигна 90% от лимита': 'reached 90% of limit',
+            'достигна 95% от лимита': 'reached 95% of limit',
+            'достигна 100% от лимита': 'reached 100% of limit',
+            'превиши лимита с': 'exceeded limit by',
+
+            // Category names
+            'Общ бюджет': 'General Budget',
+            'Храна': 'Food',
+            'Транспорт': 'Transport',
+            'Жилище': 'Housing',
+            'Комунални услуги': 'Utilities',
+            'Здравеопазване': 'Healthcare',
+            'Образование': 'Education',
+            'Развлечения': 'Entertainment',
+            'Дрехи': 'Clothing',
+            'Красота': 'Beauty',
+            'Спорт': 'Sports',
+            'Технологии': 'Technology',
+            'Пътувания': 'Travel',
+            'Подаръци': 'Gifts',
+            'Застраховки': 'Insurance',
+            'Данъци': 'Taxes',
+            'Кредити': 'Loans',
+            'Домашни любимци': 'Pets',
+            'Ремонт': 'Repairs',
+            'Автомобил': 'Car',
+
+            // Time expressions
+            'за месец': 'for month',
+            'за период': 'for period',
+            'през': 'in',
+            'от': 'from',
+            'до': 'to',
+
+            // Status words
+            'Внимание': 'Attention',
+            'Предупреждение': 'Warning',
+            'Грешка': 'Error',
+            'Информация': 'Information',
+            'Превишихте': 'You exceeded',
+            'Изразходили сте': 'You have spent',
+            'планираните': 'planned',
+            'лв.': '€'
+        };
+
+        let translatedMessage = cleanMessage;
+        Object.entries(translations).forEach(([bulgarian, english]) => {
+            translatedMessage = translatedMessage.replace(new RegExp(bulgarian, 'gi'), english);
+        });
+
+        return translatedMessage;
     }
 
     toggleNotifications() {
@@ -1736,30 +2116,54 @@ class BudgetsManager {
         }
     }
 
+    /**
+     * ✅ UPDATED: Render notifications with English messages and smart scrollbar logic
+     */
     renderNotifications() {
         const container = document.getElementById('notifications-list');
         if (!container) return;
 
-        if (this.notifications.length === 0) {
+        // ✅ FILTER: Only show notifications less than 1 day old
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const validNotifications = this.notifications.filter(notification => {
+            const notificationDate = new Date(notification.createdAt);
+            return notificationDate > oneDayAgo;
+        });
+
+        // ✅ SMART SCROLLBAR: Show scrollbar only when more than 3 notifications
+        if (validNotifications.length > 3) {
+            container.classList.remove('few-items');
+            container.classList.add('many-items');
+        } else {
+            container.classList.remove('many-items');
+            container.classList.add('few-items');
+        }
+
+        if (validNotifications.length === 0) {
             container.innerHTML = `
                 <div class="no-notifications">
                     <i data-lucide="bell-off"></i>
-                    <p>No budget alerts</p>
+                    <p>No recent budget alerts</p>
+                    <span class="no-notifications-subtitle">Notifications older than 1 day are automatically removed</span>
                 </div>
             `;
         } else {
-            container.innerHTML = this.notifications.map(notification => `
+            container.innerHTML = validNotifications.map(notification => `
                 <div class="notification-item ${notification.isRead ? '' : 'unread'}"
                      onclick="budgetsManager.markNotificationAsRead(${notification.id})">
-                    <div class="notification-icon ${notification.severity}">
-                        <i data-lucide="${notification.severity === 'danger' ? 'zap' : 'trending-up'}"></i>
+                    <div class="notification-icon ${this.getNotificationSeverity(notification)}">
+                        <i data-lucide="${this.getNotificationIcon(notification)}"></i>
                     </div>
                     <div class="notification-content">
-                        <div class="notification-title">${this.escapeHtml(notification.message)}</div>
+                        <div class="notification-title">${this.escapeHtml(notification.title || 'Budget Alert')}</div>
                         <div class="notification-details">
-                            ${this.escapeHtml(this.translateCategoryName(notification.categoryName))} - ${notification.budgetPeriod}
+                            ${this.escapeHtml(notification.message)}
                         </div>
-                        <div class="notification-time">${this.formatRelativeTime(notification.createdAt)}</div>
+                        <div class="notification-meta">
+                            <span class="notification-category">${this.escapeHtml(this.translateCategoryName(notification.categoryName || 'General Budget'))}</span>
+                            <span class="notification-period">${notification.budgetPeriod || 'Current Period'}</span>
+                        </div>
+                        <div class="notification-time">${this.formatSmartRelativeTime(notification.createdAt)}</div>
                     </div>
                 </div>
             `).join('');
@@ -1768,13 +2172,81 @@ class BudgetsManager {
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+
+        console.log(`📱 Rendered ${validNotifications.length} notifications with ${validNotifications.length > 3 ? 'scrollbar' : 'no scrollbar'}`);
+    }
+
+    /**
+     * ✅ NEW: Smart relative time formatting with update logic
+     * - 0-59 minutes: "X minutes ago" (updates every 15 min)
+     * - 1-23 hours: "X hours ago" (updates every hour)
+     * - >24 hours: Hidden (removed by updateNotificationTimes)
+     */
+    formatSmartRelativeTime(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+
+        if (diffInMinutes < 1) {
+            return 'Just now';
+        } else if (diffInMinutes < 60) {
+            // Round to nearest 15 minutes for cleaner display
+            const roundedMinutes = Math.ceil(diffInMinutes / 15) * 15;
+            return `${Math.min(roundedMinutes, 59)} minutes ago`;
+        } else if (diffInMinutes < 1440) { // Less than 24 hours
+            const hours = Math.floor(diffInMinutes / 60);
+            return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+        } else {
+            // This shouldn't show up due to filtering, but just in case
+            return 'More than 1 day ago';
+        }
+    }
+
+    /**
+     * ✅ NEW: Get notification severity class
+     */
+    getNotificationSeverity(notification) {
+        if (notification.severity === 'danger' || notification.type === 'error') {
+            return 'danger';
+        } else if (notification.severity === 'warning' || notification.type === 'warning') {
+            return 'warning';
+        } else if (notification.type === 'success') {
+            return 'success';
+        } else {
+            return 'info';
+        }
+    }
+
+    /**
+     * ✅ NEW: Get notification icon
+     */
+    getNotificationIcon(notification) {
+        const severity = this.getNotificationSeverity(notification);
+
+        switch (severity) {
+            case 'danger':
+                return 'alert-circle';
+            case 'warning':
+                return 'alert-triangle';
+            case 'success':
+                return 'check-circle';
+            default:
+                return 'info';
+        }
     }
 
     updateNotificationBadge() {
         const badge = document.getElementById('notification-badge');
         if (!badge) return;
 
-        const unreadCount = this.notifications.filter(n => !n.isRead).length;
+        // ✅ FILTER: Only count notifications less than 1 day old
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const validNotifications = this.notifications.filter(notification => {
+            const notificationDate = new Date(notification.createdAt);
+            return notificationDate > oneDayAgo && !notification.isRead;
+        });
+
+        const unreadCount = validNotifications.length;
 
         if (unreadCount > 0) {
             badge.textContent = unreadCount;
@@ -1821,19 +2293,44 @@ class BudgetsManager {
         }
     }
 
+    /**
+     * ✅ UPDATED: Add notification with English messages (no emojis)
+     */
     addNotification(notification) {
         const newNotification = {
-            ...notification,
-            id: Date.now(),
+            id: Date.now() + Math.random(),
+            title: notification.title || 'Budget Alert',
+            message: notification.message, // Already in English when called
+            categoryName: notification.categoryName || 'General Budget',
+            budgetPeriod: notification.budgetPeriod || this.getCurrentPeriodString(),
+            type: notification.type || 'info',
+            severity: notification.severity || notification.type || 'info',
             isRead: false,
-            createdAt: new Date().toISOString(),
-            severity: notification.type === 'warning' ? 'warning' : 'info',
-            icon: notification.type === 'warning' ? '⚠️' : 'ℹ️'
+            createdAt: new Date().toISOString()
         };
 
         this.notifications.unshift(newNotification);
-        this.notifications.splice(20);
+
+        // Keep only last 20 notifications
+        if (this.notifications.length > 20) {
+            this.notifications.splice(20);
+        }
+
         this.updateNotificationBadge();
+
+        console.log('📬 Added notification:', newNotification);
+    }
+
+    /**
+     * ✅ NEW: Get current period as string
+     */
+    getCurrentPeriodString() {
+        const months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        return `${months[this.currentPeriod.month - 1]} ${this.currentPeriod.year}`;
     }
 
     /**
@@ -1872,11 +2369,9 @@ class BudgetsManager {
 
         if (!wrapper || arrows.length !== 2) {
             console.log('🔧 Carousel integrity compromised, fixing...');
-            // Only fix if actually broken
             this.setupPerfectCarousel();
         } else {
             console.log('✅ Carousel integrity maintained');
-            // Just ensure proper layout
             this.applyPerfectCarouselLayout();
             this.updateCarouselControls();
         }
@@ -1921,20 +2416,11 @@ class BudgetsManager {
         }
     }
 
+    /**
+     * ✅ LEGACY: Keep for backward compatibility (but use formatSmartRelativeTime)
+     */
     formatRelativeTime(dateString) {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffInMinutes = Math.floor((now - date) / (1000 * 60));
-
-        if (diffInMinutes < 60) {
-            return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
-        } else if (diffInMinutes < 1440) {
-            const hours = Math.floor(diffInMinutes / 60);
-            return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
-        } else {
-            const days = Math.floor(diffInMinutes / 1440);
-            return `${days} day${days !== 1 ? 's' : ''} ago`;
-        }
+        return this.formatSmartRelativeTime(dateString);
     }
 
     escapeHtml(text) {
@@ -1986,6 +2472,9 @@ class BudgetsManager {
         }, 300);
     }
 
+    /**
+     * ✅ ENHANCED: fetchAPI method to handle DELETE responses properly
+     */
     async fetchAPI(endpoint, method = 'GET', data = null) {
         const url = `${this.API_BASE}${endpoint}`;
 
@@ -2016,23 +2505,71 @@ class BudgetsManager {
                 throw new Error(errorMessage);
             }
 
+            // ✅ FIXED: Handle empty responses for DELETE requests
             const contentType = response.headers.get('content-type');
+            const contentLength = response.headers.get('content-length');
+
+            // If response is empty (like for DELETE operations)
+            if (contentLength === '0' || !contentType) {
+                console.log(`✅ ${method} request to ${endpoint} completed successfully (empty response)`);
+                return { success: true }; // Return a success object for DELETE operations
+            }
+
             if (contentType && contentType.includes('application/json')) {
-                return await response.json();
+                const jsonResponse = await response.json();
+                console.log(`✅ ${method} request to ${endpoint} completed successfully:`, jsonResponse);
+                return jsonResponse;
             } else {
-                return await response.text();
+                const textResponse = await response.text();
+                console.log(`✅ ${method} request to ${endpoint} completed successfully:`, textResponse);
+                return { success: true, message: textResponse };
             }
 
         } catch (error) {
+            console.error(`❌ ${method} request to ${endpoint} failed:`, error);
+
             if (error.name === 'TypeError' && error.message.includes('fetch')) {
                 throw new Error('Network error. Please check your connection and try again.');
             }
             throw error;
         }
     }
+
+    /**
+     * ✅ UPDATED: Cleanup method with time interval cleanup
+     */
+    cleanup() {
+        // Clear time update interval
+        if (this.timeUpdateInterval) {
+            clearInterval(this.timeUpdateInterval);
+            this.timeUpdateInterval = null;
+        }
+
+        // Remove event listeners
+        document.removeEventListener('click', this.globalClickHandler);
+        document.removeEventListener('keydown', this.globalKeyHandler);
+        document.removeEventListener('visibilitychange', this.visibilityChangeHandler);
+
+        // Clear any running timers
+        if (this.refreshTimer) {
+            clearInterval(this.refreshTimer);
+        }
+
+        // Clear notifications
+        this.notifications = [];
+
+        console.log('🧹 BudgetsManager cleanup completed with time interval cleared');
+    }
 }
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.budgetsManager = new BudgetsManager();
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (window.budgetsManager) {
+        window.budgetsManager.cleanup();
+    }
 });
