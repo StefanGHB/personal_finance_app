@@ -1,6 +1,5 @@
 package com.example.personal_finance_app.Entity;
 
-
 import com.example.personal_finance_app.Enum.TransactionType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -37,6 +36,13 @@ public class Category {
 
     @Column(name = "is_default")
     private Boolean isDefault = false;
+
+    // ===== SOFT DELETE FIELDS =====
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
@@ -131,6 +137,23 @@ public class Category {
         this.isDefault = isDefault;
     }
 
+    // ===== SOFT DELETE GETTERS/SETTERS =====
+    public Boolean getIsDeleted() {
+        return isDeleted;
+    }
+
+    public void setIsDeleted(Boolean isDeleted) {
+        this.isDeleted = isDeleted;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -163,13 +186,32 @@ public class Category {
         this.budgets = budgets;
     }
 
-    // Helper methods
+    // ===== HELPER METHODS =====
     public boolean isIncomeCategory() {
         return TransactionType.INCOME.equals(this.type);
     }
 
     public boolean isExpenseCategory() {
         return TransactionType.EXPENSE.equals(this.type);
+    }
+
+    // ===== SOFT DELETE HELPER METHODS =====
+    public boolean isDeleted() {
+        return Boolean.TRUE.equals(this.isDeleted);
+    }
+
+    public void markAsDeleted() {
+        this.isDeleted = true;
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public void restore() {
+        this.isDeleted = false;
+        this.deletedAt = null;
+    }
+
+    public boolean isActive() {
+        return !isDeleted();
     }
 
     @Override
@@ -180,6 +222,7 @@ public class Category {
                 ", type=" + type +
                 ", color='" + color + '\'' +
                 ", isDefault=" + isDefault +
+                ", isDeleted=" + isDeleted +
                 '}';
     }
 }

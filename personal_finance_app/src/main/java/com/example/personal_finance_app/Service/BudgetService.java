@@ -47,7 +47,7 @@ public class BudgetService {
     }
 
     /**
-     * Създаване на общ месечен бюджет
+     * ✅ FIXED: Създаване на общ месечен бюджет с опция за reset на spent
      */
     public Budget createGeneralBudget(Long userId, BigDecimal plannedAmount, Integer year, Integer month) {
         logger.info("Creating general budget for user ID: {} for period {}-{}", userId, year, month);
@@ -68,7 +68,10 @@ public class BudgetService {
         budget.setUser(user);
         budget.setCategory(null); // Общ бюджет
         budget.setPlannedAmount(plannedAmount);
-        budget.setSpentAmount(calculateCurrentSpentAmount(userId, null, year, month));
+
+        // ✅ FIXED: Винаги изчислява spent от транзакции, не от category budgets
+        budget.setSpentAmount(calculateTotalSpentForPeriod(userId, year, month));
+
         budget.setBudgetYear(year);
         budget.setBudgetMonth(month);
 
@@ -144,15 +147,19 @@ public class BudgetService {
     }
 
     /**
-     * Изтриване на бюджет
+     * ✅ COMPLETELY FIXED: Изтриване на бюджет БЕЗ промяна на General Budget
      */
     public void deleteBudget(Long userId, Long budgetId) {
         logger.info("Deleting budget ID: {} for user ID: {}", budgetId, userId);
 
         Budget budget = findUserBudget(userId, budgetId);
+
+        // ✅ ПРЕМАХНАТА ГРЕШНАТА ЛОГИКА: Не обновяваме General Budget при изтриване на category budget
+        // Транзакциите остават, General Budget трябва да отразява всички транзакции
+
         budgetRepository.delete(budget);
 
-        logger.info("Successfully deleted budget ID: {}", budgetId);
+        logger.info("Successfully deleted budget ID: {} without affecting General Budget calculations", budgetId);
     }
 
     /**
@@ -221,7 +228,7 @@ public class BudgetService {
     }
 
     /**
-     * Обновяване на изразходваните суми за всички бюджети на потребител - ОБНОВЕНА
+     * ✅ FIXED: Обновяване на изразходваните суми с правилна логика
      */
     public void updateSpentAmounts(Long userId, Integer year, Integer month) {
         logger.info("Updating spent amounts for user ID: {} for period {}-{}", userId, year, month);
@@ -229,10 +236,20 @@ public class BudgetService {
         List<Budget> budgets = findUserBudgetsByPeriod(userId, year, month);
 
         for (Budget budget : budgets) {
-            BigDecimal currentSpent = calculateCurrentSpentAmount(userId,
-                    budget.getCategory() != null ? budget.getCategory().getId() : null, year, month);
+            BigDecimal currentSpent;
 
-            // ===== ПРОВЕРКА ДАЛИ СУМАТА СЕ Е ПРОМЕНИЛА =====
+            if (budget.isGeneralBudget()) {
+                // ✅ За General Budget - ВИНАГИ от всички транзакции
+                currentSpent = calculateTotalSpentForPeriod(userId, year, month);
+                logger.debug("General Budget spent calculated from all transactions: {}", currentSpent);
+            } else {
+                // ✅ За Category Budget - само от тази категория
+                currentSpent = calculateCurrentSpentAmount(userId, budget.getCategory().getId(), year, month);
+                logger.debug("Category Budget spent calculated for category {}: {}",
+                        budget.getCategory().getName(), currentSpent);
+            }
+
+            // Проверка дали сумата се е променила
             if (budget.getSpentAmount().compareTo(currentSpent) != 0) {
                 budget.setSpentAmount(currentSpent);
                 budgetRepository.save(budget);
@@ -265,17 +282,41 @@ public class BudgetService {
     // ===== PRIVATE HELPER METHODS - ОБНОВЕНИ ЗА ИЗБЯГВАНЕ НА CIRCULAR DEPENDENCY =====
 
     /**
-     * Изчисляване на текуща изразходвана сума - ИЗПОЛЗВА ДИРЕКТНО TRANSACTION REPOSITORY
+     * ✅ FIXED: Изчисляване на текуща изразходвана сума за category budget
      */
     private BigDecimal calculateCurrentSpentAmount(Long userId, Long categoryId, Integer year, Integer month) {
-        // Използваме директно TransactionRepository вместо TransactionService
+        // За category budget - само транзакции от тази категория
         List<Transaction> transactions = transactionRepository.findByUserIdAndYearAndMonth(userId, year, month);
 
-        return transactions.stream()
+        BigDecimal spent = transactions.stream()
                 .filter(t -> t.getType() == TransactionType.EXPENSE)
-                .filter(t -> categoryId == null || t.getCategory().getId().equals(categoryId))
+                .filter(t -> categoryId != null && t.getCategory().getId().equals(categoryId))
                 .map(Transaction::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        logger.debug("Calculated spent for category {}: {} from {} transactions",
+                categoryId, spent, transactions.size());
+
+        return spent;
+    }
+
+    /**
+     * ✅ FIXED: Изчисляване на общия spent за периода (за General Budget)
+     */
+    private BigDecimal calculateTotalSpentForPeriod(Long userId, Integer year, Integer month) {
+        // За general budget - всички expense транзакции за периода
+        List<Transaction> transactions = transactionRepository.findByUserIdAndYearAndMonth(userId, year, month);
+
+        BigDecimal totalSpent = transactions.stream()
+                .filter(t -> t.getType() == TransactionType.EXPENSE)
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        logger.debug("Calculated total spent for period {}-{}: {} from {} expense transactions",
+                year, month, totalSpent,
+                transactions.stream().filter(t -> t.getType() == TransactionType.EXPENSE).count());
+
+        return totalSpent;
     }
 
     private void validateBudgetInput(BigDecimal plannedAmount, Integer year, Integer month) {

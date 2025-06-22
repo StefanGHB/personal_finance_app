@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -46,6 +47,7 @@ public class CategoryService {
         category.setType(type);
         category.setColor(validateAndSetColor(color));
         category.setIsDefault(false);
+        category.setIsDeleted(false); // Explicit set for new categories
 
         try {
             Category savedCategory = categoryRepository.save(category);
@@ -69,6 +71,7 @@ public class CategoryService {
         category.setType(type);
         category.setColor(color);
         category.setIsDefault(true);
+        category.setIsDeleted(false); // Explicit set for default categories
 
         return categoryRepository.save(category);
     }
@@ -80,6 +83,11 @@ public class CategoryService {
         logger.info("Updating category ID: {} for user ID: {}", categoryId, userId);
 
         Category category = findUserCategory(userId, categoryId);
+
+        // Проверка дали категорията е архивирана
+        if (category.isDeleted()) {
+            throw new IllegalArgumentException("Cannot update archived category. Please restore it first.");
+        }
 
         if (!StringUtils.hasText(name)) {
             throw new IllegalArgumentException("Category name is required");
@@ -99,32 +107,77 @@ public class CategoryService {
     }
 
     /**
-     * Изтриване на категория
+     * SOFT DELETE на категория - Enterprise Implementation
      */
     public void deleteCategory(Long userId, Long categoryId) {
-        logger.info("Deleting category ID: {} for user ID: {}", categoryId, userId);
+        logger.info("Soft deleting category ID: {} for user ID: {}", categoryId, userId);
 
         Category category = findUserCategory(userId, categoryId);
 
+        // Проверка дали вече е изтрита
+        if (category.isDeleted()) {
+            throw new IllegalArgumentException("Category is already archived");
+        }
+
+        // Проверка за default категории
         if (category.getIsDefault()) {
-            throw new IllegalArgumentException("Cannot delete default categories");
+            throw new IllegalArgumentException("Cannot archive default categories");
         }
 
-        // Проверка дали категорията се използва в транзакции или бюджети
-        if (!category.getTransactions().isEmpty()) {
-            throw new IllegalArgumentException("Cannot delete category that has transactions. Please reassign transactions first.");
-        }
+        // SOFT DELETE - маркиране като изтрита
+        category.markAsDeleted();
+        categoryRepository.save(category);
 
-        if (!category.getBudgets().isEmpty()) {
-            throw new IllegalArgumentException("Cannot delete category that has budgets. Please delete budgets first.");
-        }
-
-        categoryRepository.delete(category);
-        logger.info("Successfully deleted category ID: {}", categoryId);
+        logger.info("Successfully archived category ID: {} (soft delete)", categoryId);
+        logger.info("Category '{}' archived - {} transactions will keep this category",
+                category.getName(),
+                category.getTransactions() != null ? category.getTransactions().size() : 0);
     }
 
     /**
-     * Намиране на категория по ID
+     * RESTORE архивирана категория
+     */
+    public Category restoreCategory(Long userId, Long categoryId) {
+        logger.info("Restoring archived category ID: {} for user ID: {}", categoryId, userId);
+
+        Category category = findUserCategoryIncludingDeleted(userId, categoryId);
+
+        if (!category.isDeleted()) {
+            throw new IllegalArgumentException("Category is not archived");
+        }
+
+        category.restore();
+        Category restoredCategory = categoryRepository.save(category);
+
+        logger.info("Successfully restored category ID: {}", categoryId);
+        return restoredCategory;
+    }
+
+    /**
+     * PERMANENT DELETE (само за админи или специални случаи)
+     */
+    public void permanentDeleteCategory(Long userId, Long categoryId) {
+        logger.warn("PERMANENT DELETE requested for category ID: {} by user ID: {}", categoryId, userId);
+
+        Category category = findUserCategoryIncludingDeleted(userId, categoryId);
+
+        // Допълнителни проверки за permanent delete
+        if (!category.getTransactions().isEmpty()) {
+            throw new IllegalArgumentException("Cannot permanently delete category with transactions. Found " +
+                    category.getTransactions().size() + " transactions.");
+        }
+
+        if (!category.getBudgets().isEmpty()) {
+            throw new IllegalArgumentException("Cannot permanently delete category with budgets. Found " +
+                    category.getBudgets().size() + " budgets.");
+        }
+
+        categoryRepository.delete(category);
+        logger.warn("PERMANENTLY DELETED category ID: {} - THIS ACTION CANNOT BE UNDONE", categoryId);
+    }
+
+    /**
+     * Намиране на категория по ID (само активни)
      */
     @Transactional(readOnly = true)
     public Category findById(Long categoryId) {
@@ -132,26 +185,38 @@ public class CategoryService {
             throw new IllegalArgumentException("Category ID must be a positive number");
         }
 
-        return categoryRepository.findById(categoryId)
+        Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new CategoryNotFoundException("Category not found with ID: " + categoryId));
-    }
 
-    /**
-     * Намиране на категория принадлежаща на потребител
-     */
-    @Transactional(readOnly = true)
-    public Category findUserCategory(Long userId, Long categoryId) {
-        Category category = findById(categoryId);
-
-        if (!category.getUser().getId().equals(userId)) {
-            throw new CategoryNotFoundException("Category not found or access denied");
+        // Проверка дали е активна
+        if (category.isDeleted()) {
+            throw new CategoryNotFoundException("Category is archived");
         }
 
         return category;
     }
 
     /**
-     * Всички категории на потребител
+     * Намиране на категория принадлежаща на потребител (само активни)
+     */
+    @Transactional(readOnly = true)
+    public Category findUserCategory(Long userId, Long categoryId) {
+        return categoryRepository.findByIdAndUserId(categoryId, userId)
+                .filter(category -> !category.isDeleted())
+                .orElseThrow(() -> new CategoryNotFoundException("Active category not found or access denied"));
+    }
+
+    /**
+     * Намиране на категория принадлежаща на потребител (включително архивирани)
+     */
+    @Transactional(readOnly = true)
+    public Category findUserCategoryIncludingDeleted(Long userId, Long categoryId) {
+        return categoryRepository.findByIdAndUserId(categoryId, userId)
+                .orElseThrow(() -> new CategoryNotFoundException("Category not found or access denied"));
+    }
+
+    /**
+     * Всички АКТИВНИ категории на потребител
      */
     @Transactional(readOnly = true)
     public List<Category> findUserCategories(Long userId) {
@@ -160,7 +225,25 @@ public class CategoryService {
     }
 
     /**
-     * Категории по тип
+     * Всички категории на потребител (включително архивирани - за reports)
+     */
+    @Transactional(readOnly = true)
+    public List<Category> findAllUserCategories(Long userId) {
+        userService.findById(userId);
+        return categoryRepository.findAllByUserId(userId);
+    }
+
+    /**
+     * Архивирани категории на потребител
+     */
+    @Transactional(readOnly = true)
+    public List<Category> findDeletedUserCategories(Long userId) {
+        userService.findById(userId);
+        return categoryRepository.findDeletedByUserId(userId);
+    }
+
+    /**
+     * Активни категории по тип
      */
     @Transactional(readOnly = true)
     public List<Category> findUserCategoriesByType(Long userId, TransactionType type) {
@@ -168,8 +251,34 @@ public class CategoryService {
             throw new IllegalArgumentException("Transaction type is required");
         }
 
-        userService.findById(userId); // Валидиране че потребителят съществува
+        userService.findById(userId);
         return categoryRepository.findByUserIdAndType(userId, type);
+    }
+
+    /**
+     * Всички категории по тип (включително архивирани)
+     */
+    @Transactional(readOnly = true)
+    public List<Category> findAllUserCategoriesByType(Long userId, TransactionType type) {
+        if (type == null) {
+            throw new IllegalArgumentException("Transaction type is required");
+        }
+
+        userService.findById(userId);
+        return categoryRepository.findAllByUserIdAndType(userId, type);
+    }
+
+    /**
+     * Статистики за категории
+     */
+    @Transactional(readOnly = true)
+    public CategoryStats getCategoryStats(Long userId) {
+        userService.findById(userId);
+
+        long activeCount = categoryRepository.countActiveByUserId(userId);
+        long deletedCount = categoryRepository.countDeletedByUserId(userId);
+
+        return new CategoryStats(activeCount, deletedCount);
     }
 
     /**
@@ -200,7 +309,24 @@ public class CategoryService {
         logger.info("Successfully created default categories for user ID: {}", user.getId());
     }
 
-    // Private helper methods
+    // ===== HELPER CLASSES =====
+
+    public static class CategoryStats {
+        private final long activeCount;
+        private final long archivedCount;
+
+        public CategoryStats(long activeCount, long archivedCount) {
+            this.activeCount = activeCount;
+            this.archivedCount = archivedCount;
+        }
+
+        public long getActiveCount() { return activeCount; }
+        public long getArchivedCount() { return archivedCount; }
+        public long getTotalCount() { return activeCount + archivedCount; }
+    }
+
+    // ===== PRIVATE HELPER METHODS =====
+
     private void validateCategoryInput(String name, TransactionType type) {
         if (!StringUtils.hasText(name)) {
             throw new IllegalArgumentException("Category name is required");
