@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transactions - PersonalFinance</title>
-    <meta name="description" content="Manage your financial transactions - Track income and expenses">
+    <meta name="description" content="Manage your financial transactions - Track income and expenses with advanced filtering">
 
     <!-- CSS -->
     <link rel="stylesheet" href="/static/css/shared.css">
@@ -29,7 +29,7 @@
         <header class="dashboard-header">
             <div class="header-left">
                 <h1>💰 Transactions</h1>
-                <p class="page-subtitle">Track and manage all your financial transactions</p>
+                <p class="page-subtitle">Track and manage all your financial transactions with advanced filtering</p>
             </div>
             <div class="header-right">
                 <!-- Notifications -->
@@ -150,12 +150,12 @@
                 </div>
             </section>
 
-            <!-- Transactions Section -->
+            <!-- Enhanced Transactions Section with Advanced Filter -->
             <section class="transactions-section">
                 <div class="section-header">
                     <div class="header-left">
                         <h2 class="section-title">Recent Transactions</h2>
-                        <p class="section-subtitle">Your latest financial activities</p>
+                        <p class="section-subtitle">Your latest financial activities with smart filtering</p>
                     </div>
                     <div class="section-actions">
                         <button class="filter-btn" id="transaction-filter">
@@ -236,6 +236,113 @@
         </div>
     </main>
 </div>
+
+<!-- Enhanced Filter Panel (Dynamic Creation) -->
+<!-- This will be created dynamically by JavaScript with the following structure: -->
+<!--
+<div class="filter-panel" id="transaction-filter-panel">
+    <div class="filter-panel-content">
+        <div class="filter-header">
+            <h3>Filter Transactions</h3>
+            <button class="filter-close" id="close-transaction-filter">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+
+        <div class="filter-body">
+            Transaction Type Filter
+            <div class="filter-group">
+                <label class="filter-label">Transaction Type</label>
+                <select id="filter-transaction-type" class="filter-select">
+                    <option value="all">All Types</option>
+                    <option value="INCOME">Income Only</option>
+                    <option value="EXPENSE">Expenses Only</option>
+                </select>
+            </div>
+
+            Time Period Filter
+            <div class="filter-group">
+                <label class="filter-label">Time Period</label>
+                <select id="filter-period" class="filter-select">
+                    <option value="all">All Time</option>
+                    <option value="this-month">This Month</option>
+                    <option value="last-month">Last Month</option>
+                    <option value="this-year">This Year</option>
+                    <option value="last-7-days">Last 7 Days</option>
+                    <option value="last-30-days">Last 30 Days</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+
+            Custom Date Range
+            <div class="filter-group" id="custom-date-range" style="display: none;">
+                <label class="filter-label">Date Range</label>
+                <div class="date-range">
+                    <input type="date" id="filter-start-date" class="filter-input">
+                    <span>to</span>
+                    <input type="date" id="filter-end-date" class="filter-input">
+                </div>
+            </div>
+
+            Category Filter
+            <div class="filter-group">
+                <label class="filter-label">Category</label>
+                <select id="filter-transaction-category" class="filter-select">
+                    <option value="all">All Categories</option>
+                    Categories will be loaded dynamically
+                </select>
+            </div>
+
+            Amount Range Filter
+            <div class="filter-group">
+                <label class="filter-label">Amount Range</label>
+                <select id="filter-amount" class="filter-select">
+                    <option value="all">All Amounts</option>
+                    <option value="small">Small (≤ €50)</option>
+                    <option value="medium">Medium (€50 - €200)</option>
+                    <option value="large">Large (> €200)</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+
+            Custom Amount Range
+            <div class="filter-group" id="custom-amount-range" style="display: none;">
+                <label class="filter-label">Amount Range (€)</label>
+                <div class="date-range">
+                    <input type="number" id="filter-min-amount" class="filter-input" placeholder="Min" step="0.01" min="0">
+                    <span>to</span>
+                    <input type="number" id="filter-max-amount" class="filter-input" placeholder="Max" step="0.01" min="0">
+                </div>
+            </div>
+
+            Sort Order
+            <div class="filter-group">
+                <label class="filter-label">Sort By</label>
+                <select id="filter-sort" class="filter-select">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="amount_high">Highest Amount</option>
+                    <option value="amount_low">Lowest Amount</option>
+                    <option value="alphabetical">Alphabetical</option>
+                    <option value="category">By Category</option>
+                </select>
+            </div>
+
+            Search Filter
+            <div class="filter-group">
+                <label class="filter-label">Search</label>
+                <input type="text" id="filter-search" class="filter-input international-input"
+                       placeholder="Search descriptions or categories...">
+            </div>
+        </div>
+
+        <div class="filter-actions">
+            <button class="btn btn-secondary" id="clear-transaction-filters">Clear All</button>
+            <button class="btn btn-primary" id="apply-transaction-filters">Apply Filters</button>
+        </div>
+    </div>
+</div>
+-->
 
 <!-- Add/Edit Transaction Modal -->
 <div class="modal" id="transaction-modal">
@@ -349,5 +456,6 @@
 <!-- JavaScript -->
 <script src="/static/js/shared.js"></script>
 <script src="/static/js/transactions.js"></script>
+
 </body>
 </html>
