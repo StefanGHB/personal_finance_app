@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Analytics Dashboard</title>
-    <meta name="description" content="Professional Financial Analytics Dashboard with Trading View Style Charts">
+    <meta name="description" content="Professional Financial Analytics Dashboard with Trading View Style Charts and Perfect Notifications">
 
-    <!-- CSS -->
+    <!-- CSS Files -->
     <link rel="stylesheet" href="/static/css/shared.css">
     <link rel="stylesheet" href="/static/css/dashboard.css">
 
@@ -32,23 +32,28 @@
         <!-- Header -->
         <header class="dashboard-header">
             <div class="header-left">
-                <h1 class="page-title">📊 Financial Analytics Dashboard</h1>
-                <p class="page-subtitle">Professional financial insights with Trading View style charts</p>
+                <h1 class="page-title"><i data-lucide="trending-up"></i> Financial Analytics Dashboard</h1>
+                <p class="page-subtitle">Professional financial insights with Trading View style charts & perfect notifications</p>
             </div>
             <div class="header-right">
-                <!-- Notifications -->
+                <!-- 🔔 PERFECT NOTIFICATIONS DROPDOWN - COMPACT DESIGN -->
                 <div class="notifications-dropdown">
                     <button class="notification-btn" id="notification-btn">
                         <i data-lucide="bell"></i>
-                        <span class="notification-badge" id="notification-badge">0</span>
+                        <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
                     </button>
                     <div class="notifications-panel" id="notifications-panel">
                         <div class="notifications-header">
-                            <h3>Budget Alerts</h3>
+                            <h3>Dashboard Alerts</h3>
                             <button class="mark-all-read" id="mark-all-read">Mark all as read</button>
                         </div>
                         <div class="notifications-list" id="notifications-list">
-                            <!-- Budget alerts will be loaded here -->
+                            <!-- Dashboard notifications will be loaded here -->
+                            <div class="empty-notifications">
+                                <div class="empty-icon">🔔</div>
+                                <p>All caught up!</p>
+                                <small>No new dashboard alerts</small>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -63,7 +68,7 @@
                 <div class="section-header">
                     <div class="section-title-group">
                         <h2 class="section-title">Financial Overview</h2>
-                        <p class="section-subtitle">Real-time financial metrics</p>
+                        <p class="section-subtitle">Real-time financial metrics with intelligent alerts</p>
                     </div>
                 </div>
 
@@ -78,7 +83,7 @@
                         <div class="card-content">
                             <h3 class="card-title">Current Balance</h3>
                             <div class="card-value" id="current-balance">
-                                <span class="value-amount">Loading...</span>
+                                <span class="value-amount">0.00</span>
                                 <span class="value-currency"></span>
                             </div>
                             <div class="card-trend" id="balance-trend">
@@ -100,7 +105,7 @@
                         <div class="card-content">
                             <h3 class="card-title">Monthly Income</h3>
                             <div class="card-value" id="monthly-income">
-                                <span class="value-amount">Loading...</span>
+                                <span class="value-amount">0.00</span>
                                 <span class="value-currency"></span>
                             </div>
                             <div class="card-trend" id="income-trend">
@@ -122,7 +127,7 @@
                         <div class="card-content">
                             <h3 class="card-title">Monthly Expenses</h3>
                             <div class="card-value" id="monthly-expenses">
-                                <span class="value-amount">Loading...</span>
+                                <span class="value-amount">0.00</span>
                                 <span class="value-currency"></span>
                             </div>
                             <div class="card-trend" id="expenses-trend">
@@ -144,7 +149,7 @@
                         <div class="card-content">
                             <h3 class="card-title">Budget Utilization</h3>
                             <div class="card-value" id="budget-utilization">
-                                <span class="value-percentage">Loading...</span>
+                                <span class="value-percentage">0</span>
                                 <span class="value-symbol">%</span>
                             </div>
                             <div class="card-trend" id="budget-trend">
@@ -166,7 +171,7 @@
                         <div class="card-content">
                             <h3 class="card-title">Net Cash Flow</h3>
                             <div class="card-value" id="net-cashflow">
-                                <span class="value-amount">Loading...</span>
+                                <span class="value-amount">0.00</span>
                                 <span class="value-currency"></span>
                             </div>
                             <div class="card-trend" id="cashflow-trend">
@@ -188,7 +193,7 @@
                         <div class="card-content">
                             <h3 class="card-title">Avg Daily Spending</h3>
                             <div class="card-value" id="daily-spending">
-                                <span class="value-amount">Loading...</span>
+                                <span class="value-amount">0.00</span>
                                 <span class="value-currency"></span>
                             </div>
                             <div class="card-trend" id="daily-trend">
@@ -210,7 +215,7 @@
                         <div class="card-content">
                             <h3 class="card-title">Budget Remaining</h3>
                             <div class="card-value" id="budget-remaining">
-                                <span class="value-amount">Loading...</span>
+                                <span class="value-amount">0.00</span>
                                 <span class="value-currency"></span>
                             </div>
                             <div class="card-trend" id="remaining-trend">
@@ -227,35 +232,34 @@
             <!-- 💹 SECTION 2: TRADING VIEW STYLE FINANCIAL CHARTS -->
             <section class="trading-charts-section">
 
-                <!-- Account Balance Trend Chart - TRADING VIEW STYLE! -->
+                <!-- Budget vs Actual Performance Chart -->
                 <div class="charts-grid">
                     <div class="chart-card">
                         <div class="chart-header">
                             <div>
-                                <h3 class="chart-title">💹 Account Balance Trend</h3>
-                                <p class="chart-subtitle">Daily balance movements (Trading View style)</p>
+                                <h3 class="chart-title"><i data-lucide="target"></i> Budget vs Actual Performance</h3>
+                                <p class="chart-subtitle">Compare planned vs actual spending by category with smart alerts</p>
                             </div>
                             <div class="chart-controls">
-                                <div class="chart-period-selector">
-                                    <button class="period-btn" data-period="1W">1W</button>
-                                    <button class="period-btn active" data-period="1M">1M</button>
-                                    <button class="period-btn" data-period="3M">3M</button>
-                                    <button class="period-btn" data-period="6M">6M</button>
-                                    <button class="period-btn" data-period="1Y">1Y</button>
+                                <div class="budget-performance-info" id="budget-performance-info">
+                                    <span class="performance-indicator neutral" id="performance-indicator">No budgets configured</span>
                                 </div>
                             </div>
                         </div>
                         <div class="chart-container">
-                            <canvas id="balance-trend-chart"></canvas>
+                            <canvas id="budget-vs-actual-chart"></canvas>
+                        </div>
+                        <div class="budget-summary" id="budget-summary">
+                            <!-- Budget summary will be generated here -->
                         </div>
                     </div>
 
-                    <!-- Category Allocation - KEEP THE AWESOME ONE! -->
+                    <!-- Category Allocation -->
                     <div class="chart-card">
                         <div class="chart-header">
                             <div>
-                                <h3 class="chart-title">🥧 Category Allocation</h3>
-                                <p class="chart-subtitle">Expense distribution</p>
+                                <h3 class="chart-title"><i data-lucide="pie-chart"></i> Category Allocation</h3>
+                                <p class="chart-subtitle">Expense distribution with automated insights</p>
                             </div>
                         </div>
                         <div class="chart-container small">
@@ -267,12 +271,12 @@
                     </div>
                 </div>
 
-                <!-- Daily Cash Flow Chart - REPLACED BUDGET COMPARISON -->
+                <!-- Daily Cash Flow Chart -->
                 <div class="chart-card full-width-chart">
                     <div class="chart-header">
                         <div>
-                            <h3 class="chart-title">📊 Daily Cash Flow</h3>
-                            <p class="chart-subtitle">Income vs expenses by day (like volume bars)</p>
+                            <h3 class="chart-title"><i data-lucide="bar-chart-3"></i> Daily Cash Flow</h3>
+                            <p class="chart-subtitle">Income vs expenses by day (like volume bars) with trend notifications</p>
                         </div>
                     </div>
                     <div class="chart-container">
@@ -281,87 +285,177 @@
                 </div>
             </section>
 
-            <!-- 📅 SECTION 3: MONTHLY COMPARISON -->
+            <!-- 📊 SECTION 3: MONTHLY PERFORMANCE WITH SPENDING VELOCITY -->
             <section class="monthly-comparison-section">
                 <div class="section-header">
                     <div class="section-title-group">
                         <h2 class="section-title">Monthly Performance</h2>
-                        <p class="section-subtitle">This month vs last month analysis</p>
+                        <p class="section-subtitle">This month vs last month analysis with velocity tracking</p>
                     </div>
                 </div>
 
-                <div class="comparison-grid">
-                    <!-- Overall Comparison Card -->
-                    <div class="comparison-card overview-comparison">
+                <div class="modern-comparison-grid">
+                    <!-- Enhanced Overall Comparison Card -->
+                    <div class="modern-comparison-card primary-card">
+                        <div class="card-decoration"></div>
                         <div class="comparison-header">
-                            <h4>Overall Spending</h4>
-                            <div class="comparison-change" id="overall-change">
-                                <span class="change-amount">Loading...</span>
-                                <span class="change-percentage">(--)</span>
+                            <div class="header-icon">
+                                <i data-lucide="dollar-sign"></i>
+                            </div>
+                            <div class="header-content">
+                                <h4>Overall Spending</h4>
+                                <p class="card-description">Total monthly expenses with trend analysis</p>
                             </div>
                         </div>
-                        <div class="comparison-details">
-                            <div class="comparison-item">
-                                <span class="comparison-label">This Month</span>
-                                <span class="comparison-value" id="current-month-spending">Loading...</span>
+                        <div class="comparison-metrics">
+                            <div class="primary-metric">
+                                <span class="metric-value" id="overall-change">0.00€</span>
+                                <span class="metric-label">This Month</span>
                             </div>
-                            <div class="comparison-item">
-                                <span class="comparison-label">Last Month</span>
-                                <span class="comparison-value" id="previous-month-spending">Loading...</span>
+                            <div class="change-projection" id="change-projection">
+                                <span class="projection-text" id="change-description">No expenses yet</span>
+                            </div>
+                        </div>
+                        <div class="comparison-details-spaced">
+                            <div class="comparison-item-spaced">
+                                <span class="comparison-label">Previous Month</span>
+                                <span class="comparison-value" id="previous-month-spending">0.00€</span>
+                            </div>
+                            <div class="comparison-item-spaced">
+                                <span class="comparison-label">Monthly Change</span>
+                                <span class="comparison-value" id="monthly-change-amount">0.00€</span>
+                            </div>
+                            <div class="comparison-item-spaced">
+                                <span class="comparison-label">Trend Direction</span>
+                                <span class="comparison-value" id="trend-direction">Stable</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Best Performing Category -->
-                    <div class="comparison-card best-category">
+                    <!-- 🚀 PRODUCTION: Spending Velocity Card with Smart Alerts -->
+                    <div class="modern-comparison-card velocity-card">
+                        <div class="card-decoration velocity"></div>
                         <div class="comparison-header">
-                            <h4>Most Improved</h4>
-                            <div class="category-icon positive">
-                                <i data-lucide="trending-down"></i>
+                            <div class="header-icon velocity">
+                                <i data-lucide="gauge"></i>
+                            </div>
+                            <div class="header-content">
+                                <h4>Spending Velocity</h4>
+                                <p class="card-description">Current spending pace & projection with alerts</p>
                             </div>
                         </div>
-                        <div class="comparison-details">
-                            <div class="category-name" id="best-category-name">Loading...</div>
-                            <div class="category-improvement" id="best-category-change">Loading...</div>
+                        <div class="comparison-metrics">
+                            <div class="velocity-metric">
+                                <span class="velocity-value" id="velocity-percentage">0%</span>
+                                <span class="velocity-label">of month elapsed</span>
+                            </div>
+                            <div class="velocity-projection" id="velocity-projection">
+                                <span class="projection-text">No budget or expenses yet</span>
+                            </div>
+                        </div>
+                        <div class="velocity-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Days Remaining</span>
+                                <span class="detail-value" id="velocity-days-remaining">0</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Projected Total</span>
+                                <span class="detail-value" id="velocity-projected-total">0.00€</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Budget Forecast</span>
+                                <span class="detail-value" id="velocity-budget-forecast">No forecast available</span>
+                            </div>
+                        </div>
+                        <div class="velocity-badge neutral" id="velocity-badge">
+                            <i data-lucide="info"></i>
+                            <span>No Data Yet</span>
                         </div>
                     </div>
 
-                    <!-- Worst Performing Category -->
-                    <div class="comparison-card worst-category">
+                    <!-- Enhanced Worst Performing Category -->
+                    <div class="modern-comparison-card warning-card">
+                        <div class="card-decoration warning"></div>
                         <div class="comparison-header">
-                            <h4>Increased Spending</h4>
-                            <div class="category-icon negative">
+                            <div class="header-icon warning">
                                 <i data-lucide="trending-up"></i>
                             </div>
+                            <div class="header-content">
+                                <h4>Increased Spending</h4>
+                                <p class="card-description">Category needing attention with alerts</p>
+                            </div>
                         </div>
-                        <div class="comparison-details">
-                            <div class="category-name" id="worst-category-name">Loading...</div>
-                            <div class="category-increase" id="worst-category-change">Loading...</div>
+                        <div class="comparison-metrics">
+                            <div class="category-name" id="worst-category-name">No increases</div>
+                            <div class="category-increase" id="worst-category-change">No extra spending</div>
+                        </div>
+                        <div class="category-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Previous Amount</span>
+                                <span class="detail-value" id="worst-category-previous">0.00€</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Current Amount</span>
+                                <span class="detail-value" id="worst-category-current">0.00€</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Increase Rate</span>
+                                <span class="detail-value" id="worst-category-rate">0%</span>
+                            </div>
+                        </div>
+                        <div class="attention-badge">
+                            <i data-lucide="info"></i>
+                            <span>All Good</span>
                         </div>
                     </div>
 
-                    <!-- Performance Summary -->
-                    <div class="comparison-card performance-summary">
+                    <!-- 📈 PRODUCTION: Performance Summary with Smart Scoring -->
+                    <div class="modern-comparison-card score-card">
+                        <div class="card-decoration score"></div>
                         <div class="comparison-header">
-                            <h4>Performance Score</h4>
-                            <div class="category-icon">
-                                <i data-lucide="award"></i>
+                            <div class="header-icon score">
+                                <i data-lucide="zap"></i>
+                            </div>
+                            <div class="header-content">
+                                <h4>Performance Score</h4>
+                                <p class="card-description">Overall financial health with dynamic alerts</p>
                             </div>
                         </div>
-                        <div class="comparison-details">
-                            <div class="performance-score" id="performance-score">Loading...</div>
-                            <div class="performance-description" id="performance-description">Loading...</div>
+                        <div class="score-display">
+                            <div class="score-circle">
+                                <div class="score-value" id="performance-score">0</div>
+                            </div>
+                            <div class="score-description" id="performance-description">Add transactions and budgets to see score</div>
+                        </div>
+                        <div class="score-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Budget Control</span>
+                                <span class="detail-value" id="budget-control-score">0/30</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Spending Trend</span>
+                                <span class="detail-value" id="spending-trend-score">0/40</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Financial Health</span>
+                                <span class="detail-value" id="financial-health-score">0/30</span>
+                            </div>
+                        </div>
+                        <div class="score-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" id="score-progress" style="width: 0%"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- 📋 SECTION 4: FINANCIAL INSIGHTS WIDGETS -->
+            <!-- 📋 SECTION 4: PRODUCTION FINANCIAL INSIGHTS WIDGETS WITH SMART NOTIFICATIONS -->
             <section class="financial-widgets-section">
                 <div class="section-header">
                     <div class="section-title-group">
                         <h2 class="section-title">Financial Insights</h2>
-                        <p class="section-subtitle">Key metrics and performance indicators</p>
+                        <p class="section-subtitle">Key metrics and performance indicators with intelligent notifications</p>
                     </div>
                 </div>
 
@@ -375,9 +469,9 @@
                             <h4>Top Spending Category</h4>
                         </div>
                         <div class="widget-content">
-                            <div class="category-name" id="top-category-name">Loading...</div>
-                            <div class="category-amount" id="top-category-amount">Loading...</div>
-                            <div class="category-percentage" id="top-category-percentage">Loading...</div>
+                            <div class="category-name" id="top-category-name">No expenses yet</div>
+                            <div class="category-amount" id="top-category-amount">0.00€</div>
+                            <div class="category-percentage" id="top-category-percentage">0% of total expenses</div>
                         </div>
                     </div>
 
@@ -390,13 +484,13 @@
                             <h4>Biggest Single Expense</h4>
                         </div>
                         <div class="widget-content">
-                            <div class="expense-amount" id="biggest-expense-amount">Loading...</div>
-                            <div class="expense-description" id="biggest-expense-description">Loading...</div>
-                            <div class="expense-date" id="biggest-expense-date">Loading...</div>
+                            <div class="expense-amount" id="biggest-expense-amount">0.00€</div>
+                            <div class="expense-description" id="biggest-expense-description">No expenses yet</div>
+                            <div class="expense-date" id="biggest-expense-date">No expenses recorded</div>
                         </div>
                     </div>
 
-                    <!-- Budget Adherence Widget -->
+                    <!-- 🎯 PRODUCTION: Budget Adherence Widget with Perfect Symmetry -->
                     <div class="widget-card budget-adherence-widget">
                         <div class="widget-header">
                             <div class="widget-icon">
@@ -405,37 +499,74 @@
                             <h4>Budget Adherence Rate</h4>
                         </div>
                         <div class="widget-content">
-                            <div class="adherence-rate" id="adherence-rate">Loading...</div>
-                            <div class="adherence-description" id="adherence-description">Loading...</div>
+                            <div class="adherence-main-metric">
+                                <div class="adherence-rate" id="adherence-rate">0%</div>
+                                <div class="adherence-description" id="adherence-description">No budgets configured</div>
+                            </div>
                             <div class="adherence-progress">
                                 <div class="progress-bar">
-                                    <div class="progress-fill" id="adherence-progress" style="width: 0%"></div>
+                                    <div class="progress-fill neutral" id="adherence-progress" style="width: 0%"></div>
                                 </div>
+                            </div>
+                            <div class="adherence-details" id="adherence-details">
+                                <!-- Adherence breakdown will be loaded here -->
                             </div>
                         </div>
                     </div>
 
-                    <!-- Spending Frequency Widget -->
+                    <!-- 📊 PRODUCTION: Spending Patterns Widget - PERFECT SYMMETRY WITH BUDGET ADHERENCE -->
                     <div class="widget-card spending-frequency-widget">
                         <div class="widget-header">
                             <div class="widget-icon">
-                                <i data-lucide="pulse"></i>
+                                <i data-lucide="activity"></i>
                             </div>
                             <h4>Spending Patterns</h4>
                         </div>
                         <div class="widget-content">
+                            <!-- Main metric section to match Budget Adherence exactly -->
+                            <div class="frequency-main-metric">
+                                <div class="frequency-rate" id="frequency-rate">0</div>
+                                <div class="frequency-description" id="frequency-description">No transactions this month</div>
+                            </div>
+
+                            <!-- Progress bar to match Budget Adherence -->
+                            <div class="frequency-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill neutral" id="frequency-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Frequency stats to match adherence details exactly -->
                             <div class="frequency-stats">
                                 <div class="stat-item">
-                                    <span class="stat-label">Transactions this month</span>
-                                    <span class="stat-value" id="total-transactions">Loading...</span>
+                                    <span class="stat-label">
+                                        <i data-lucide="activity" style="width: 14px; height: 14px;"></i>
+                                        Transactions this month
+                                    </span>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <span class="stat-value" id="total-transactions">0</span>
+                                        <span class="stat-status neutral">No data</span>
+                                    </div>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-label">Average per transaction</span>
-                                    <span class="stat-value" id="average-transaction">Loading...</span>
+                                    <span class="stat-label">
+                                        <i data-lucide="calculator" style="width: 14px; height: 14px;"></i>
+                                        Average per transaction
+                                    </span>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <span class="stat-value" id="average-transaction">0.00€</span>
+                                        <span class="stat-status neutral">No data</span>
+                                    </div>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-label">Most active day</span>
-                                    <span class="stat-value" id="most-active-day">Loading...</span>
+                                    <span class="stat-label">
+                                        <i data-lucide="calendar" style="width: 14px; height: 14px;"></i>
+                                        Most active day
+                                    </span>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <span class="stat-value" id="most-active-day">None</span>
+                                        <span class="stat-status neutral">No data</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -456,7 +587,7 @@
                         </div>
                     </div>
 
-                    <!-- Financial Score Widget -->
+                    <!-- 🌟 PRODUCTION: Financial Score Widget with Dynamic Calculations -->
                     <div class="widget-card financial-score-widget">
                         <div class="widget-header">
                             <div class="widget-icon">
@@ -465,11 +596,11 @@
                             <h4>Financial Health Score</h4>
                         </div>
                         <div class="widget-content">
-                            <div class="score-display">
-                                <div class="score-value" id="financial-score">Loading...</div>
-                                <div class="score-max">/100</div>
+                            <div class="score-display-inline">
+                                <span class="score-value" id="financial-score">0</span>
+                                <span class="score-max">/100</span>
                             </div>
-                            <div class="score-description" id="score-description">Loading...</div>
+                            <div class="score-description" id="score-description">Add transactions and budgets to see financial score</div>
                             <div class="score-factors" id="score-factors">
                                 <!-- Score breakdown will be loaded here -->
                             </div>
@@ -481,17 +612,97 @@
     </main>
 </div>
 
-<!-- JavaScript - CRITICAL ORDER -->
+<!-- JavaScript Files -->
 <script src="/static/js/shared.js"></script>
 <script src="/static/js/dashboard.js"></script>
 
-<!-- Initialize Lucide icons -->
+<!-- 🚀 PRODUCTION: Dashboard Enhancement Script -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
+        console.log('🎯 Dashboard Enhancement Script Loaded');
+
+        // Enhanced initialization with error handling
+        setTimeout(() => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+                console.log('✅ Lucide icons initialized');
+            }
+
+            // Check if Chart.js is loaded
+            if (typeof Chart !== 'undefined') {
+                console.log('✅ Chart.js loaded successfully');
+            } else {
+                console.warn('⚠️ Chart.js not loaded');
+            }
+
+            // Verify dashboard instance
+            setTimeout(() => {
+                if (window.dashboardInstance) {
+                    console.log('✅ Dashboard instance created successfully');
+                    console.log('🔔 Notification system status:', window.dashboardInstance.notifications ? 'Active' : 'Inactive');
+                } else {
+                    console.warn('⚠️ Dashboard instance not found');
+                }
+            }, 1000);
+        }, 100);
+
+        // Enhanced error handling for missing elements
+        const criticalElements = [
+            'notification-btn',
+            'notifications-panel',
+            'notifications-list',
+            'notification-badge',
+            'mark-all-read'
+        ];
+
+        setTimeout(() => {
+            criticalElements.forEach(id => {
+                const element = document.getElementById(id);
+                if (!element) {
+                    console.warn(`⚠️ Critical element missing: ${id}`);
+                }
+            });
+        }, 500);
+
+        // Enhanced cross-tab communication
+        window.addEventListener('storage', function(e) {
+            if (e.key && e.key.includes('dashboard')) {
+                console.log('🔄 Dashboard data updated in another tab');
+            }
+        });
+
+        // Performance monitoring
+        window.addEventListener('load', function() {
+            const loadTime = performance.now();
+            console.log(`⚡ Dashboard loaded in ${loadTime.toFixed(2)}ms`);
+        });
     });
+
+    // Global utilities for external pages
+    window.DashboardAPI = {
+        notify: function(title, message, type = 'info') {
+            if (window.dashboardInstance && window.dashboardInstance.addNotification) {
+                window.dashboardInstance.addNotification({
+                    title: title,
+                    message: message,
+                    type: type,
+                    category: 'external'
+                });
+            }
+        },
+
+        refresh: function(reason = 'External trigger') {
+            if (window.dashboardInstance && window.dashboardInstance.performSmartRefresh) {
+                window.dashboardInstance.performSmartRefresh(reason);
+            }
+        },
+
+        isReady: function() {
+            return !!(window.dashboardInstance && window.dashboardInstance.notifications);
+        }
+    };
+
+    console.log('📊 Dashboard API ready for external integration');
 </script>
 </body>
 </html>
