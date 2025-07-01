@@ -1,7 +1,8 @@
 /**
- * Transactions Page JavaScript - Enhanced with Advanced Filtering
- * Complete transaction management with comprehensive filtering system like categories
- * Clean version without style injection - all styles moved to CSS file
+ * Transactions Page JavaScript - FIXED NEWEST FIRST SORTING
+ * Complete transaction management with newest transactions always appearing first
+ * ✅ COMPLETELY FIXED: New transactions appear at the top of page 1
+ * ✅ GUARANTEED: Newest transactions are always shown first
  */
 
 class TransactionsManager {
@@ -37,26 +38,24 @@ class TransactionsManager {
             }
         };
 
-        // ✅ ENHANCED FILTER SYSTEM - similar to categories
+        // Enhanced filter system
         this.currentFilter = {
-            type: 'all',           // all, INCOME, EXPENSE
-            period: 'all',         // all, this-month, last-month, this-quarter, this-year, last-90-days, last-180-days, custom
-            category: 'all',       // all, categoryId
-            amount: 'all',         // all, micro, small, medium, large, very-large, huge, custom
-            search: '',            // search term
-            sort: 'newest',        // newest, oldest, amount_high, amount_low, alphabetical, category
-            startDate: null,       // custom date range
+            type: 'all',
+            period: 'all',
+            category: 'all',
+            amount: 'all',
+            search: '',
+            sort: 'newest', // Always default to newest first
+            startDate: null,
             endDate: null,
-            minAmount: null,       // custom amount range
+            minAmount: null,
             maxAmount: null,
-            showArchived: false    // for future archive functionality
+            showArchived: false
         };
 
         this.currentPage = 1;
-        this.pageSize = 10; // Changed from 20 to 10 for pagination
+        this.pageSize = 10;
         this.totalPages = 1;
-
-        // ✅ NEW: Notification timer for auto-refresh
         this.notificationTimer = null;
 
         this.init();
@@ -85,7 +84,7 @@ class TransactionsManager {
             // Initialize date inputs with current date
             this.initializeDateInputs();
 
-            // Apply initial filters and render
+            // Apply initial filters and render (will sort newest first)
             this.applyFiltersAndRender();
 
             // Setup auto-refresh for cross-tab sync
@@ -119,9 +118,9 @@ class TransactionsManager {
                 localStorage.setItem('transactionsLastRefresh', now.toString());
             }
 
-            // ✅ FIXED: Refresh notifications on window focus preserving localStorage data
+            // Refresh notifications on window focus preserving localStorage data
             console.log('🔔 Refreshing notifications on window focus with localStorage persistence');
-            this.cleanupOldNotifications(); // Clean old notifications first
+            this.cleanupOldNotifications();
             this.loadNotifications().then(() => {
                 this.updateNotificationBadge();
 
@@ -141,7 +140,7 @@ class TransactionsManager {
                 localStorage.removeItem('budgetUpdated');
             }
 
-            // ✅ NEW: Listen for notification updates from other tabs
+            // Listen for notification updates from other tabs
             if (e.key === 'transactionNotifications' && e.newValue) {
                 console.log('🔔 Notifications updated in another tab, refreshing...');
                 this.loadNotifications().then(() => {
@@ -170,9 +169,11 @@ class TransactionsManager {
     }
 
     /**
-     * Setup all event listeners
+     * Setup all event listeners with working pagination
      */
     setupEventListeners() {
+        console.log('🔧 Setting up event listeners...');
+
         // Primary action buttons
         this.addEventListeners([
             ['add-transaction-btn', 'click', () => this.openTransactionModal()],
@@ -208,8 +209,16 @@ class TransactionsManager {
             ['mark-all-read', 'click', () => this.markAllNotificationsAsRead()]
         ]);
 
-        // Global event listeners
+        // Global click handler for pagination and other interactions
         document.addEventListener('click', (e) => {
+            // Handle pagination buttons
+            if (e.target.closest('.pagination-btn')) {
+                const button = e.target.closest('.pagination-btn');
+                this.handlePaginationClick(e, button);
+                return;
+            }
+
+            // Handle modal overlays
             if (e.target.classList.contains('modal-overlay')) {
                 this.closeAllModals();
             }
@@ -220,6 +229,7 @@ class TransactionsManager {
             }
         });
 
+        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.closeAllModals();
@@ -239,43 +249,51 @@ class TransactionsManager {
                 }
             }
         });
+
+        console.log('✅ All event listeners setup completed');
     }
 
     /**
-     * ✅ ENHANCED: Setup filter event listeners with improved reliability
+     * Handle pagination button clicks
      */
-    setupFilterEventListeners() {
-        // Filter button with multiple event handling approaches
-        const filterButton = document.getElementById('transaction-filter');
-        if (filterButton) {
-            // Remove any existing listeners to prevent conflicts
-            filterButton.replaceWith(filterButton.cloneNode(true));
-            const newFilterButton = document.getElementById('transaction-filter');
+    handlePaginationClick(event, button) {
+        console.log('📄 Pagination click handler called');
 
-            // Add click listener
-            newFilterButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🔍 Filter button clicked');
-                this.toggleFilterPanel();
-            });
+        // Prevent all default behaviors
+        event.preventDefault();
+        event.stopImmediatePropagation();
 
-            // Add touch listener for mobile
-            newFilterButton.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('📱 Filter button touched');
-                this.toggleFilterPanel();
-            });
-
-            console.log('✅ Filter button listeners attached');
-        } else {
-            console.warn('⚠️ Filter button not found, retrying...');
-            // Retry after DOM is ready
-            setTimeout(() => this.setupFilterEventListeners(), 100);
+        // Check if button is disabled
+        if (button.disabled || button.classList.contains('disabled')) {
+            console.log('🚫 Pagination button is disabled, ignoring click');
+            return;
         }
 
-        // Global event listeners for filter panel with improved handling
+        // Determine button type and execute action
+        if (button.classList.contains('prev-btn')) {
+            console.log('⬅️ Previous button clicked');
+            this.goToPreviousPage();
+        } else if (button.classList.contains('next-btn')) {
+            console.log('➡️ Next button clicked');
+            this.goToNextPage();
+        }
+    }
+
+    /**
+     * Setup filter event listeners
+     */
+    setupFilterEventListeners() {
+        // Filter button
+        const filterButton = document.getElementById('transaction-filter');
+        if (filterButton) {
+            filterButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.toggleFilterPanel();
+            });
+        }
+
+        // Global event listeners for filter panel
         document.addEventListener('click', (e) => {
             const filterPanel = e.target.closest('.filter-panel');
             const filterButton = e.target.closest('#transaction-filter');
@@ -284,7 +302,6 @@ class TransactionsManager {
             if (!filterPanel && !filterButton) {
                 const activePanel = document.getElementById('transaction-filter-panel');
                 if (activePanel && activePanel.classList.contains('active')) {
-                    console.log('🔍 Closing filter panel - outside click');
                     this.closeFilterPanel();
                 }
             }
@@ -296,7 +313,6 @@ class TransactionsManager {
                 switch (e.key) {
                     case 'f':
                         e.preventDefault();
-                        console.log('⌨️ Filter shortcut pressed');
                         this.toggleFilterPanel();
                         break;
                 }
@@ -305,7 +321,6 @@ class TransactionsManager {
             if (e.key === 'Escape') {
                 const activePanel = document.getElementById('transaction-filter-panel');
                 if (activePanel && activePanel.classList.contains('active')) {
-                    console.log('🔍 Closing filter panel - ESC key');
                     this.closeFilterPanel();
                 }
             }
@@ -313,7 +328,7 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ NEW: Normalize search terms with proper Bulgarian support
+     * Normalize search terms with proper Bulgarian support
      */
     normalizeSearchTerm(text) {
         if (!text) return '';
@@ -329,7 +344,7 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ NEW: Enhanced function to check if text contains search term
+     * Enhanced function to check if text contains search term
      */
     textContainsSearchTerm(text, searchTerm) {
         if (!text || !searchTerm) return false;
@@ -361,15 +376,10 @@ class TransactionsManager {
 
         return false;
     }
-
-    /**
-     * Helper method to add multiple event listeners
-     */
     addEventListeners(listeners) {
         listeners.forEach(([id, event, handler]) => {
             const element = document.getElementById(id);
             if (element) {
-                // Add error handling to event listeners
                 element.addEventListener(event, (e) => {
                     try {
                         handler(e);
@@ -482,7 +492,7 @@ class TransactionsManager {
     }
 
     /**
-     * Populate category select options with English translations - ENHANCED with elegant styling
+     * Populate category select options with English translations
      */
     populateCategorySelect() {
         const categorySelect = document.getElementById('transaction-category');
@@ -515,12 +525,12 @@ class TransactionsManager {
             categorySelect.appendChild(option);
         }
 
-        // ✅ ENHANCED: Apply elegant dropdown styling for transaction modal
+        // Apply elegant dropdown styling for transaction modal
         this.applyElegantDropdownStyling(categorySelect, filteredCategories.length);
     }
 
     /**
-     * ✅ NEW: Apply elegant dropdown styling to category selects
+     * Apply elegant dropdown styling to category selects
      */
     applyElegantDropdownStyling(selectElement, categoryCount) {
         if (!selectElement) return;
@@ -543,16 +553,24 @@ class TransactionsManager {
     }
 
     /**
-     * Load ALL transactions from API
+     * ✅ FIXED: Load all transactions with GUARANTEED newest first sorting
      */
     async loadAllTransactions() {
         try {
             console.log('📥 Loading all transactions from API...');
 
-            const transactions = await this.fetchAPI('/transactions');
+            let transactions = await this.fetchAPI('/transactions');
+            console.log('📥 Received transactions from API:', transactions.length);
+
+            // ✅ GUARANTEED: Sort transactions newest first IMMEDIATELY
+            console.log('🔄 Sorting transactions newest first...');
+
+            transactions = this.sortTransactionsNewestFirst(transactions);
+
             this.transactions = transactions;
 
-            console.log('✅ All transactions loaded:', transactions.length);
+            // Verify the sorting worked
+            this.verifyTransactionSorting();
 
         } catch (error) {
             console.error('❌ Failed to load transactions:', error);
@@ -562,38 +580,95 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ ENHANCED: Apply filters and render with comprehensive filtering logic
+     * ✅ GUARANTEED: Sort transactions newest first (most recent dates at the top)
+     */
+    sortTransactionsNewestFirst(transactions) {
+        return transactions.sort((a, b) => {
+            // Create date objects
+            const dateA = new Date(a.transactionDate);
+            const dateB = new Date(b.transactionDate);
+
+            // Sort newest first (higher timestamp = more recent = should come first)
+            const result = dateB.getTime() - dateA.getTime();
+
+            // If dates are the same, sort by ID descending (newest created first)
+            if (result === 0) {
+                return parseInt(b.id) - parseInt(a.id);
+            }
+
+            return result;
+        });
+    }
+
+    /**
+     * ✅ Verify that transactions are properly sorted newest first
+     */
+    verifyTransactionSorting() {
+        if (this.transactions.length === 0) {
+            console.log('📊 No transactions to verify');
+            return;
+        }
+
+        console.log('🔍 Verifying transaction sorting...');
+
+        // Show first 5 transactions
+        console.log('📊 First 5 transactions (should be newest):');
+        this.transactions.slice(0, 5).forEach((t, index) => {
+            const date = new Date(t.transactionDate);
+            console.log(`  ${index + 1}. ${t.description} - ${t.transactionDate} (${date.toLocaleDateString()})`);
+        });
+
+        // Verify sorting is correct
+        for (let i = 0; i < this.transactions.length - 1; i++) {
+            const currentDate = new Date(this.transactions[i].transactionDate);
+            const nextDate = new Date(this.transactions[i + 1].transactionDate);
+
+            if (currentDate.getTime() < nextDate.getTime()) {
+                console.error('❌ SORTING ERROR: Found newer transaction after older one at index', i);
+                console.error(`❌ Current: ${this.transactions[i].description} - ${this.transactions[i].transactionDate}`);
+                console.error(`❌ Next: ${this.transactions[i + 1].description} - ${this.transactions[i + 1].transactionDate}`);
+                break;
+            }
+        }
+
+        console.log('✅ Transaction sorting verification complete');
+    }
+
+    /**
+     * ✅ FIXED: Apply filters and render with guaranteed newest first sorting
      */
     applyFiltersAndRender() {
-        console.log('🔍 Applying enhanced filters:', this.currentFilter);
+        console.log('🔍 Applying filters and rendering...');
 
+        // Start with all transactions (already sorted newest first)
         let filtered = [...this.transactions];
+        console.log('🔍 Starting with transactions:', filtered.length);
 
-        // 1. Apply TYPE filter first
+        // Apply TYPE filter
         if (this.currentFilter.type !== 'all') {
             filtered = filtered.filter(t => t.type === this.currentFilter.type);
             console.log(`After type filter (${this.currentFilter.type}):`, filtered.length);
         }
 
-        // 2. Apply PERIOD filter
+        // Apply PERIOD filter
         if (this.currentFilter.period !== 'all') {
             filtered = this.applyPeriodFilter(filtered);
             console.log(`After period filter (${this.currentFilter.period}):`, filtered.length);
         }
 
-        // 3. Apply CATEGORY filter
+        // Apply CATEGORY filter
         if (this.currentFilter.category !== 'all') {
             filtered = filtered.filter(t => t.categoryId == this.currentFilter.category);
             console.log(`After category filter (${this.currentFilter.category}):`, filtered.length);
         }
 
-        // 4. Apply AMOUNT filter
+        // Apply AMOUNT filter
         if (this.currentFilter.amount !== 'all') {
             filtered = this.applyAmountFilter(filtered);
             console.log(`After amount filter (${this.currentFilter.amount}):`, filtered.length);
         }
 
-        // 5. Apply SEARCH filter with Bulgarian support
+        // Apply SEARCH filter
         if (this.currentFilter.search) {
             const searchTerm = this.normalizeSearchTerm(this.currentFilter.search);
             filtered = filtered.filter(t => {
@@ -606,73 +681,63 @@ class TransactionsManager {
             console.log(`After search filter (${this.currentFilter.search}):`, filtered.length);
         }
 
-        // 6. Apply SORTING
-        filtered = this.applyCleanSorting(filtered);
+        // ✅ APPLY SORTING: Apply user-selected sort or default to newest first
+        filtered = this.applySorting(filtered);
 
         this.filteredTransactions = filtered;
+        console.log('🔍 Final filtered transactions:', this.filteredTransactions.length);
+
+        // Update pagination
         this.updatePagination();
+
+        // Render transactions
         this.renderTransactions();
 
-        // Update filter button indicator
+        // Update filter indicators
         this.updateFilterButtonIndicator();
 
-        console.log('✅ Enhanced filters applied successfully. Final count:', filtered.length);
+        console.log('✅ Filters applied and rendering complete');
     }
 
     /**
-     * ✅ ENHANCED: Apply amount filter with realistic ranges
+     * ✅ Apply sorting to filtered transactions
      */
-    applyAmountFilter(transactions) {
-        switch (this.currentFilter.amount) {
-            case 'micro':
-                return transactions.filter(t => parseFloat(t.amount) <= 20);
-            case 'small':
-                return transactions.filter(t => {
-                    const amount = parseFloat(t.amount);
-                    return amount > 20 && amount <= 100;
-                });
-            case 'medium':
-                return transactions.filter(t => {
-                    const amount = parseFloat(t.amount);
-                    return amount > 100 && amount <= 500;
-                });
-            case 'large':
-                return transactions.filter(t => {
-                    const amount = parseFloat(t.amount);
-                    return amount > 500 && amount <= 2000;
-                });
-            case 'very-large':
-                return transactions.filter(t => {
-                    const amount = parseFloat(t.amount);
-                    return amount > 2000 && amount <= 10000;
-                });
-            case 'huge':
-                return transactions.filter(t => parseFloat(t.amount) > 10000);
-            case 'custom':
-                if (this.currentFilter.minAmount !== null || this.currentFilter.maxAmount !== null) {
-                    return transactions.filter(t => {
-                        const amount = parseFloat(t.amount);
-                        const min = this.currentFilter.minAmount;
-                        const max = this.currentFilter.maxAmount;
+    applySorting(transactions) {
+        console.log(`🔄 Applying sort: ${this.currentFilter.sort}`);
 
-                        if (min !== null && max !== null) {
-                            return amount >= min && amount <= max;
-                        } else if (min !== null) {
-                            return amount >= min;
-                        } else if (max !== null) {
-                            return amount <= max;
-                        }
-                        return true;
-                    });
-                }
-                return transactions;
+        switch (this.currentFilter.sort) {
+            case 'oldest':
+                return transactions.sort((a, b) => {
+                    const dateA = new Date(a.transactionDate);
+                    const dateB = new Date(b.transactionDate);
+                    return dateA.getTime() - dateB.getTime(); // Oldest first
+                });
+
+            case 'amount_high':
+                return transactions.sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount));
+
+            case 'amount_low':
+                return transactions.sort((a, b) => parseFloat(a.amount) - parseFloat(b.amount));
+
+            case 'alphabetical':
+                return transactions.sort((a, b) => a.description.localeCompare(b.description));
+
+            case 'category':
+                return transactions.sort((a, b) => {
+                    const categoryA = this.translateCategoryName(a.categoryName || '');
+                    const categoryB = this.translateCategoryName(b.categoryName || '');
+                    return categoryA.localeCompare(categoryB);
+                });
+
+            case 'newest':
             default:
-                return transactions;
+                // ✅ DEFAULT: Newest first (most recent dates at the top)
+                return this.sortTransactionsNewestFirst(transactions);
         }
     }
 
     /**
-     * Apply period filter with correct date logic
+     * Apply period filter
      */
     applyPeriodFilter(transactions) {
         const now = new Date();
@@ -758,63 +823,59 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ NEW: Apply clean sorting similar to categories
+     * Apply amount filter
      */
-    applyCleanSorting(transactions) {
-        switch (this.currentFilter.sort) {
-            case 'alphabetical':
-                return transactions.sort((a, b) => a.description.localeCompare(b.description));
-            case 'amount_high':
-                return transactions.sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount));
-            case 'amount_low':
-                return transactions.sort((a, b) => parseFloat(a.amount) - parseFloat(b.amount));
-            case 'category':
-                return transactions.sort((a, b) => {
-                    const categoryA = this.translateCategoryName(a.categoryName || '');
-                    const categoryB = this.translateCategoryName(b.categoryName || '');
-                    return categoryA.localeCompare(categoryB);
+    applyAmountFilter(transactions) {
+        switch (this.currentFilter.amount) {
+            case 'micro':
+                return transactions.filter(t => parseFloat(t.amount) <= 20);
+            case 'small':
+                return transactions.filter(t => {
+                    const amount = parseFloat(t.amount);
+                    return amount > 20 && amount <= 100;
                 });
-            case 'oldest':
-                return transactions.sort((a, b) => new Date(a.transactionDate) - new Date(b.transactionDate));
-            case 'newest':
+            case 'medium':
+                return transactions.filter(t => {
+                    const amount = parseFloat(t.amount);
+                    return amount > 100 && amount <= 500;
+                });
+            case 'large':
+                return transactions.filter(t => {
+                    const amount = parseFloat(t.amount);
+                    return amount > 500 && amount <= 2000;
+                });
+            case 'very-large':
+                return transactions.filter(t => {
+                    const amount = parseFloat(t.amount);
+                    return amount > 2000 && amount <= 10000;
+                });
+            case 'huge':
+                return transactions.filter(t => parseFloat(t.amount) > 10000);
+            case 'custom':
+                if (this.currentFilter.minAmount !== null || this.currentFilter.maxAmount !== null) {
+                    return transactions.filter(t => {
+                        const amount = parseFloat(t.amount);
+                        const min = this.currentFilter.minAmount;
+                        const max = this.currentFilter.maxAmount;
+
+                        if (min !== null && max !== null) {
+                            return amount >= min && amount <= max;
+                        } else if (min !== null) {
+                            return amount >= min;
+                        } else if (max !== null) {
+                            return amount <= max;
+                        }
+                        return true;
+                    });
+                }
+                return transactions;
             default:
-                return transactions.sort((a, b) => new Date(b.transactionDate) - new Date(a.transactionDate));
+                return transactions;
         }
     }
 
     /**
-     * ✅ NEW: Get active filters text for display
-     */
-    getActiveFiltersText() {
-        const filters = [];
-
-        if (this.currentFilter.type !== 'all') {
-            filters.push(`Type: ${this.currentFilter.type}`);
-        }
-        if (this.currentFilter.period !== 'all') {
-            filters.push(`Period: ${this.currentFilter.period}`);
-        }
-        if (this.currentFilter.category !== 'all') {
-            const category = this.categories.find(cat => cat.id == this.currentFilter.category);
-            if (category) {
-                filters.push(`Category: ${this.translateCategoryName(category.name)}`);
-            }
-        }
-        if (this.currentFilter.amount !== 'all') {
-            filters.push(`Amount: ${this.currentFilter.amount}`);
-        }
-        if (this.currentFilter.search) {
-            filters.push(`Search: "${this.currentFilter.search}"`);
-        }
-        if (this.currentFilter.sort !== 'newest') {
-            filters.push(`Sort: ${this.currentFilter.sort}`);
-        }
-
-        return filters.length > 0 ? `Active filters: ${filters.join(', ')}` : '';
-    }
-
-    /**
-     * ✅ NEW: Get count of active filters
+     * Get active filters count
      */
     getActiveFiltersCount() {
         let count = 0;
@@ -827,7 +888,7 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ NEW: Update filter button indicator
+     * Update filter button indicator
      */
     updateFilterButtonIndicator() {
         const filterBtn = document.getElementById('transaction-filter');
@@ -850,21 +911,35 @@ class TransactionsManager {
     updatePagination() {
         this.totalPages = Math.ceil(this.filteredTransactions.length / this.pageSize);
         if (this.currentPage > this.totalPages) {
-            this.currentPage = 1;
+            this.currentPage = Math.max(1, this.totalPages);
         }
     }
 
     /**
-     * Get current page transactions
+     * ✅ Get current page transactions (already properly sorted)
      */
     getCurrentPageTransactions() {
         const startIndex = (this.currentPage - 1) * this.pageSize;
         const endIndex = startIndex + this.pageSize;
-        return this.filteredTransactions.slice(startIndex, endIndex);
+
+        console.log(`📄 Page ${this.currentPage}: Items ${startIndex + 1}-${Math.min(endIndex, this.filteredTransactions.length)} of ${this.filteredTransactions.length}`);
+
+        const pageTransactions = this.filteredTransactions.slice(startIndex, endIndex);
+
+        // Verify that page 1 shows the newest transactions
+        if (this.currentPage === 1 && pageTransactions.length > 0) {
+            console.log('📄 Page 1 verification - showing newest transactions:');
+            pageTransactions.slice(0, 3).forEach((t, index) => {
+                const date = new Date(t.transactionDate);
+                console.log(`  ${index + 1}. ${t.description} - ${t.transactionDate} (${date.toLocaleDateString()})`);
+            });
+        }
+
+        return pageTransactions;
     }
 
     /**
-     * Load complete summary data for cards with enhanced error handling
+     * Load complete summary data for cards
      */
     async loadCompleteSummaryData() {
         try {
@@ -882,27 +957,13 @@ class TransactionsManager {
             // Today's date string
             const today = currentDate.toISOString().split('T')[0];
 
-            // Load all data in parallel with detailed error handling
-            const dataRequests = [
-                this.fetchAPI('/transactions').catch(err => {
-                    console.warn('Failed to load all transactions:', err);
-                    return [];
-                }),
-                this.fetchAPI(`/transactions/month/${currentYear}/${currentMonth}`).catch(err => {
-                    console.warn('Failed to load current month transactions:', err);
-                    return [];
-                }),
-                this.fetchAPI(`/transactions/month/${prevYear}/${prevMonth}`).catch(err => {
-                    console.warn('Failed to load previous month transactions:', err);
-                    return [];
-                }),
-                this.fetchAPI('/transactions/balance').catch(err => {
-                    console.warn('Failed to load balance:', err);
-                    return { balance: 0 };
-                })
-            ];
-
-            const [allTransactions, currentMonthTransactions, prevMonthTransactions, balanceData] = await Promise.all(dataRequests);
+            // Load all data in parallel
+            const [allTransactions, currentMonthTransactions, prevMonthTransactions, balanceData] = await Promise.all([
+                this.fetchAPI('/transactions').catch(() => []),
+                this.fetchAPI(`/transactions/month/${currentYear}/${currentMonth}`).catch(() => []),
+                this.fetchAPI(`/transactions/month/${prevYear}/${prevMonth}`).catch(() => []),
+                this.fetchAPI('/transactions/balance').catch(() => ({ balance: 0 }))
+            ]);
 
             // Today's transactions
             const todayTransactions = allTransactions.filter(t => t.transactionDate === today);
@@ -953,31 +1014,19 @@ class TransactionsManager {
             // Update all summary cards
             this.updateAllSummaryCards();
 
-            console.log('✅ Complete summary data loaded and processed');
+            console.log('✅ Complete summary data loaded');
 
         } catch (error) {
             console.error('❌ Failed to load complete summary data:', error);
             this.showToast('Failed to load summary statistics.', 'warning');
-
-            // Set default values to prevent undefined errors
-            this.summaryData = {
-                currentMonth: { transactions: [], totalCount: 0, totalIncome: 0, totalExpenses: 0 },
-                previousMonth: { transactions: [], totalCount: 0, totalIncome: 0, totalExpenses: 0 },
-                allTime: { transactions: [], totalCount: 0, balance: 0 },
-                today: { transactions: [], totalCount: 0 }
-            };
-
-            this.updateAllSummaryCards();
         }
     }
 
     /**
-     * Update all summary cards with calculated data and trends
+     * Update all summary cards
      */
     updateAllSummaryCards() {
         try {
-            console.log('🔄 Updating all summary cards...');
-
             // Card 1: Total Transactions
             this.updateElement('total-transactions', this.summaryData.allTime.totalCount);
 
@@ -987,10 +1036,10 @@ class TransactionsManager {
             // Card 3: Recent Activity (Today)
             this.updateElement('recent-activity', this.summaryData.today.totalCount);
 
-            // Update trend indicators with percentage calculations
+            // Update trend indicators
             this.updateTrendIndicators();
 
-            console.log('✅ All summary cards updated successfully');
+            console.log('✅ All summary cards updated');
 
         } catch (error) {
             console.error('❌ Error updating summary cards:', error);
@@ -998,7 +1047,7 @@ class TransactionsManager {
     }
 
     /**
-     * Enhanced trend indicators with proper percentage calculations
+     * Update trend indicators
      */
     updateTrendIndicators() {
         try {
@@ -1016,7 +1065,6 @@ class TransactionsManager {
                 monthlyTrendText = `${Math.abs(percentage)}% vs last month`;
                 monthlyTrendIcon = isPositive ? 'trending-up' : 'trending-down';
 
-                // Update icon color based on trend
                 const trendIndicator = document.querySelector('#monthly-trend .trend-indicator i');
                 if (trendIndicator) {
                     trendIndicator.setAttribute('data-lucide', monthlyTrendIcon);
@@ -1039,12 +1087,10 @@ class TransactionsManager {
 
             this.updateElement('last-activity', activityText);
 
-            // Refresh icons to apply new data-lucide attributes
+            // Refresh icons
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
-
-            console.log('✅ Trend indicators updated');
 
         } catch (error) {
             console.error('❌ Error updating trend indicators:', error);
@@ -1052,7 +1098,7 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ ENHANCED: Render transactions with pagination
+     * Render transactions with pagination
      */
     renderTransactions() {
         const container = document.getElementById('transactions-list');
@@ -1096,14 +1142,14 @@ class TransactionsManager {
         // Show pagination if needed
         this.renderPagination();
 
-        // Refresh icons after rendering transactions
+        // Refresh icons
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
     }
 
     /**
-     * ✅ ENHANCED: Render pagination with dynamic transaction count
+     * ✅ Render pagination with working buttons
      */
     renderPagination() {
         const totalTransactions = this.filteredTransactions.length;
@@ -1130,13 +1176,17 @@ class TransactionsManager {
 
         const currentStart = (this.currentPage - 1) * this.pageSize + 1;
         const currentEnd = Math.min(this.currentPage * this.pageSize, totalTransactions);
-        const currentPageCount = currentEnd - currentStart + 1; // Actual transactions on current page
+        const currentPageCount = currentEnd - currentStart + 1;
+
+        const prevDisabled = this.currentPage === 1;
+        const nextDisabled = this.currentPage === this.totalPages;
 
         paginationContainer.innerHTML = `
             <div class="pagination-wrapper">
-                <button class="pagination-btn prev-btn"
-                        onclick="transactionsManager.goToPreviousPage()"
-                        ${this.currentPage === 1 ? 'disabled' : ''}>
+                <button class="pagination-btn prev-btn${prevDisabled ? ' disabled' : ''}"
+                        type="button"
+                        ${prevDisabled ? 'disabled' : ''}
+                        aria-label="Previous page">
                     <i data-lucide="chevron-left"></i>
                 </button>
 
@@ -1145,9 +1195,10 @@ class TransactionsManager {
                     <div class="showing-info">Showing ${currentPageCount} of ${totalTransactions}</div>
                 </div>
 
-                <button class="pagination-btn next-btn"
-                        onclick="transactionsManager.goToNextPage()"
-                        ${this.currentPage === this.totalPages ? 'disabled' : ''}>
+                <button class="pagination-btn next-btn${nextDisabled ? ' disabled' : ''}"
+                        type="button"
+                        ${nextDisabled ? 'disabled' : ''}
+                        aria-label="Next page">
                     <i data-lucide="chevron-right"></i>
                 </button>
             </div>
@@ -1161,11 +1212,11 @@ class TransactionsManager {
             lucide.createIcons();
         }
 
-        console.log(`✅ Pagination rendered: Page ${this.currentPage} of ${this.totalPages} (showing ${currentPageCount} of ${totalTransactions})`);
+        console.log(`✅ Pagination rendered - Page ${this.currentPage} of ${this.totalPages}`);
     }
 
     /**
-     * ✅ NEW: Hide pagination when not needed
+     * Hide pagination when not needed
      */
     hidePagination() {
         const paginationContainer = document.getElementById('transactions-pagination');
@@ -1175,48 +1226,41 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ NEW: Go to previous page
+     * ✅ Go to previous page
      */
     goToPreviousPage() {
         if (this.currentPage > 1) {
             this.currentPage--;
+            console.log(`📄 Moving to previous page: ${this.currentPage}`);
             this.renderTransactions();
-            console.log(`📄 Navigated to previous page: ${this.currentPage}`);
         }
     }
 
     /**
-     * ✅ NEW: Go to next page
+     * ✅ Go to next page
      */
     goToNextPage() {
         if (this.currentPage < this.totalPages) {
             this.currentPage++;
+            console.log(`📄 Moving to next page: ${this.currentPage}`);
             this.renderTransactions();
-            console.log(`📄 Navigated to next page: ${this.currentPage}`);
         }
     }
 
     /**
-     * ✅ FIXED: Get modern empty state HTML with working clear filters button
+     * Get empty state HTML
      */
     getEmptyStateHTML() {
         const hasFilters = this.getActiveFiltersCount() > 0;
 
         if (hasFilters) {
-            // When filters are applied but no results - SIMPLIFIED VERSION WITHOUT FILTER TAGS
+            // When filters are applied but no results
             const totalTransactions = this.transactions.length;
 
             return `
                 <div class="modern-empty-state filtered-state">
-                    <!-- Animated Search Icon with Particles -->
                     <div class="empty-icon-container">
                         <div class="search-icon-wrapper">
-                            <div class="search-particles">
-                                <div class="particle particle-1"></div>
-                                <div class="particle particle-2"></div>
-                                <div class="particle particle-3"></div>
-                                <div class="particle particle-4"></div>
-                            </div>
                             <div class="search-icon">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                     <circle cx="11" cy="11" r="8"></circle>
@@ -1226,7 +1270,6 @@ class TransactionsManager {
                         </div>
                     </div>
 
-                    <!-- Modern Content Section -->
                     <div class="empty-content">
                         <div class="empty-title">
                             <span class="title-gradient">No matching transactions</span>
@@ -1238,9 +1281,8 @@ class TransactionsManager {
                             Your search criteria didn't match any transactions. Try adjusting your filters or clear them to explore all your data.
                         </div>
 
-                        <!-- Simple Action Buttons WITHOUT FILTER TAGS -->
                         <div class="empty-actions">
-                            <button class="modern-btn secondary-btn" onclick="window.transactionsManager?.clearFilters?.() || (console.log('clearFilters called'))">
+                            <button class="modern-btn secondary-btn" onclick="window.transactionsManager?.clearFilters?.()">
                                 <span class="btn-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
@@ -1249,39 +1291,24 @@ class TransactionsManager {
                                     </svg>
                                 </span>
                                 <span class="btn-text">Clear All Filters</span>
-                                <div class="btn-glow"></div>
                             </button>
                         </div>
-                    </div>
-
-                    <!-- Decorative Elements -->
-                    <div class="bg-decoration">
-                        <div class="floating-shape shape-1"></div>
-                        <div class="floating-shape shape-2"></div>
-                        <div class="floating-shape shape-3"></div>
                     </div>
                 </div>
             `;
         } else {
-            // When no transactions exist at all - WORKING VERSION
+            // When no transactions exist at all
             return `
                 <div class="modern-empty-state welcome-state">
-                    <!-- Animated Credit Card Icon -->
                     <div class="empty-icon-container">
                         <div class="card-icon-wrapper">
-                            <div class="card-glow"></div>
                             <div class="credit-card">
                                 <div class="card-chip"></div>
                                 <div class="card-stripe"></div>
-                                <div class="card-number">
-                                    <span></span><span></span><span></span><span></span>
-                                </div>
-                                <div class="card-pulse"></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Modern Welcome Content -->
                     <div class="empty-content">
                         <div class="empty-title">
                             <span class="title-gradient">Start Your Financial Journey</span>
@@ -1293,25 +1320,8 @@ class TransactionsManager {
                             Begin tracking your income and expenses to gain valuable insights into your spending habits and financial health.
                         </div>
 
-                        <!-- Feature Highlights -->
-                        <div class="feature-highlights">
-                            <div class="feature-item">
-                                <div class="feature-icon">📊</div>
-                                <div class="feature-text">Track spending patterns</div>
-                            </div>
-                            <div class="feature-item">
-                                <div class="feature-icon">🎯</div>
-                                <div class="feature-text">Set budget goals</div>
-                            </div>
-                            <div class="feature-item">
-                                <div class="feature-icon">📈</div>
-                                <div class="feature-text">Analyze trends</div>
-                            </div>
-                        </div>
-
-                        <!-- Modern CTA Button -->
                         <div class="empty-actions">
-                            <button class="modern-btn hero-btn" onclick="window.transactionsManager?.openTransactionModal?.() || (console.log('openTransactionModal called'))">
+                            <button class="modern-btn hero-btn" onclick="window.transactionsManager?.openTransactionModal?.()">
                                 <span class="btn-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                         <line x1="12" y1="5" x2="12" y2="19"/>
@@ -1319,24 +1329,8 @@ class TransactionsManager {
                                     </svg>
                                 </span>
                                 <span class="btn-text">Add Your First Transaction</span>
-                                <div class="btn-glow"></div>
-                                <div class="btn-sparkles">
-                                    <div class="sparkle sparkle-1"></div>
-                                    <div class="sparkle sparkle-2"></div>
-                                    <div class="sparkle sparkle-3"></div>
-                                </div>
                             </button>
                         </div>
-                    </div>
-
-                    <!-- Advanced Background Decorations -->
-                    <div class="bg-decoration">
-                        <div class="floating-shape shape-1"></div>
-                        <div class="floating-shape shape-2"></div>
-                        <div class="floating-shape shape-3"></div>
-                        <div class="floating-shape shape-4"></div>
-                        <div class="gradient-orb orb-1"></div>
-                        <div class="gradient-orb orb-2"></div>
                     </div>
                 </div>
             `;
@@ -1344,7 +1338,7 @@ class TransactionsManager {
     }
 
     /**
-     * Create HTML for a single transaction with Euro currency + English category names
+     * Create HTML for a single transaction
      */
     createTransactionHTML(transaction) {
         const isIncome = transaction.type === 'INCOME';
@@ -1383,58 +1377,30 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ ENHANCED: Toggle filter panel with improved reliability
+     * Toggle filter panel
      */
     toggleFilterPanel() {
-        console.log('🔍 Toggle filter panel called');
-
         const existingPanel = document.getElementById('transaction-filter-panel');
 
         if (existingPanel) {
             if (existingPanel.classList.contains('active')) {
-                console.log('🔍 Closing existing active panel');
                 this.closeFilterPanel();
             } else {
-                console.log('🔍 Showing existing inactive panel');
                 existingPanel.classList.add('active');
             }
         } else {
-            console.log('🔍 Creating new filter panel');
             this.showFilterPanel();
         }
     }
 
     /**
-     * ✅ ENHANCED: Show filter panel with robust error handling
+     * Show filter panel
      */
     showFilterPanel() {
         try {
-            console.log('🔍 Starting to show filter panel...');
-
-            // Remove any existing panels to prevent conflicts
+            // Remove any existing panels
             const existingPanels = document.querySelectorAll('#transaction-filter-panel');
-            existingPanels.forEach(panel => {
-                console.log('🗑️ Removing existing panel');
-                panel.remove();
-            });
-
-            // Small delay to ensure DOM cleanup
-            setTimeout(() => {
-                this.createAndShowFilterPanel();
-            }, 50);
-
-        } catch (error) {
-            console.error('❌ Error showing filter panel:', error);
-            this.showToast('Failed to open filter panel. Please try again.', 'error');
-        }
-    }
-
-    /**
-     * ✅ NEW: Create and show filter panel
-     */
-    createAndShowFilterPanel() {
-        try {
-            console.log('🏗️ Creating filter panel...');
+            existingPanels.forEach(panel => panel.remove());
 
             // Create filter panel
             const filterPanel = document.createElement('div');
@@ -1451,7 +1417,6 @@ class TransactionsManager {
                     </div>
 
                     <div class="filter-body">
-                        <!-- Transaction Type Filter -->
                         <div class="filter-group">
                             <label class="filter-label">Transaction Type</label>
                             <select id="filter-transaction-type" class="filter-select">
@@ -1461,7 +1426,6 @@ class TransactionsManager {
                             </select>
                         </div>
 
-                        <!-- Time Period Filter -->
                         <div class="filter-group">
                             <label class="filter-label">Time Period</label>
                             <select id="filter-period" class="filter-select">
@@ -1476,7 +1440,6 @@ class TransactionsManager {
                             </select>
                         </div>
 
-                        <!-- Custom Date Range -->
                         <div class="filter-group" id="custom-date-range" style="display: none;">
                             <label class="filter-label">Date Range</label>
                             <div class="date-range">
@@ -1497,7 +1460,6 @@ class TransactionsManager {
                             </select>
                         </div>
 
-                        <!-- Amount Range Filter -->
                         <div class="filter-group">
                             <label class="filter-label">Amount Range</label>
                             <select id="filter-amount" class="filter-select">
@@ -1512,7 +1474,6 @@ class TransactionsManager {
                             </select>
                         </div>
 
-                        <!-- Custom Amount Range -->
                         <div class="filter-group" id="custom-amount-range" style="display: none;">
                             <label class="filter-label">Amount Range (€)</label>
                             <div class="date-range">
@@ -1522,7 +1483,6 @@ class TransactionsManager {
                             </div>
                         </div>
 
-                        <!-- Sort Order -->
                         <div class="filter-group">
                             <label class="filter-label">Sort By</label>
                             <select id="filter-sort" class="filter-select">
@@ -1552,7 +1512,6 @@ class TransactionsManager {
 
             // Add to page
             document.body.appendChild(filterPanel);
-            console.log('✅ Filter panel added to DOM');
 
             // Setup event listeners for conditional filters
             this.setupFilterEventHandlers();
@@ -1560,18 +1519,15 @@ class TransactionsManager {
             // Set current filter values
             this.populateFilterPanel();
 
-            // Show panel with small delay for smooth animation
+            // Show panel
             setTimeout(() => {
                 filterPanel.classList.add('active');
-                console.log('✅ Filter panel activated');
             }, 10);
 
             // Initialize icons
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
-
-            console.log('🎉 Enhanced filter panel opened successfully');
 
         } catch (error) {
             console.error('❌ Error creating filter panel:', error);
@@ -1580,7 +1536,7 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ ENHANCED: Setup event handlers for filter panel with forced scrollable dropdown
+     * Setup filter event handlers with forced scrollable dropdown
      */
     setupFilterEventHandlers() {
         // Period change handler
@@ -1605,7 +1561,7 @@ class TransactionsManager {
             });
         }
 
-        // ✅ ENHANCED: Force category dropdown to show exactly 5 options with scroll
+        // Force category dropdown to show exactly 5 options with scroll
         setTimeout(() => {
             const categoryDropdown = document.getElementById('filter-transaction-category');
             if (categoryDropdown && this.categories.length > 5) {
@@ -1622,30 +1578,26 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ NEW: Populate filter panel with current values
+     * Populate filter panel with current values
      */
     populateFilterPanel() {
-        const filterType = document.getElementById('filter-transaction-type');
-        const filterPeriod = document.getElementById('filter-period');
-        const filterCategory = document.getElementById('filter-transaction-category');
-        const filterAmount = document.getElementById('filter-amount');
-        const filterSort = document.getElementById('filter-sort');
-        const filterSearch = document.getElementById('filter-search');
-        const filterStartDate = document.getElementById('filter-start-date');
-        const filterEndDate = document.getElementById('filter-end-date');
-        const filterMinAmount = document.getElementById('filter-min-amount');
-        const filterMaxAmount = document.getElementById('filter-max-amount');
+        const elements = {
+            'filter-transaction-type': this.currentFilter.type,
+            'filter-period': this.currentFilter.period,
+            'filter-transaction-category': this.currentFilter.category,
+            'filter-amount': this.currentFilter.amount,
+            'filter-sort': this.currentFilter.sort,
+            'filter-search': this.currentFilter.search,
+            'filter-start-date': this.currentFilter.startDate || '',
+            'filter-end-date': this.currentFilter.endDate || '',
+            'filter-min-amount': this.currentFilter.minAmount || '',
+            'filter-max-amount': this.currentFilter.maxAmount || ''
+        };
 
-        if (filterType) filterType.value = this.currentFilter.type;
-        if (filterPeriod) filterPeriod.value = this.currentFilter.period;
-        if (filterCategory) filterCategory.value = this.currentFilter.category;
-        if (filterAmount) filterAmount.value = this.currentFilter.amount;
-        if (filterSort) filterSort.value = this.currentFilter.sort;
-        if (filterSearch) filterSearch.value = this.currentFilter.search;
-        if (filterStartDate) filterStartDate.value = this.currentFilter.startDate || '';
-        if (filterEndDate) filterEndDate.value = this.currentFilter.endDate || '';
-        if (filterMinAmount) filterMinAmount.value = this.currentFilter.minAmount || '';
-        if (filterMaxAmount) filterMaxAmount.value = this.currentFilter.maxAmount || '';
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) element.value = value;
+        });
 
         // Show conditional filters if needed
         if (this.currentFilter.period === 'custom') {
@@ -1660,9 +1612,10 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ NEW: Apply filters from panel
+     * Apply filters from panel
      */
-    applyFiltersFromPanel() {
+    applyFilters() {
+        // Get values from filter panel
         const filterType = document.getElementById('filter-transaction-type');
         const filterPeriod = document.getElementById('filter-period');
         const filterCategory = document.getElementById('filter-transaction-category');
@@ -1674,6 +1627,7 @@ class TransactionsManager {
         const filterMinAmount = document.getElementById('filter-min-amount');
         const filterMaxAmount = document.getElementById('filter-max-amount');
 
+        // Update current filter
         this.currentFilter = {
             ...this.currentFilter,
             type: filterType?.value || 'all',
@@ -1688,43 +1642,29 @@ class TransactionsManager {
             maxAmount: filterMaxAmount?.value ? parseFloat(filterMaxAmount.value) : null
         };
 
-        // Reset pagination to page 1 when filters change
+        // ✅ CRITICAL: Reset to page 1 when applying filters
         this.currentPage = 1;
 
+        // Apply filters and render
         this.applyFiltersAndRender();
 
-        console.log('🔍 Manual filters applied (pagination reset to 1):', this.currentFilter);
-    }
-
-    /**
-     * ✅ NEW: Apply filters
-     */
-    applyFilters() {
-        // Reset pagination to page 1 when applying filters
-        this.currentPage = 1;
-        console.log('📄 Reset pagination to page 1 when applying filters');
-
-        this.applyFiltersFromPanel();
-
+        // Close filter panel
         this.closeFilterPanel();
 
+        // Show success message
         const activeFilters = this.getActiveFiltersCount();
         if (activeFilters > 0) {
             this.showToast(`Applied ${activeFilters} filter${activeFilters > 1 ? 's' : ''} • Showing ${this.filteredTransactions.length} transactions`, 'success');
         } else {
             this.showToast(`Showing all ${this.filteredTransactions.length} transactions`, 'info');
         }
-
-        console.log(`✅ Applied ${activeFilters} filters, showing ${this.filteredTransactions.length} transactions (pagination reset to 1)`);
     }
 
     /**
-     * ✅ FIXED: Clear all filters - completely working version
+     * Clear all filters
      */
     clearFilters() {
         try {
-            console.log('🧹 Clearing all filters...');
-
             // Reset all filter values to defaults
             this.currentFilter = {
                 type: 'all',
@@ -1732,7 +1672,7 @@ class TransactionsManager {
                 category: 'all',
                 amount: 'all',
                 search: '',
-                sort: 'newest',
+                sort: 'newest', // Always default to newest first
                 startDate: null,
                 endDate: null,
                 minAmount: null,
@@ -1740,9 +1680,8 @@ class TransactionsManager {
                 showArchived: false
             };
 
-            // Reset pagination to page 1 when clearing filters
+            // ✅ CRITICAL: Reset to page 1 when clearing filters
             this.currentPage = 1;
-            console.log('📄 Reset pagination to page 1 when clearing filters');
 
             // Apply the cleared filters and render
             this.applyFiltersAndRender();
@@ -1753,13 +1692,11 @@ class TransactionsManager {
                 this.populateFilterPanel();
             }
 
-            // Close filter panel if open
+            // Close filter panel
             this.closeFilterPanel();
 
             // Show success message
             this.showToast('All filters cleared successfully', 'success');
-
-            console.log('✅ All filters cleared successfully');
 
         } catch (error) {
             console.error('❌ Error clearing filters:', error);
@@ -1768,30 +1705,21 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ ENHANCED: Close filter panel with improved cleanup
+     * Close filter panel
      */
     closeFilterPanel() {
         try {
-            console.log('🔍 Closing filter panel...');
-
             const filterPanel = document.getElementById('transaction-filter-panel');
             if (filterPanel) {
-                // Remove active class for animation
                 filterPanel.classList.remove('active');
-
-                // Remove panel after animation with cleanup
                 setTimeout(() => {
                     if (filterPanel && filterPanel.parentNode) {
                         filterPanel.remove();
-                        console.log('✅ Filter panel removed successfully');
                     }
-                }, 350); // Slightly longer than CSS transition
-            } else {
-                console.log('⚠️ No filter panel found to close');
+                }, 350);
             }
         } catch (error) {
             console.error('❌ Error closing filter panel:', error);
-            // Force remove any existing panels
             document.querySelectorAll('#transaction-filter-panel').forEach(panel => panel.remove());
         }
     }
@@ -1904,7 +1832,7 @@ class TransactionsManager {
     }
 
     /**
-     * Handle transaction type toggle - ENHANCED with elegant dropdown styling
+     * Handle transaction type toggle
      */
     handleTransactionTypeToggle(clickedBtn) {
         // Remove active class from all toggle buttons
@@ -1918,11 +1846,11 @@ class TransactionsManager {
         // Update categories for new type
         this.populateCategorySelect();
 
-        console.log(`🔄 Switched to ${clickedBtn.dataset.type} type with elegant dropdown`);
+        console.log(`🔄 Switched to ${clickedBtn.dataset.type} type`);
     }
 
     /**
-     * Set transaction type programmatically - ENHANCED with elegant dropdown styling
+     * Set transaction type programmatically
      */
     setTransactionType(type) {
         const buttons = document.querySelectorAll('.toggle-btn');
@@ -1933,7 +1861,7 @@ class TransactionsManager {
     }
 
     /**
-     * Handle transaction form submission - ENHANCED WITH BUDGET SIGNAL
+     * ✅ FIXED: Handle transaction form submission - ALWAYS go to page 1 for new transactions
      */
     async handleTransactionSubmit(event) {
         event.preventDefault();
@@ -1954,6 +1882,8 @@ class TransactionsManager {
             // Prepare data
             const formData = new FormData(form);
             const transactionData = this.prepareTransactionData(formData);
+
+            console.log('💾 Submitting transaction:', transactionData);
 
             // Submit transaction
             let result;
@@ -1977,6 +1907,10 @@ class TransactionsManager {
                     message: `${transactionData.type.toLowerCase()} of €${transactionData.amount} added successfully`,
                     type: 'success'
                 });
+
+                // ✅ CRITICAL: For new transactions, ALWAYS go to page 1 to see the newest transaction
+                console.log('💾 NEW TRANSACTION: FORCE going to page 1 to show newest transaction');
+                this.currentPage = 1;
             }
 
             // Signal budget update to other tabs
@@ -1984,11 +1918,11 @@ class TransactionsManager {
                 this.signalBudgetUpdate();
             }
 
-            // Refresh all data including summary cards
+            // ✅ GUARANTEED: Refresh all data (this will reload and re-sort all transactions newest first)
             await this.refreshAllData();
             this.closeTransactionModal();
 
-            console.log(`✅ Transaction ${this.isEditing ? 'updated' : 'created'} successfully`);
+            console.log('✅ Transaction completed successfully - newest transactions will be shown first');
 
         } catch (error) {
             console.error('❌ Transaction submission failed:', error);
@@ -2100,13 +2034,23 @@ class TransactionsManager {
     }
 
     /**
-     * Show delete confirmation modal with Euro currency
+     * Show delete confirmation modal
      */
     showDeleteConfirmation(transaction) {
         const modal = document.getElementById('delete-confirmation-modal');
         const preview = document.getElementById('delete-transaction-preview');
 
-        if (!modal || !preview) return;
+        if (!modal || !preview) {
+            console.error('❌ Delete modal elements not found');
+            return;
+        }
+
+        // Validate transaction data
+        if (!transaction || !transaction.id) {
+            console.error('❌ Invalid transaction data for deletion:', transaction);
+            this.showToast('Invalid transaction data. Cannot delete.', 'error');
+            return;
+        }
 
         // Store transaction for deletion
         this.currentTransaction = transaction;
@@ -2115,15 +2059,17 @@ class TransactionsManager {
         const isIncome = transaction.type === 'INCOME';
         const amountClass = isIncome ? 'income' : 'expense';
         const amountPrefix = isIncome ? '+' : '-';
+        const categoryName = transaction.categoryName || 'Unknown Category';
+        const transactionDate = transaction.transactionDate || 'Unknown Date';
 
         preview.innerHTML = `
             <div class="transaction-summary">
                 <div class="summary-amount ${amountClass}">
-                    ${amountPrefix}€${transaction.amount}
+                    ${amountPrefix}€${transaction.amount || '0.00'}
                 </div>
-                <div class="summary-description">${this.escapeHtml(transaction.description)}</div>
-                <div class="summary-category">${this.escapeHtml(this.translateCategoryName(transaction.categoryName))}</div>
-                <div class="summary-date">${this.formatDate(transaction.transactionDate)}</div>
+                <div class="summary-description">${this.escapeHtml(transaction.description || 'No description')}</div>
+                <div class="summary-category">${this.escapeHtml(this.translateCategoryName(categoryName))}</div>
+                <div class="summary-date">${this.formatDate(transactionDate)}</div>
             </div>
         `;
 
@@ -2135,44 +2081,58 @@ class TransactionsManager {
     }
 
     /**
-     * Confirm transaction deletion - ENHANCED WITH BUDGET SIGNAL
+     * Confirm transaction deletion
      */
     async confirmDeleteTransaction() {
-        if (!this.currentTransaction) return;
+        if (!this.currentTransaction) {
+            console.error('❌ No transaction selected for deletion');
+            this.showToast('No transaction selected for deletion.', 'error');
+            return;
+        }
 
         const deleteBtn = document.getElementById('confirm-delete-btn');
 
         try {
             this.setButtonLoading(deleteBtn, true);
 
-            // Store transaction type before deletion
-            const transactionType = this.currentTransaction.type;
+            // Store transaction details before deletion
+            const transactionId = this.currentTransaction.id;
+            const transactionType = this.currentTransaction.type || 'UNKNOWN';
+            const transactionDescription = this.currentTransaction.description || 'Unknown transaction';
 
-            await this.fetchAPI(`/transactions/${this.currentTransaction.id}`, 'DELETE');
+            console.log(`🗑️ Attempting to delete transaction ${transactionId}`);
 
+            // Make DELETE request
+            const result = await this.fetchAPI(`/transactions/${transactionId}`, 'DELETE');
+
+            console.log('✅ Delete API response:', result);
+
+            // Show success message
             this.showToast('Transaction deleted successfully!', 'success');
 
             // Add notification for deleted transaction
             this.addNotification({
                 title: 'Transaction Deleted',
-                message: `${this.currentTransaction.description} has been removed`,
+                message: `${transactionDescription} has been removed`,
                 type: 'warning'
             });
 
-            // Signal budget update to other tabs
+            // Signal budget update to other tabs if it was an expense
             if (transactionType === 'EXPENSE') {
                 this.signalBudgetUpdate();
             }
 
-            // Refresh all data including summary cards
-            await this.refreshAllData();
+            // Close modal first
             this.closeDeleteModal();
 
-            console.log(`✅ Transaction ${this.currentTransaction.id} deleted successfully`);
+            // ✅ GUARANTEED: Refresh all data and maintain newest first sorting
+            await this.refreshAllData();
+
+            console.log(`✅ Transaction ${transactionId} deleted successfully`);
 
         } catch (error) {
             console.error('❌ Failed to delete transaction:', error);
-            this.showToast('Failed to delete transaction. Please try again.', 'error');
+            this.showToast(`Failed to delete transaction: ${error.message}`, 'error');
         } finally {
             this.setButtonLoading(deleteBtn, false);
         }
@@ -2186,7 +2146,14 @@ class TransactionsManager {
         if (modal) {
             modal.classList.remove('active');
             document.body.style.overflow = '';
+
+            // Clear transaction reference
+            if (this.currentTransaction) {
+                console.log(`🗑️ Clearing transaction reference for ID: ${this.currentTransaction.id}`);
+            }
             this.currentTransaction = null;
+
+            console.log('✅ Delete modal closed and cleaned up');
         }
     }
 
@@ -2199,7 +2166,7 @@ class TransactionsManager {
     }
 
     /**
-     * Show all transactions (remove filters) and apply
+     * Show all transactions (remove filters)
      */
     showAllTransactions() {
         this.currentFilter = {
@@ -2208,40 +2175,66 @@ class TransactionsManager {
             category: 'all',
             amount: 'all',
             search: '',
-            sort: 'newest',
+            sort: 'newest', // Always default to newest first
             startDate: null,
             endDate: null,
             minAmount: null,
             maxAmount: null,
             showArchived: false
         };
-        this.currentPage = 1;
+        this.currentPage = 1; // Always go to page 1
         this.applyFiltersAndRender();
         this.showToast('Showing all transactions', 'info');
     }
 
     /**
-     * ✅ ENHANCED: Initialize notifications with localStorage persistence and cleanup
+     * ✅ GUARANTEED: Refresh all data with newest first sorting maintained
+     */
+    async refreshAllData() {
+        try {
+            console.log('🔄 Refreshing all data...');
+            console.log('🔄 Current page before refresh:', this.currentPage);
+
+            // Load all data in parallel
+            await Promise.all([
+                this.loadAllTransactions(), // This will sort newest first automatically
+                this.loadCompleteSummaryData(),
+                this.loadNotifications()
+            ]);
+
+            console.log('🔄 All data loaded, applying filters and rendering...');
+
+            // Apply current filters and render (will maintain newest first sorting)
+            this.applyFiltersAndRender();
+
+            // Update notification badge
+            this.updateNotificationBadge();
+
+            console.log('✅ All data refreshed successfully with newest first sorting maintained');
+
+        } catch (error) {
+            console.error('❌ Error in refreshAllData:', error);
+            // Don't show toast here as it might conflict with other success messages
+        }
+    }
+
+    /**
+     * Initialize notifications
      */
     async initializeNotifications() {
         try {
-            // Clean up old notifications from localStorage on startup
             this.cleanupOldNotifications();
-
             await this.loadNotifications();
             this.updateNotificationBadge();
-
-            // Setup automatic notification time updates every 15 minutes
             this.setupNotificationRefreshTimer();
-
-            console.log('✅ Notifications initialized with localStorage persistence and auto-refresh');
+            console.log('✅ Notifications initialized');
         } catch (error) {
             console.error('❌ Failed to initialize notifications:', error);
         }
     }
 
     /**
-     * ✅ NEW: Clean up old notifications from localStorage
+     * Clean up old notifications
      */
     cleanupOldNotifications() {
         try {
@@ -2249,7 +2242,6 @@ class TransactionsManager {
             const now = new Date();
             const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-            // Filter out notifications older than 1 day
             const cleaned = notifications.filter(notification => {
                 if (notification.timestamp) {
                     const notificationTime = new Date(notification.timestamp);
@@ -2258,10 +2250,9 @@ class TransactionsManager {
                 return false;
             });
 
-            // Save cleaned notifications back to localStorage
             if (cleaned.length !== notifications.length) {
                 localStorage.setItem('transactionNotifications', JSON.stringify(cleaned));
-                console.log(`🧹 Cleaned ${notifications.length - cleaned.length} old notifications from localStorage`);
+                console.log(`🧹 Cleaned ${notifications.length - cleaned.length} old notifications`);
             }
 
         } catch (error) {
@@ -2270,82 +2261,51 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ FIXED: Setup automatic notification refresh with read state preservation
+     * Setup notification refresh timer
      */
     setupNotificationRefreshTimer() {
-        // Clear any existing timer
         if (this.notificationTimer) {
             clearInterval(this.notificationTimer);
         }
 
-        // Update notification times every 15 minutes
         this.notificationTimer = setInterval(() => {
-            console.log('⏰ Auto-updating notification timestamps');
-
-            // Reload notifications preserving read states
             this.loadNotifications().then(() => {
                 this.updateNotificationBadge();
-
-                // Update display if notifications panel is open
                 const panel = document.getElementById('notifications-panel');
                 if (panel && panel.classList.contains('active')) {
                     this.renderNotifications();
-                    console.log('🔔 Auto-refreshed notifications display');
                 }
             });
-        }, 15 * 60 * 1000); // 15 minutes in milliseconds
-
-        console.log('⏰ Notification refresh timer setup (15 minutes interval)');
+        }, 15 * 60 * 1000); // 15 minutes
     }
 
     /**
-     * ✅ COMPLETELY FIXED: Toggle notifications panel - always works
+     * Toggle notifications panel
      */
     async toggleNotifications() {
-        console.log('🔔 Toggle notifications called');
-
         const panel = document.getElementById('notifications-panel');
-        if (!panel) {
-            console.warn('⚠️ Notifications panel not found');
-            return;
-        }
+        if (!panel) return;
 
         if (panel.classList.contains('active')) {
-            console.log('🔔 Closing notifications panel');
             this.closeNotificationsPanel();
         } else {
-            console.log('🔔 Opening notifications panel');
             await this.showNotificationsPanel();
         }
     }
 
     /**
-     * ✅ COMPLETELY FIXED: Show notifications panel - guaranteed to work every time
+     * Show notifications panel
      */
     async showNotificationsPanel() {
         try {
-            console.log('🔔 Starting to show notifications panel...');
-
             const panel = document.getElementById('notifications-panel');
-            if (!panel) {
-                console.error('❌ Notifications panel not found in DOM');
-                return;
-            }
+            if (!panel) return;
 
-            // Force load fresh notifications every time
-            console.log('🔔 Force loading fresh notifications...');
             await this.loadNotifications();
-
-            console.log('🔔 Notifications loaded:', this.notifications.length);
-
-            // Force render notifications
-            console.log('🔔 Force rendering notifications...');
             this.renderNotifications();
 
-            // Show panel with delay to ensure rendering
             setTimeout(() => {
                 panel.classList.add('active');
-                console.log('✅ Notifications panel opened successfully');
             }, 50);
 
         } catch (error) {
@@ -2365,31 +2325,21 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ COMPLETELY REWRITTEN: Load notifications with proper read state persistence
+     * Load notifications
      */
     async loadNotifications() {
         try {
-            console.log('🔔 Loading notifications with proper state persistence...');
-
-            // Load the persistent read states from storage first
             const readStates = this.loadReadStates();
-            console.log('🔔 Loaded read states:', Object.keys(readStates).length);
-
-            // Generate fresh notifications
             this.notifications = await this.generateTransactionNotifications();
 
-            // Apply saved read states to all notifications
             this.notifications.forEach(notification => {
                 if (notification.persistentId && readStates[notification.persistentId]) {
                     notification.isRead = true;
-                    console.log(`🔔 Applied read state to: ${notification.persistentId}`);
                 }
             });
 
-            // Filter out notifications older than 1 day and sort by time
             this.notifications = this.filterAndSortNotifications(this.notifications);
 
-            console.log('✅ Notifications loaded with states applied:', this.notifications.length);
         } catch (error) {
             console.error('❌ Failed to load notifications:', error);
             this.notifications = [];
@@ -2397,13 +2347,11 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ NEW: Load persistent read states from dedicated storage
+     * Load read states
      */
     loadReadStates() {
         try {
             const readStates = JSON.parse(localStorage.getItem('notificationReadStates') || '{}');
-
-            // Clean old read states (older than 2 days)
             const twoDaysAgo = new Date().getTime() - (2 * 24 * 60 * 60 * 1000);
             const cleanStates = {};
 
@@ -2413,9 +2361,7 @@ class TransactionsManager {
                 }
             });
 
-            // Save cleaned states back
             localStorage.setItem('notificationReadStates', JSON.stringify(cleanStates));
-
             return cleanStates;
         } catch (error) {
             console.error('❌ Error loading read states:', error);
@@ -2424,55 +2370,51 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ NEW: Save persistent read state
+     * Save read state
      */
     saveReadState(persistentId) {
         try {
             const readStates = this.loadReadStates();
             readStates[persistentId] = new Date().getTime();
             localStorage.setItem('notificationReadStates', JSON.stringify(readStates));
-            console.log(`💾 Saved read state for: ${persistentId}`);
         } catch (error) {
             console.error('❌ Error saving read state:', error);
         }
     }
 
     /**
-     * ✅ NEW: Filter notifications older than 1 day and sort by recency
+     * Filter and sort notifications
      */
     filterAndSortNotifications(notifications) {
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-        // Filter out notifications older than 1 day
         let filtered = notifications.filter(notification => {
             if (notification.timestamp) {
                 const notificationTime = new Date(notification.timestamp);
                 return notificationTime > oneDayAgo;
             }
-            return true; // Keep notifications without timestamp for safety
+            return true;
         });
 
-        // Sort by timestamp (newest first)
         filtered.sort((a, b) => {
             const timeA = a.timestamp ? new Date(a.timestamp) : new Date();
             const timeB = b.timestamp ? new Date(b.timestamp) : new Date();
             return timeB - timeA;
         });
 
-        console.log(`🔔 Filtered ${notifications.length - filtered.length} old notifications, kept ${filtered.length}`);
         return filtered;
     }
 
     /**
-     * ✅ SIMPLIFIED: Generate notifications without complex read state logic
+     * Generate transaction notifications
      */
     async generateTransactionNotifications() {
         const notifications = [];
         const now = new Date();
 
         try {
-            // Check for large expenses in current month
+            // Check for large expenses
             const largeExpenses = this.summaryData.currentMonth.transactions
                 .filter(t => t.type === 'EXPENSE' && parseFloat(t.amount) > 100)
                 .sort((a, b) => b.amount - a.amount);
@@ -2486,11 +2428,11 @@ class TransactionsManager {
                     message: `Large expense of €${largeExpenses[0].amount} recorded for ${this.translateCategoryName(largeExpenses[0].categoryName)}`,
                     type: 'warning',
                     timestamp: expenseTime.toISOString(),
-                    isRead: false // Will be updated by loadNotifications
+                    isRead: false
                 });
             }
 
-            // Check for daily spending pattern
+            // Check for daily spending
             if (this.summaryData.today.totalCount > 0) {
                 const todayExpenses = this.summaryData.today.transactions
                     .filter(t => t.type === 'EXPENSE')
@@ -2505,40 +2447,12 @@ class TransactionsManager {
                         message: `You've spent €${todayExpenses.toFixed(2)} today across ${this.summaryData.today.totalCount} transactions`,
                         type: 'info',
                         timestamp: oneHourAgo.toISOString(),
-                        isRead: false // Will be updated by loadNotifications
+                        isRead: false
                     });
                 }
             }
 
-            // Monthly progress notification
-            if (this.summaryData.currentMonth.totalExpenses > 500) {
-                const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
-                notifications.push({
-                    id: Date.now() + 3,
-                    persistentId: 'monthly-summary-' + now.getFullYear() + '-' + (now.getMonth() + 1),
-                    title: 'Monthly Spending Summary',
-                    message: `This month's expenses: €${this.summaryData.currentMonth.totalExpenses.toFixed(2)} across ${this.summaryData.currentMonth.transactions.filter(t => t.type === 'EXPENSE').length} transactions`,
-                    type: 'info',
-                    timestamp: twoHoursAgo.toISOString(),
-                    isRead: false // Will be updated by loadNotifications
-                });
-            }
-
-            // Balance warning if negative
-            if (this.summaryData.allTime.balance < 0) {
-                const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000);
-                notifications.push({
-                    id: Date.now() + 4,
-                    persistentId: 'low-balance-warning',
-                    title: 'Low Balance Alert',
-                    message: `Your current balance is €${this.summaryData.allTime.balance.toFixed(2)}. Consider reviewing your expenses.`,
-                    type: 'warning',
-                    timestamp: thirtyMinutesAgo.toISOString(),
-                    isRead: false // Will be updated by loadNotifications
-                });
-            }
-
-            // Add session notifications (user actions)
+            // Add session notifications
             notifications.push(...this.getSessionNotifications());
 
         } catch (error) {
@@ -2549,37 +2463,32 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ FIXED: Get session notifications with localStorage persistence
+     * Get session notifications
      */
     getSessionNotifications() {
-        // Use localStorage instead of sessionStorage to persist across tab closures
         const sessionNotifications = JSON.parse(localStorage.getItem('transactionNotifications') || '[]');
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-        // Filter out notifications older than 1 day
         const filtered = sessionNotifications.filter(notification => {
             if (notification.timestamp) {
                 const notificationTime = new Date(notification.timestamp);
                 return notificationTime > oneDayAgo;
             }
-            return false; // Remove notifications without proper timestamp
+            return false;
         });
 
-        // Update localStorage to remove old notifications
         if (filtered.length !== sessionNotifications.length) {
             localStorage.setItem('transactionNotifications', JSON.stringify(filtered));
-            console.log(`🔔 Cleaned ${sessionNotifications.length - filtered.length} old session notifications`);
         }
 
         return filtered;
     }
 
     /**
-     * ✅ FIXED: Add notification with localStorage persistence
+     * Add notification
      */
     addNotification(notification) {
-        // Use localStorage instead of sessionStorage to persist across tab closures
         const sessionNotifications = JSON.parse(localStorage.getItem('transactionNotifications') || '[]');
 
         const newNotification = {
@@ -2591,33 +2500,21 @@ class TransactionsManager {
         };
 
         sessionNotifications.unshift(newNotification);
-
-        // Keep only last 20 notifications (increased from 10)
-        sessionNotifications.splice(20);
+        sessionNotifications.splice(20); // Keep only last 20
 
         localStorage.setItem('transactionNotifications', JSON.stringify(sessionNotifications));
-
-        // Update UI
         this.updateNotificationBadge();
-
-        console.log('✅ New notification added to localStorage:', newNotification.title);
     }
 
     /**
-     * ✅ ENHANCED: Render notifications with dynamic time updates
+     * Render notifications
      */
     renderNotifications() {
         const container = document.getElementById('notifications-list');
+        if (!container) return;
 
-        if (!container) {
-            console.warn('⚠️ Notifications list container not found');
-            return;
-        }
-
-        // Update timestamps for all notifications before rendering
         this.updateNotificationTimestamps();
 
-        // Render notifications
         if (this.notifications.length === 0) {
             container.innerHTML = `
                 <div class="no-notifications">
@@ -2641,16 +2538,13 @@ class TransactionsManager {
             `).join('');
         }
 
-        // Refresh icons
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
-
-        console.log('✅ Notifications rendered:', this.notifications.length);
     }
 
     /**
-     * ✅ NEW: Update notification timestamps dynamically
+     * Update notification timestamps
      */
     updateNotificationTimestamps() {
         this.notifications.forEach(notification => {
@@ -2678,7 +2572,7 @@ class TransactionsManager {
     }
 
     /**
-     * Get notification icon based on type
+     * Get notification icon
      */
     getNotificationIcon(type) {
         const icons = {
@@ -2691,39 +2585,26 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ FIXED: Mark notification as read with localStorage persistence
+     * Mark notification as read
      */
     async markNotificationAsRead(notificationId) {
         try {
-            console.log(`🔔 Marking notification ${notificationId} as read`);
-
-            // Find the notification in current array
             const notification = this.notifications.find(n => n.id === notificationId);
-            if (!notification) {
-                console.warn(`⚠️ Notification ${notificationId} not found`);
-                return;
-            }
+            if (!notification) return;
 
-            // Mark as read in current state
             notification.isRead = true;
-            console.log(`✅ Local notification ${notificationId} marked as read`);
 
-            // Save to persistent storage if it has a persistent ID
             if (notification.persistentId) {
                 this.saveReadState(notification.persistentId);
-                console.log(`💾 Persistent read state saved for: ${notification.persistentId}`);
             }
 
-            // Also update localStorage for user action notifications
             const sessionNotifications = JSON.parse(localStorage.getItem('transactionNotifications') || '[]');
             const sessionNotification = sessionNotifications.find(n => n.id === notificationId);
             if (sessionNotification) {
                 sessionNotification.isRead = true;
                 localStorage.setItem('transactionNotifications', JSON.stringify(sessionNotifications));
-                console.log(`✅ localStorage updated for ID: ${notificationId}`);
             }
 
-            // Immediately update UI
             this.updateNotificationBadge();
             this.renderNotifications();
 
@@ -2733,34 +2614,24 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ FIXED: Mark all notifications as read with localStorage persistence
+     * Mark all notifications as read
      */
     async markAllNotificationsAsRead() {
         try {
-            console.log('🔔 Marking all notifications as read');
-
-            // Mark all notifications as read in current state
             this.notifications.forEach(notification => {
                 notification.isRead = true;
-
-                // Save persistent read state for each notification
                 if (notification.persistentId) {
                     this.saveReadState(notification.persistentId);
                 }
             });
 
-            // Update all localStorage notifications
             const sessionNotifications = JSON.parse(localStorage.getItem('transactionNotifications') || '[]');
             sessionNotifications.forEach(notification => {
                 notification.isRead = true;
             });
             localStorage.setItem('transactionNotifications', JSON.stringify(sessionNotifications));
 
-            console.log('✅ All notifications marked as read with localStorage persistence');
-
             this.showToast('All notifications marked as read', 'success');
-
-            // Update UI immediately
             this.updateNotificationBadge();
             this.renderNotifications();
 
@@ -2771,86 +2642,24 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ NEW: Smart relative time with 15-minute and hourly intervals
+     * Get smart relative time
      */
     getSmartRelativeTime(timestamp) {
         const now = new Date();
         const notificationTime = new Date(timestamp);
         const diffInMinutes = Math.floor((now - notificationTime) / (1000 * 60));
 
-        // Just now (0-14 minutes)
         if (diffInMinutes < 15) {
             return 'Just now';
-        }
-        // 15-minute intervals up to 1 hour
-        else if (diffInMinutes < 60) {
+        } else if (diffInMinutes < 60) {
             const quarterHours = Math.floor(diffInMinutes / 15) * 15;
             return `${quarterHours} minutes ago`;
-        }
-        // Hourly intervals up to 24 hours
-        else if (diffInMinutes < 1440) { // 24 * 60 = 1440 minutes in a day
+        } else if (diffInMinutes < 1440) {
             const hours = Math.floor(diffInMinutes / 60);
             return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-        }
-        // Should not reach here as notifications older than 1 day are filtered out
-        else {
+        } else {
             return '1 day ago';
         }
-    }
-
-    /**
-     * ✅ DEBUGGING: Enhanced refresh function with detailed logging
-     */
-    async refreshAllData() {
-        try {
-            console.log('🔥 DEBUG: refreshAllData started');
-
-            await Promise.all([
-                this.loadAllTransactions().then(() => console.log('🔥 DEBUG: loadAllTransactions completed')).catch(err => console.error('🔥 DEBUG: loadAllTransactions failed:', err)),
-                this.loadCompleteSummaryData().then(() => console.log('🔥 DEBUG: loadCompleteSummaryData completed')).catch(err => console.error('🔥 DEBUG: loadCompleteSummaryData failed:', err)),
-                this.loadNotifications().then(() => console.log('🔥 DEBUG: loadNotifications completed')).catch(err => console.error('🔥 DEBUG: loadNotifications failed:', err))
-            ]);
-
-            console.log('🔥 DEBUG: All parallel data loading completed');
-
-            // Apply current filters and render
-            console.log('🔥 DEBUG: Starting applyFiltersAndRender');
-            this.applyFiltersAndRender();
-            console.log('🔥 DEBUG: applyFiltersAndRender completed');
-
-            console.log('🔥 DEBUG: Starting updateNotificationBadge');
-            this.updateNotificationBadge();
-            console.log('🔥 DEBUG: updateNotificationBadge completed');
-
-            console.log('✅ All data refreshed successfully');
-        } catch (error) {
-            console.error('🔥 DEBUG: Error in refreshAllData:', error);
-            // Don't show toast here as it might conflict with deletion success message
-        }
-    }
-
-    /**
-     * Show loading state
-     */
-    showLoadingState() {
-        const loadingState = document.getElementById('loading-state');
-        const transactionsList = document.getElementById('transactions-list');
-        const emptyState = document.getElementById('empty-state');
-
-        if (loadingState) loadingState.style.display = 'flex';
-        if (transactionsList) transactionsList.style.display = 'none';
-        if (emptyState) emptyState.style.display = 'none';
-    }
-
-    /**
-     * Hide loading state
-     */
-    hideLoadingState() {
-        const loadingState = document.getElementById('loading-state');
-        const transactionsList = document.getElementById('transactions-list');
-
-        if (loadingState) loadingState.style.display = 'none';
-        if (transactionsList) transactionsList.style.display = 'block';
     }
 
     /**
@@ -2992,7 +2801,7 @@ class TransactionsManager {
     }
 
     /**
-     * ✅ ENHANCED: Generic API fetch function with better error handling for deletion
+     * Generic API fetch function with proper error handling
      */
     async fetchAPI(endpoint, method = 'GET', data = null) {
         const url = `${this.API_BASE}${endpoint}`;
@@ -3012,21 +2821,20 @@ class TransactionsManager {
             console.log(`🌐 Making ${method} request to: ${url}`);
             const response = await fetch(url, options);
 
-            // Handle different response types
             if (!response.ok) {
                 let errorMessage = `Request failed with status ${response.status}`;
 
                 // Special handling for DELETE requests
                 if (method === 'DELETE' && response.status === 404) {
                     console.log('ℹ️ DELETE 404: Resource already deleted, treating as success');
-                    return { success: true, message: 'Resource deleted' };
+                    return { success: true, message: 'Resource deleted successfully' };
                 }
 
+                // Try to get error details
                 try {
                     const errorData = await response.json();
                     errorMessage = errorData.error || errorData.message || errorMessage;
                 } catch (e) {
-                    // If JSON parsing fails, use status text
                     errorMessage = response.statusText || errorMessage;
                 }
 
@@ -3034,20 +2842,36 @@ class TransactionsManager {
                 throw new Error(errorMessage);
             }
 
-            // Handle different content types
+            // Handle successful responses
             const contentType = response.headers.get('content-type');
+
+            // Special handling for DELETE requests
+            if (method === 'DELETE') {
+                if (response.status === 204 || !contentType) {
+                    console.log(`✅ ${method} request successful (No Content)`);
+                    return { success: true, message: 'Resource deleted successfully' };
+                }
+            }
+
+            // Handle JSON responses
             if (contentType && contentType.includes('application/json')) {
                 const result = await response.json();
-                console.log(`✅ ${method} request successful:`, result);
-                return result;
-            } else {
-                const result = await response.text();
-                console.log(`✅ ${method} request successful (text):`, result);
+                console.log(`✅ ${method} request successful (JSON):`, result);
                 return result;
             }
 
+            // Handle text responses
+            const result = await response.text();
+
+            if (!result && method === 'DELETE') {
+                console.log(`✅ ${method} request successful (Empty Response)`);
+                return { success: true, message: 'Resource deleted successfully' };
+            }
+
+            console.log(`✅ ${method} request successful (Text):`, result);
+            return result || { success: true };
+
         } catch (error) {
-            // Network or other errors
             if (error.name === 'TypeError' && error.message.includes('fetch')) {
                 const networkError = new Error('Network error. Please check your connection and try again.');
                 console.error('❌ Network error:', networkError.message);
@@ -3059,7 +2883,7 @@ class TransactionsManager {
     }
 }
 
-// Initialize when DOM is ready
+// ✅ Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     // Make instance globally available for onclick handlers
     window.transactionsManager = new TransactionsManager();
