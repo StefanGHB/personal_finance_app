@@ -681,6 +681,7 @@
     // Global utilities for external pages
     window.DashboardAPI = {
         notify: function(title, message, type = 'info') {
+            console.log(`🔔 DashboardAPI.notify called: ${title} - ${message}`);
             if (window.dashboardInstance && window.dashboardInstance.addNotification) {
                 window.dashboardInstance.addNotification({
                     title: title,
@@ -688,6 +689,7 @@
                     type: type,
                     category: 'external'
                 });
+                console.log('✅ Notification added - badge should show immediately');
             }
         },
 
@@ -699,10 +701,39 @@
 
         isReady: function() {
             return !!(window.dashboardInstance && window.dashboardInstance.notifications);
+        },
+
+        // ✅ Test function to verify badge works
+        testBadge: function() {
+            console.log('🧪 Testing notification badge...');
+            this.notify('Test Notification', 'Badge should show immediately!', 'success');
+        }
+    };
+
+    // ✅ CRITICAL: Global test function for immediate testing
+    window.testNotificationBadge = function() {
+        console.log('🧪 Global test: Adding notification...');
+
+        if (window.dashboardInstance) {
+            window.dashboardInstance.addNotification({
+                title: 'TEST BADGE',
+                message: 'This should show badge IMMEDIATELY',
+                type: 'warning',
+                category: 'test'
+            });
+
+            // Force badge update with delay for safety
+            setTimeout(() => {
+                window.dashboardInstance.forceShowBadgeNow();
+                console.log('✅ Test notification added and badge forced');
+            }, 100);
+        } else {
+            console.error('❌ Dashboard instance not ready yet');
         }
     };
 
     console.log('📊 Dashboard API ready for external integration');
+    console.log('🧪 Test badge with: window.testNotificationBadge() or window.DashboardAPI.testBadge()');
 </script>
 </body>
 </html>

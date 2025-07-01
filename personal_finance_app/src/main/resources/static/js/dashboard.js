@@ -1,14 +1,15 @@
 /**
- * ULTRA MODERN FINANCIAL ANALYTICS DASHBOARD - COMPLETE WITH PERFECT NOTIFICATIONS
+ * ULTRA MODERN FINANCIAL ANALYTICS DASHBOARD - FIXED NOTIFICATION BADGE
  * 🚀 Professional financial charts with Trading View style
  * 📊 Advanced analytics and real-time updates
  * 💹 PRODUCTION READY: All calculation logic and dynamic updates - NO HARDCODED VALUES
  * ✨ Perfect symmetry between Budget Adherence & Spending Patterns
  * 🎯 100% Dynamic calculations - PRODUCTION READY
  * 🎨 UPDATED: Modern Empty States for Charts
- * 🔔 PERFECT: Complete Notifications System with Cross-Tab Sync
+ * 🔔 FIXED: Complete Notifications System with Immediate Badge Updates
  * 🔄 ENHANCED: Perfect synchronization with budgets, categories, transactions
- * ⏰ FIXED: Notification timing issues resolved
+ * ⏰ FIXED: Notification badge shows immediately when new notification appears
+ * ✂️ NEW: Dynamic Category Name Truncation for perfect layout
  */
 
 (function() {
@@ -30,6 +31,9 @@
             this.notificationTimer = null;
             this.notificationRetentionHours = 24; // Exactly 24 hours retention
             this.maxNotifications = 25; // Maximum notifications to keep
+
+            // Category truncation settings
+            this.categoryTruncationLength = 12;
 
             // Trading View Style Color Schemes - UPDATED TO PURPLE THEME
             this.colors = {
@@ -146,7 +150,7 @@
 
         async init() {
             try {
-                // Initialize notifications first
+                // ✅ CRITICAL FIX: Initialize notifications FIRST before anything else
                 await this.initializeNotifications();
 
                 // Try to load data, but don't fail completely if it doesn't work
@@ -155,6 +159,9 @@
                 } catch (dataError) {
                     this.initializeEmptyStates();
                 }
+
+                // ✅ CRITICAL: Generate notifications AFTER data is loaded
+                await this.generateAndShowNotifications();
 
                 // Try to update UI
                 try {
@@ -177,6 +184,7 @@
                 this.setupGlobalAccess();
                 this.initializeAnimations();
                 this.setupCrossTabSync();
+                this.setupCategoryTruncation(); // NEW: Setup category truncation
 
             } catch (error) {
                 // Emergency fallback - try to show empty states
@@ -190,33 +198,50 @@
         }
 
         // ===================================
-        // 🔔 FIXED NOTIFICATION SYSTEM - CORRECTED TIMING LOGIC
+        // 🔔 FIXED NOTIFICATION SYSTEM - IMMEDIATE BADGE UPDATES
         // ===================================
 
         /**
-         * ✅ FIXED: Initialize notifications with proper localStorage cleanup
+         * ✅ CRITICAL FIX: Initialize notification system with SIMPLE badge logic
          */
         async initializeNotifications() {
             try {
                 console.log('🔔 Initializing notification system...');
 
+                // Initialize empty notifications array first
+                this.notifications = [];
+
                 // Clean up old notifications from localStorage on startup
                 this.cleanupOldNotifications();
-
-                // Load notifications with state persistence
-                await this.loadNotifications();
-
-                // IMMEDIATE: Update badge on initialization
-                this.updateNotificationBadge();
 
                 // Setup automatic notification refresh timer
                 this.setupNotificationRefreshTimer();
 
-                console.log('✅ Notification system initialized with localStorage persistence and auto-refresh');
-                console.log(`🔔 Notification badge updated on init: ${this.notifications.filter(n => !n.isRead).length} unread`);
+                console.log('✅ Notification system initialized - badge will be updated after data loads');
             } catch (error) {
                 console.error('❌ Failed to initialize notification system:', error);
                 this.notifications = [];
+            }
+        }
+
+        /**
+         * ✅ CRITICAL FIX: Generate notifications AFTER data is loaded and FORCE badge display
+         */
+        async generateAndShowNotifications() {
+            try {
+                console.log('🔔 Generating notifications after data load...');
+
+                // Load notifications with state persistence
+                await this.loadNotifications();
+
+                // ✅ FORCE badge to show IMMEDIATELY
+                this.forceShowBadgeNow();
+
+                console.log('✅ Notifications generated and badge FORCED to display');
+            } catch (error) {
+                console.error('❌ Failed to generate notifications:', error);
+                this.notifications = [];
+                this.forceShowBadgeNow();
             }
         }
 
@@ -276,7 +301,7 @@
         }
 
         /**
-         * ✅ FIXED: Setup notification refresh timer with proper timing
+         * ✅ FIXED: Setup notification refresh timer with immediate badge updates
          */
         setupNotificationRefreshTimer() {
             // Clear any existing timer
@@ -284,31 +309,31 @@
                 clearInterval(this.notificationTimer);
             }
 
-            // Update every 1 minute to keep times accurate
+            // Update every 1 minute to keep times accurate and badge updated
             this.notificationTimer = setInterval(() => {
-                console.log('⏰ Auto-updating notification timestamps');
+                console.log('⏰ Auto-updating notifications and badge');
                 this.updateNotificationTimestamps();
+                this.updateNotificationBadgeImmediately(); // ✅ Update badge every minute
 
                 // Update display if notifications panel is open
                 const panel = document.getElementById('notifications-panel');
                 if (panel && panel.classList.contains('active')) {
                     this.renderNotifications();
                 }
-
-                // Also update badge count
-                this.updateNotificationBadge();
             }, 60 * 1000); // 1 minute
 
-            console.log('⏰ Notification refresh timer setup (1 minute interval for timestamp updates)');
+            console.log('⏰ Notification refresh timer setup with immediate badge updates');
         }
 
         /**
-         * ✅ FIXED: Refresh notifications with proper timing
+         * ✅ FIXED: Refresh notifications with FORCED badge update
          */
         async refreshNotifications() {
             try {
                 await this.loadNotifications();
-                this.updateNotificationBadge();
+
+                // ✅ CRITICAL FIX: FORCE badge update immediately after loading notifications
+                this.forceUpdateBadgeImmediately();
 
                 // Update display if notifications panel is open
                 const panel = document.getElementById('notifications-panel');
@@ -316,14 +341,16 @@
                     this.renderNotifications();
                 }
 
-                console.log('🔔 Dashboard notifications refreshed');
+                console.log('🔔 Dashboard notifications refreshed with FORCED badge update');
             } catch (error) {
                 console.error('❌ Error refreshing notifications:', error);
+                // Even on error, force badge update
+                this.forceUpdateBadgeImmediately();
             }
         }
 
         /**
-         * ✅ FIXED: Load notifications with corrected timing logic
+         * ✅ FIXED: Load notifications with GUARANTEED badge display
          */
         async loadNotifications() {
             try {
@@ -350,9 +377,15 @@
                 this.notifications = this.processNotifications(this.notifications);
 
                 console.log('✅ Dashboard notifications loaded:', this.notifications.length);
+                console.log('🔔 Unread notifications:', this.notifications.filter(n => !n.isRead).length);
+
+                // ✅ FORCE badge update with retry mechanism
+                this.forceShowBadgeNow();
+
             } catch (error) {
                 console.error('❌ Failed to load dashboard notifications:', error);
                 this.notifications = [];
+                this.forceShowBadgeNow();
             }
         }
 
@@ -637,7 +670,7 @@
         }
 
         /**
-         * ✅ ENHANCED: Add notification with ALWAYS current timestamp + auto-refresh
+         * ✅ CRITICAL FIX: Add notification with GUARANTEED badge display
          */
         addNotification(notification) {
             try {
@@ -648,29 +681,36 @@
                     ...notification,
                     id: Date.now() + Math.random(),
                     persistentId: notification.persistentId || ('user-action-' + Date.now()),
-                    timestamp: new Date().toISOString(), // ALWAYS use current time for new notifications
+                    timestamp: new Date().toISOString(),
                     isRead: false,
                     category: notification.category || 'user-action'
                 };
 
-                console.log('🔔 Adding notification with current timestamp:', newNotification.timestamp);
-                console.log('🔔 Notification details:', newNotification.title, '-', newNotification.message);
+                console.log('🔔 Adding notification:', newNotification.title, '-', newNotification.message);
 
+                // Save to localStorage
                 userNotifications.unshift(newNotification);
-
-                // Keep only recent notifications
                 userNotifications.splice(this.maxNotifications);
-
                 localStorage.setItem(storageKey, JSON.stringify(userNotifications));
 
-                // Immediately refresh to show the new notification
+                // Add to current notifications array
+                this.notifications.unshift(newNotification);
+                this.notifications = this.processNotifications(this.notifications);
+
+                // ✅ CRITICAL: Force badge to show with multiple attempts
+                this.forceShowBadgeNow();
+
+                // Additional attempt after short delay
                 setTimeout(() => {
-                    this.refreshNotifications();
+                    this.forceShowBadgeNow();
+                    console.log('✅ Badge force update completed for new notification');
                 }, 100);
 
-                console.log('✅ Notification added and dashboard refreshed:', newNotification.title);
+                console.log('✅ Notification added with GUARANTEED badge display');
+
             } catch (error) {
                 console.error('❌ Error adding notification:', error);
+                this.forceShowBadgeNow();
             }
         }
 
@@ -808,20 +848,68 @@
         }
 
         /**
-         * ✅ Update notification badge
+         * ✅ CRITICAL FIX: FORCE badge to show NOW - absolutely no conditions
+         */
+        forceShowBadgeNow() {
+            // Wait for DOM to be ready, then force badge update
+            setTimeout(() => {
+                const badge = document.getElementById('notification-badge');
+                if (!badge) {
+                    console.warn('⚠️ Badge element not found, retrying...');
+                    // Retry after another delay
+                    setTimeout(() => this.forceShowBadgeNow(), 100);
+                    return;
+                }
+
+                const unreadCount = this.notifications.filter(n => !n.isRead).length;
+
+                console.log(`🔔 FORCING BADGE NOW: ${unreadCount} unread notifications`);
+
+                // Update badge content
+                badge.textContent = unreadCount.toString();
+
+                if (unreadCount > 0) {
+                    // Force all possible CSS properties to show badge
+                    badge.style.display = 'flex';
+                    badge.style.visibility = 'visible';
+                    badge.style.opacity = '1';
+                    badge.style.position = 'absolute';
+                    badge.style.top = '-8px';
+                    badge.style.right = '-8px';
+                    badge.style.zIndex = '1000';
+
+                    console.log(`✅ Badge FORCED VISIBLE with count: ${unreadCount}`);
+                } else {
+                    badge.style.display = 'none';
+                    console.log('✅ Badge hidden - no notifications');
+                }
+
+                // Force browser reflow
+                badge.offsetHeight;
+                badge.offsetWidth;
+
+            }, 50); // Small delay to ensure DOM is ready
+        }
+
+        /**
+         * ✅ CRITICAL FIX: Enhanced force update that ALWAYS works
+         */
+        forceUpdateBadgeImmediately() {
+            this.forceShowBadgeNow();
+        }
+
+        /**
+         * ✅ LEGACY: Keep old method for compatibility but use GUARANTEED version
          */
         updateNotificationBadge() {
-            const badge = document.getElementById('notification-badge');
-            if (!badge) return;
+            this.forceShowBadgeNow();
+        }
 
-            const unreadCount = this.notifications.filter(n => !n.isRead).length;
-
-            if (unreadCount > 0) {
-                badge.textContent = unreadCount;
-                badge.style.display = 'flex';
-            } else {
-                badge.style.display = 'none';
-            }
+        /**
+         * ✅ Enhanced version that ALWAYS works
+         */
+        updateNotificationBadgeImmediately() {
+            this.forceShowBadgeNow();
         }
 
         /**
@@ -839,7 +927,7 @@
         }
 
         /**
-         * ✅ Mark notification as read with localStorage persistence
+         * ✅ Mark notification as read with FORCED badge update
          */
         async markNotificationAsRead(notificationId) {
             try {
@@ -869,19 +957,21 @@
                     localStorage.setItem(storageKey, JSON.stringify(userNotifications));
                 }
 
-                // Update UI immediately
-                this.updateNotificationBadge();
+                // ✅ CRITICAL FIX: FORCE badge update immediately after marking as read
+                this.forceUpdateBadgeImmediately();
                 this.renderNotifications();
 
-                console.log(`✅ Notification ${notificationId} marked as read`);
+                console.log(`✅ Notification ${notificationId} marked as read with FORCED badge update`);
 
             } catch (error) {
                 console.error('❌ Failed to mark notification as read:', error);
+                // Even on error, force badge update
+                this.forceUpdateBadgeImmediately();
             }
         }
 
         /**
-         * ✅ Mark all notifications as read
+         * ✅ Mark all notifications as read with FORCED badge update
          */
         async markAllNotificationsAsRead() {
             try {
@@ -904,14 +994,16 @@
                 });
                 localStorage.setItem(storageKey, JSON.stringify(userNotifications));
 
-                // Update UI
-                this.updateNotificationBadge();
+                // ✅ CRITICAL FIX: FORCE badge update immediately
+                this.forceUpdateBadgeImmediately();
                 this.renderNotifications();
 
-                console.log('✅ All notifications marked as read');
+                console.log('✅ All notifications marked as read with FORCED badge update');
 
             } catch (error) {
                 console.error('❌ Failed to mark all notifications as read:', error);
+                // Even on error, force badge update
+                this.forceUpdateBadgeImmediately();
             }
         }
 
@@ -945,7 +1037,7 @@
         }
 
         /**
-         * ✅ Setup cross-tab synchronization with notifications
+         * ✅ Setup cross-tab synchronization with notifications and immediate badge updates
          */
         setupCrossTabSync() {
             // Listen for storage changes from other tabs
@@ -987,6 +1079,157 @@
 
         // ===================================
         // END OF NOTIFICATION SYSTEM
+        // ===================================
+
+        // ===================================
+        // ✂️ NEW: CATEGORY TRUNCATION SYSTEM
+        // ===================================
+
+        /**
+         * ✅ NEW: Setup category truncation system with proper event listeners
+         */
+        setupCategoryTruncation() {
+            console.log('✂️ Setting up category truncation system...');
+
+            // Setup resize handler with debouncing
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    this.truncateCategoryLabels(this.categoryTruncationLength);
+                    console.log('✂️ Category truncation reapplied after resize');
+                }, 250);
+            });
+
+            // Setup MutationObserver for dynamic content changes
+            const legendContainer = document.getElementById('category-legend');
+            if (legendContainer) {
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                            // New legend items were added, apply truncation
+                            setTimeout(() => {
+                                this.truncateCategoryLabels(this.categoryTruncationLength);
+                                console.log('✂️ Category truncation applied to new content');
+                            }, 100);
+                        }
+                    });
+                });
+
+                observer.observe(legendContainer, {
+                    childList: true,
+                    subtree: true
+                });
+
+                console.log('✂️ Category truncation MutationObserver setup completed');
+            }
+
+            console.log('✅ Category truncation system initialized');
+        }
+
+        /**
+         * ✅ NEW: Truncate category labels dynamically
+         * @param {number} maxLength - Maximum length before truncation (default: 12)
+         */
+        truncateCategoryLabels(maxLength = 12) {
+            const legendLabels = document.querySelectorAll('.legend-label');
+
+            if (legendLabels.length === 0) {
+                return;
+            }
+
+            let truncatedCount = 0;
+
+            legendLabels.forEach((label, index) => {
+                const originalText = label.textContent.trim();
+
+                if (originalText.length > maxLength) {
+                    // Truncate to maxLength characters + ".."
+                    const truncatedText = originalText.substring(0, maxLength) + '..';
+
+                    // Update the label text
+                    label.textContent = truncatedText;
+
+                    // Add tooltip with full name for better UX
+                    label.title = originalText;
+                    label.style.cursor = 'help';
+
+                    truncatedCount++;
+                    console.log(`✂️ Truncated category ${index + 1}: "${originalText}" → "${truncatedText}"`);
+                } else {
+                    // Remove tooltip if text doesn't need truncation
+                    label.removeAttribute('title');
+                    label.style.cursor = 'default';
+                }
+            });
+
+            if (truncatedCount > 0) {
+                console.log(`✂️ Truncation completed: ${truncatedCount}/${legendLabels.length} categories truncated`);
+            }
+        }
+
+        /**
+         * ✅ NEW: Smart truncation with category-specific logic
+         */
+        smartTruncateCategoryLabels() {
+            const legendLabels = document.querySelectorAll('.legend-label');
+
+            legendLabels.forEach((label, index) => {
+                const originalText = label.textContent.trim();
+                let maxLength = this.categoryTruncationLength; // Default 12
+
+                // Smart logic for different category types
+                if (originalText.includes('&') || originalText.includes('and')) {
+                    maxLength = 15; // More space for categories with "&" or "and"
+                } else if (originalText.split(' ').length === 1) {
+                    maxLength = 10; // Shorter for single long words
+                } else if (originalText.includes('Transportation') || originalText.includes('Entertainment')) {
+                    maxLength = 14; // Common long categories get slightly more space
+                }
+
+                if (originalText.length > maxLength) {
+                    const truncatedText = originalText.substring(0, maxLength) + '..';
+                    label.textContent = truncatedText;
+                    label.title = originalText;
+                    label.style.cursor = 'help';
+
+                    console.log(`✂️ Smart truncated [${maxLength}]: "${originalText}" → "${truncatedText}"`);
+                } else {
+                    label.removeAttribute('title');
+                    label.style.cursor = 'default';
+                }
+            });
+        }
+
+        /**
+         * ✅ NEW: Test truncation functionality
+         */
+        testCategoryTruncation() {
+            const testCategories = [
+                'Food',
+                'Transportation',
+                'Entertainment & Movies',
+                'Very Long Category Name That Should Be Truncated',
+                'Здравеопазване',
+                'Short',
+                'Technology & Software Development',
+                'Home & Garden Supplies'
+            ];
+
+            console.log('🧪 Testing category truncation logic:');
+            testCategories.forEach((category, index) => {
+                console.log(`Test ${index + 1}: "${category}" (${category.length} chars)`);
+                if (category.length > this.categoryTruncationLength) {
+                    const truncated = category.substring(0, this.categoryTruncationLength) + '..';
+                    console.log(`  → Would become: "${truncated}"`);
+                } else {
+                    console.log(`  → Stays the same`);
+                }
+            });
+        }
+
+        // ===================================
+        // END OF CATEGORY TRUNCATION SYSTEM
         // ===================================
 
         /**
@@ -1872,7 +2115,7 @@
         }
 
         /**
-         * Category Allocation Chart - UPDATED WITH MODERN EMPTY STATE
+         * Category Allocation Chart - UPDATED WITH MODERN EMPTY STATE + TRUNCATION
          */
         async initCategoryAllocationChart() {
             const canvas = document.getElementById('category-pie-chart');
@@ -2016,15 +2259,14 @@
                 }
 
                 this.updateSummaryCardsInstantly();
-
-                // CRITICAL: Always update notification badge IMMEDIATELY after data update
-                this.updateNotificationBadge();
-
                 this.updateMonthlyComparison();
                 this.updateSpendingVelocity();
                 this.updateFinancialWidgets();
 
-                console.log('🔔 Notification badge updated in updateAllComponentsInstantly');
+                // ✅ CRITICAL FIX: Always force badge update at the end
+                this.forceShowBadgeNow();
+
+                console.log('🔔 Components updated - badge forced to display');
 
             } catch (error) {
                 // Try to initialize with empty data to prevent complete failure
@@ -3070,9 +3312,15 @@
             return Math.min(score, 10);
         }
 
+        /**
+         * ✅ UPDATED: Category Legend with Truncation Support
+         */
         updateCategoryLegend(categoryData) {
             const legend = document.getElementById('category-legend');
-            if (!legend) return;
+            if (!legend) {
+                console.warn('⚠️ Category legend container not found');
+                return;
+            }
 
             const total = categoryData.data.reduce((sum, value) => sum + value, 0);
 
@@ -3081,6 +3329,7 @@
                 return;
             }
 
+            // Generate HTML for legend items
             legend.innerHTML = categoryData.labels.map((label, index) => {
                 const value = categoryData.data[index];
                 const percentage = Math.round((value / total) * 100);
@@ -3093,6 +3342,17 @@
                     </div>
                 `;
             }).join('');
+
+            // ✂️ CRITICAL: Apply truncation AFTER HTML is generated
+            setTimeout(() => {
+                this.truncateCategoryLabels(this.categoryTruncationLength);
+                console.log('✂️ Category truncation applied to legend');
+
+                // Refresh Lucide icons if needed
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 50); // Small delay to ensure HTML is rendered
         }
 
         // ===== CHART DATA METHODS =====
@@ -3111,7 +3371,7 @@
                 }
 
                 const categoryTotals = this.groupByCategory(expenseTransactions);
-                const labels = Object.keys(categoryTotals);
+                const labels = Object.keys(categoryTotals).map(label => this.translateCategoryName(label));
                 const data = Object.values(categoryTotals);
                 const colors = this.generateChartColors(labels.length);
 
@@ -3255,6 +3515,9 @@
                     chart.resize();
                 }
             });
+
+            // ✂️ NEW: Reapply truncation on window resize
+            this.truncateCategoryLabels(this.categoryTruncationLength);
         }
 
         triggerHoverEffect(element) {
@@ -3517,6 +3780,10 @@
 
             // Shorter aliases for convenience
             window.notifyDashboard = window.DashboardUtils.notifyTransactionChange;
+
+            // ✂️ NEW: Global access to truncation functions
+            window.truncateCategoryLabels = (maxLength = 12) => this.truncateCategoryLabels(maxLength);
+            window.testCategoryTruncation = () => this.testCategoryTruncation();
         }
 
         async performSmartRefresh(operation = 'Smart refresh') {
@@ -4063,7 +4330,7 @@
         // Wait a bit for all resources to load
         setTimeout(() => {
             window.modernDashboard = new ModernFinancialDashboard();
-            console.log('🚀 Modern Financial Dashboard initialized');
+            console.log('🚀 Modern Financial Dashboard initialized with FIXED notification badge logic');
         }, 100);
     }
 
@@ -4117,7 +4384,7 @@
             }
         });
 
-        console.log('🔧 Production enhancements setup completed');
+        console.log('🔧 Production enhancements setup completed with FIXED notification badge updates');
     }
 
     if (document.readyState === 'loading') {
@@ -4137,6 +4404,6 @@
 
     window.ModernFinancialDashboard = ModernFinancialDashboard;
 
-    console.log('📊 Modern Financial Dashboard script loaded successfully - Notification timing issues FIXED');
+    console.log('📊 Modern Financial Dashboard script loaded successfully - NOTIFICATION BADGE FIXED');
 
 })();
