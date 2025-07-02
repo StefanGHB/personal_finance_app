@@ -3,6 +3,7 @@
    Premium Design with Enhanced Empty States + International Support
    Enhanced Beautiful Filter Messages and Clear Button
    🎯 NEW: Enhanced Notifications Scroller for 3+ notifications
+   ✨ UPDATED: Purple Trading View Style from Dashboard
    ================================== */
 
 /* Reset & Enhanced Base */
@@ -41,6 +42,14 @@ body {
   --accent-purple: #8b5cf6;
   --accent-indigo: #6366f1;
 
+  /* ✨ NEW: Trading View Style Colors - PURPLE THEME */
+  --trading-purple: #a855f7;       /* Beautiful purple */
+  --trading-purple-dark: #9333ea;  /* Darker purple */
+  --trading-purple-light: #c084fc; /* Lighter purple */
+  --trading-red: #ff4757;
+  --trading-blue: #3742fa;
+  --trading-gray: #747d8c;
+
   /* Category Colors */
   --category-teal: #14b8a6;
   --category-lime: #84cc16;
@@ -76,6 +85,7 @@ body {
   --border-secondary: rgba(255, 255, 255, 0.08);
   --border-tertiary: rgba(255, 255, 255, 0.05);
   --border-focus: rgba(59, 130, 246, 0.5);
+  --border-trading: rgba(168, 85, 247, 0.3);
 
   /* Gradients */
   --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
@@ -90,6 +100,10 @@ body {
                             radial-gradient(ellipse at bottom right, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
                             radial-gradient(ellipse at center, rgba(6, 182, 212, 0.05) 0%, transparent 70%);
   --gradient-filter-panel: linear-gradient(180deg, #1a1f2e 0%, #1e293b 100%);
+
+  /* ✨ NEW: Trading View Style Gradients - PURPLE */
+  --gradient-trading-purple: linear-gradient(135deg, var(--trading-purple) 0%, var(--trading-purple-dark) 100%);
+  --gradient-trading-fill: linear-gradient(180deg, rgba(168, 85, 247, 0.3) 0%, rgba(168, 85, 247, 0.05) 100%);
 
   /* 🎯 NEW: Enhanced notification gradients */
   --gradient-notification-scroller: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #06b6d4 100%);
@@ -106,6 +120,7 @@ body {
   --shadow-glow: 0 10px 30px rgba(59, 130, 246, 0.4);
   --shadow-glow-purple: 0 10px 30px rgba(139, 92, 246, 0.3);
   --shadow-glow-teal: 0 10px 30px rgba(20, 184, 166, 0.3);
+  --shadow-trading: 0 0 30px rgba(168, 85, 247, 0.3);
 
   /* 🎯 NEW: Enhanced notification shadows */
   --shadow-notification-scroller: 0 4px 12px rgba(139, 92, 246, 0.15);
@@ -118,6 +133,7 @@ body {
   --duration-slower: 500ms;
   --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Border Radius */
   --radius-sm: 0.25rem;
@@ -153,7 +169,7 @@ body {
 }
 
 /* ===================================
-   DASHBOARD HEADER
+   DASHBOARD HEADER - UPDATED WITH PURPLE THEME
    ================================== */
 
 .dashboard-header {
@@ -174,7 +190,7 @@ body {
   font-weight: 800;
   color: var(--text-primary);
   margin-bottom: 0.25rem;
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -289,7 +305,7 @@ body {
 .mark-all-read {
   background: none;
   border: none;
-  color: var(--accent-cyan);
+  color: var(--trading-purple);
   font-size: 0.875rem;
   cursor: pointer;
   padding: 0.25rem 0.5rem;
@@ -318,7 +334,7 @@ body {
 
   /* Enhanced scrollbar styling */
   scrollbar-width: thin;
-  scrollbar-color: var(--accent-purple) transparent;
+  scrollbar-color: var(--trading-purple) transparent;
 }
 
 /* 🎯 FIXED: Webkit scrollbar styling with stable width */
@@ -650,7 +666,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   border: none;
   border-radius: var(--radius-xl);
   padding: 0.75rem 1.25rem;
@@ -675,7 +691,7 @@ body {
 
 .quick-action-btn:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: var(--shadow-glow-purple);
+  box-shadow: var(--shadow-trading);
 }
 
 .quick-action-btn:hover::before {
@@ -698,7 +714,7 @@ body {
 }
 
 /* ===================================
-   SUMMARY SECTION
+   ✨ SUMMARY SECTION - UPDATED WITH TRADING STYLE PURPLE EFFECTS
    ================================== */
 
 .summary-section {
@@ -719,11 +735,26 @@ body {
   padding: 1.5rem;
   position: relative;
   overflow: hidden;
-  transition: all var(--duration-normal) var(--ease-spring);
+  transition: all var(--duration-normal) var(--ease-in-out);
   cursor: pointer;
 }
 
+/* ✨ TRADING VIEW STYLE ANIMATED BACKGROUND EFFECTS - PURPLE */
 .summary-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(from 0deg, transparent, rgba(168, 85, 247, 0.1), transparent, rgba(168, 85, 247, 0.05), transparent);
+  animation: rotate 8s linear infinite;
+  opacity: 0;
+  transition: opacity var(--duration-normal) ease;
+  z-index: 1;
+}
+
+.summary-card::after {
   content: '';
   position: absolute;
   top: 0;
@@ -733,22 +764,31 @@ body {
   background: var(--gradient-glass);
   opacity: 0;
   transition: opacity var(--duration-normal) ease;
-  z-index: 1;
+  z-index: 2;
 }
 
-.summary-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: var(--shadow-xl);
-  border-color: var(--border-focus);
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .summary-card:hover::before {
   opacity: 1;
 }
 
+.summary-card:hover::after {
+  opacity: 1;
+}
+
+.summary-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: var(--shadow-card), var(--shadow-trading);
+  border-color: var(--border-trading);
+}
+
 .summary-card > * {
   position: relative;
-  z-index: 2;
+  z-index: 3;
 }
 
 .card-header {
@@ -769,34 +809,37 @@ body {
   transition: all var(--duration-normal) var(--ease-spring);
 }
 
+/* ✨ Enhanced Card Icon Styles with TRADING STYLE Purple Gradients */
 .balance-icon {
-  background: var(--gradient-category-primary);
-  box-shadow: var(--shadow-glow-purple);
+  background: var(--gradient-trading-purple);
+  box-shadow: var(--shadow-trading), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .income-icon {
   background: var(--gradient-success);
-  box-shadow: var(--shadow-glow-teal);
+  box-shadow: var(--shadow-glow-teal), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .expense-icon {
   background: var(--gradient-danger);
-  box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+  box-shadow: 0 0 20px rgba(236, 72, 153, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .budget-icon {
   background: var(--gradient-warning);
-  box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .summary-card:hover .card-icon {
   transform: scale(1.1) rotate(5deg);
+  filter: brightness(1.2);
 }
 
 .card-icon i {
   color: white;
   width: 24px;
   height: 24px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .card-actions {
@@ -828,11 +871,23 @@ body {
 
 .card-title {
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 800;
   color: var(--text-secondary);
   margin-bottom: 0.5rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.12em;
+  position: relative;
+}
+
+.card-title::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 30px;
+  height: 2px;
+  background: var(--gradient-trading-purple);
+  border-radius: 1px;
 }
 
 .card-value {
@@ -856,10 +911,11 @@ body {
 }
 
 .summary-card:hover .value-amount {
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  transform: scale(1.05);
 }
 
 .card-trend {
@@ -867,6 +923,19 @@ body {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
+  margin-top: auto;
+  padding-top: 0.5rem;
+  position: relative;
+}
+
+.card-trend::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--trading-purple), transparent);
 }
 
 .trend-indicator {
@@ -881,7 +950,7 @@ body {
 }
 
 .summary-card:hover .trend-indicator {
-  background: var(--accent-emerald);
+  background: var(--gradient-trading-purple);
   transform: scale(1.2);
 }
 
@@ -889,6 +958,7 @@ body {
   width: 12px;
   height: 12px;
   color: var(--accent-emerald);
+  transition: all var(--duration-normal) ease;
 }
 
 .summary-card:hover .trend-indicator i {
@@ -928,7 +998,7 @@ body {
 }
 
 /* ===================================
-   SECTION STYLES
+   ✨ SECTION STYLES - UPDATED WITH PURPLE THEME
    ================================== */
 
 .section-header {
@@ -945,10 +1015,15 @@ body {
 
 .section-title {
   font-size: 1.75rem;
-  font-weight: 700;
+  font-weight: 900;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
   position: relative;
+  background: var(--gradient-trading-purple);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
 }
 
 .section-title::after {
@@ -958,7 +1033,7 @@ body {
   left: 0;
   width: 60px;
   height: 3px;
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   border-radius: var(--radius-full);
 }
 
@@ -999,11 +1074,11 @@ body {
   color: var(--text-primary);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
-  border-color: var(--border-focus);
+  border-color: var(--border-trading);
 }
 
 /* ===================================
-   CATEGORIES LIST SECTION
+   ✨ CATEGORIES LIST SECTION - UPDATED WITH TRADING STYLE EFFECTS
    ================================== */
 
 .categories-list-section {
@@ -1014,6 +1089,30 @@ body {
   overflow: hidden;
   box-shadow: var(--shadow-lg);
   position: relative;
+}
+
+/* ✨ TRADING VIEW STYLE SCANNING ANIMATION - PURPLE */
+.categories-list-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--trading-purple), transparent);
+  animation: scan 3s ease-in-out infinite;
+  z-index: 1;
+}
+
+@keyframes scan {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.categories-list-section:hover {
+  box-shadow: var(--shadow-card), var(--shadow-trading);
+  transform: translateY(-3px);
+  border-color: var(--border-trading);
 }
 
 .categories-list {
@@ -1033,12 +1132,12 @@ body {
 }
 
 .categories-list::-webkit-scrollbar-thumb {
-  background: var(--gradient-primary);
+  background: var(--gradient-trading-purple);
   border-radius: var(--radius-full);
 }
 
 .categories-list::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--trading-purple-dark) 0%, #6d28d9 100%);
 }
 
 .category-item {
@@ -1275,11 +1374,11 @@ body {
   width: 48px;
   height: 48px;
   border: 4px solid var(--surface-glass);
-  border-top: 4px solid var(--accent-purple);
+  border-top: 4px solid var(--trading-purple);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 1.5rem;
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
 }
 
 @keyframes spin {
@@ -1340,7 +1439,7 @@ body {
   font-size: 4rem;
   margin-bottom: 1.5rem;
   opacity: 0.8;
-  filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.3));
+  filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.3));
   line-height: 1;
   animation: bounce 3s ease-in-out infinite;
 }
@@ -1356,7 +1455,7 @@ body {
   color: var(--text-primary);
   margin-bottom: 0.75rem;
   line-height: 1.3;
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1409,8 +1508,8 @@ body {
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.12) 0%, transparent 60%),
-    radial-gradient(circle at 80% 50%, rgba(139, 92, 246, 0.1) 0%, transparent 60%),
+    radial-gradient(circle at 20% 50%, rgba(168, 85, 247, 0.12) 0%, transparent 60%),
+    radial-gradient(circle at 80% 50%, rgba(168, 85, 247, 0.1) 0%, transparent 60%),
     radial-gradient(circle at 40% 20%, rgba(6, 182, 212, 0.08) 0%, transparent 60%);
   opacity: 0.8;
   animation: backgroundShift 18s ease-in-out infinite;
@@ -1458,10 +1557,10 @@ body {
   font-size: 5rem;
   margin-bottom: 2rem;
   opacity: 0.9;
-  filter: drop-shadow(0 0 30px rgba(139, 92, 246, 0.4));
+  filter: drop-shadow(0 0 30px rgba(168, 85, 247, 0.4));
   line-height: 1;
   animation: floatBounce 4s ease-in-out infinite;
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1481,11 +1580,11 @@ body {
   color: var(--text-primary);
   margin-bottom: 1rem;
   line-height: 1.2;
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+  text-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
 }
 
 /* Enhanced description */
@@ -1529,7 +1628,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(139, 92, 246, 0.03));
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(168, 85, 247, 0.03));
   z-index: -1;
 }
 
@@ -1566,99 +1665,20 @@ body {
   transition: left var(--duration-slower) ease;
 }
 
-.categories-empty-state .btn:hover::before {
-  left: 100%;
-}
-
-.categories-empty-state .btn:hover {
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: var(--shadow-glow-purple), 0 15px 35px rgba(139, 92, 246, 0.4);
-}
-
-/* PREMIUM CLEAR FILTERS BUTTON */
-.categories-empty-state .btn-secondary {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: var(--text-primary);
-  backdrop-filter: blur(15px);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.categories-empty-state .btn-secondary:hover {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
-  border-color: rgba(59, 130, 246, 0.4);
-  color: var(--text-primary);
-  transform: translateY(-3px) scale(1.05);
-  box-shadow:
-    0 12px 40px rgba(59, 130, 246, 0.2),
-    0 8px 32px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
-}
-
-.categories-empty-state .btn-secondary i {
-  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
-}
-
-/* Enhanced empty actions layout */
-.categories-empty-state .empty-actions {
-  display: flex;
-  gap: 1.25rem;
-  justify-content: center;
-  width: 100%;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-}
-
-/* ===================================
-   ENHANCED BUTTONS WITH GLASOMORPHISM
-   ================================== */
-
-.btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 1rem 1.75rem;
-  border-radius: var(--radius-2xl);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--duration-normal) var(--ease-spring);
-  border: none;
-  text-decoration: none;
-  font-size: 0.925rem;
-  font-family: inherit;
-  justify-content: center;
-  min-height: 48px;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left var(--duration-slower) ease;
-}
-
 .btn:hover::before {
   left: 100%;
 }
 
 .btn-primary {
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   color: white;
-  box-shadow: var(--shadow-glow-purple);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: var(--shadow-trading);
+  border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
 .btn-primary:hover {
   transform: translateY(-3px) scale(1.02);
-  box-shadow: var(--shadow-glow-purple), 0 15px 35px rgba(139, 92, 246, 0.4);
+  box-shadow: var(--shadow-trading), 0 15px 35px rgba(168, 85, 247, 0.4);
 }
 
 .btn-primary i {
@@ -1694,7 +1714,7 @@ body {
 }
 
 /* ===================================
-   QUICK ACTIONS SECTION
+   ✨ QUICK ACTIONS SECTION - UPDATED WITH TRADING STYLE EFFECTS
    ================================== */
 
 .quick-actions-section {
@@ -1716,12 +1736,27 @@ body {
   padding: 2rem;
   position: relative;
   overflow: hidden;
-  transition: all var(--duration-normal) var(--ease-spring);
+  transition: all var(--duration-normal) var(--ease-in-out);
   text-align: center;
   cursor: pointer;
 }
 
+/* ✨ TRADING VIEW STYLE ANIMATED BACKGROUND EFFECTS - PURPLE */
 .transaction-type-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(from 0deg, transparent, rgba(168, 85, 247, 0.1), transparent, rgba(168, 85, 247, 0.05), transparent);
+  animation: rotate 8s linear infinite;
+  opacity: 0;
+  transition: opacity var(--duration-normal) ease;
+  z-index: 1;
+}
+
+.transaction-type-card::after {
   content: '';
   position: absolute;
   top: 0;
@@ -1731,22 +1766,26 @@ body {
   background: var(--gradient-glass);
   opacity: 0;
   transition: opacity var(--duration-normal) ease;
-  z-index: 1;
-}
-
-.transaction-type-card:hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: var(--shadow-xl);
-  border-color: var(--border-focus);
+  z-index: 2;
 }
 
 .transaction-type-card:hover::before {
   opacity: 1;
 }
 
+.transaction-type-card:hover::after {
+  opacity: 1;
+}
+
+.transaction-type-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: var(--shadow-card), var(--shadow-trading);
+  border-color: var(--border-trading);
+}
+
 .transaction-type-card > * {
   position: relative;
-  z-index: 2;
+  z-index: 3;
 }
 
 .type-icon {
@@ -1762,22 +1801,24 @@ body {
 
 .income-type .type-icon {
   background: var(--gradient-success);
-  box-shadow: var(--shadow-glow-teal);
+  box-shadow: var(--shadow-glow-teal), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .expense-type .type-icon {
   background: var(--gradient-danger);
-  box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+  box-shadow: 0 0 20px rgba(236, 72, 153, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .transaction-type-card:hover .type-icon {
   transform: scale(1.1) rotate(10deg);
+  filter: brightness(1.2);
 }
 
 .type-icon i {
   color: white;
   width: 28px;
   height: 28px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .type-title {
@@ -1817,7 +1858,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   border: none;
   border-radius: var(--radius-xl);
   padding: 0.875rem 1.5rem;
@@ -1827,11 +1868,12 @@ body {
   transition: all var(--duration-normal) var(--ease-spring);
   margin: 0 auto;
   min-width: 180px;
+  box-shadow: var(--shadow-trading);
 }
 
 .type-btn:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: var(--shadow-glow-purple);
+  box-shadow: var(--shadow-trading), 0 8px 25px rgba(168, 85, 247, 0.4);
 }
 
 /* ===================================
@@ -1904,7 +1946,7 @@ body {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1966,9 +2008,9 @@ body {
 
 .form-input:focus {
   outline: none;
-  border-color: var(--border-focus);
+  border-color: var(--border-trading);
   background: var(--surface-glass-hover);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
 
 .form-input::placeholder {
@@ -2004,7 +2046,7 @@ body {
 }
 
 .toggle-btn.active {
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   color: white;
   box-shadow: var(--shadow-md);
   transform: scale(1.02);
@@ -2055,7 +2097,7 @@ body {
 .color-preset.active {
   transform: scale(1.1);
   border-color: white;
-  box-shadow: 0 0 0 2px var(--accent-purple);
+  box-shadow: 0 0 0 2px var(--trading-purple);
 }
 
 .form-error {
@@ -2076,6 +2118,7 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ✨ Enhanced modal action buttons with fixed sizing */
 .modal-actions {
   display: flex;
   gap: 1rem;
@@ -2083,6 +2126,108 @@ body {
   margin-top: 2rem;
   padding-top: 1rem;
   border-top: 1px solid var(--border-glass);
+}
+
+.modal-actions .btn {
+  /* 🎯 FIXED: Specific sizing for modal buttons */
+  min-width: 140px;
+  padding: 0.875rem 1.5rem;
+}
+
+.modal-actions .btn-primary {
+  min-width: 160px; /* Slightly wider for primary actions */
+}
+
+.modal-actions .btn-secondary {
+  min-width: 120px; /* Slightly narrower for secondary actions */
+}
+
+.modal-actions .btn-danger {
+  min-width: 140px; /* Standard width for danger actions */
+}
+
+/* 🎯 FIXED: Form buttons with consistent sizing */
+.form-actions .btn,
+.category-form .btn,
+.quick-category-form .btn {
+  min-width: 150px;
+  padding: 0.875rem 1.5rem;
+}
+
+/* 🎯 FIXED: Section action buttons */
+.section-action-btn {
+  min-width: 120px;
+  padding: 0.75rem 1rem;
+  white-space: nowrap;
+}
+
+/* 🎯 FIXED: Quick action buttons */
+.quick-action-btn {
+  min-width: 140px;
+  padding: 0.75rem 1.25rem;
+  white-space: nowrap;
+}
+
+/* 🎯 FIXED: Type buttons in transaction cards */
+.type-btn {
+  min-width: 180px;
+  padding: 0.875rem 1.5rem;
+  white-space: nowrap;
+}
+
+/* 🎯 FIXED: Filter panel buttons */
+.filter-actions .btn {
+  min-width: 100px;
+  padding: 0.75rem 1rem;
+}
+
+/* 🎯 FIXED: Empty state buttons */
+.empty-actions .btn,
+.categories-empty-state .btn {
+  min-width: 160px;
+  padding: 1rem 2rem;
+}
+
+/* 🎯 FIXED: Loading state for buttons */
+.btn.loading {
+  pointer-events: none;
+  cursor: default;
+}
+
+.btn.loading .btn-text {
+  opacity: 0.7;
+}
+
+.btn.loading .loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+/* 🎯 FIXED: Ensure consistent button height */
+.btn,
+.section-action-btn,
+.quick-action-btn,
+.type-btn,
+.filter-actions .btn,
+.modal-actions .btn {
+  height: 48px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 🎯 FIXED: Prevent text wrapping in buttons */
+.btn span,
+.btn-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ===================================
@@ -2189,7 +2334,7 @@ body {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -2230,7 +2375,7 @@ body {
 }
 
 .filter-body::-webkit-scrollbar-thumb {
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   border-radius: var(--radius-full);
 }
 
@@ -2277,16 +2422,16 @@ body {
 
 .filter-select option:hover,
 .filter-select option:focus {
-  background-color: #6366f1 !important;
+  background-color: #a855f7 !important;
   color: white !important;
 }
 
 .filter-select:focus,
 .filter-input:focus {
   outline: none;
-  border-color: var(--border-focus);
+  border-color: var(--border-trading);
   background: var(--surface-glass-hover);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.1);
 }
 
 .filter-input::placeholder {
@@ -2478,7 +2623,7 @@ body {
 
 /* Search results highlighting for international text */
 .search-highlight {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(168, 85, 247, 0.2);
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   font-weight: 600;
@@ -2608,14 +2753,14 @@ body {
 }
 
 .section-action-btn.primary {
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   color: white;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
 .section-action-btn.primary:hover {
   transform: translateY(-2px) scale(1.02);
-  box-shadow: var(--shadow-glow-purple);
+  box-shadow: var(--shadow-trading);
 }
 
 /* Enhanced delete/archive modal */
@@ -2728,7 +2873,7 @@ body {
 .impact-icon {
   width: 32px;
   height: 32px;
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -2838,7 +2983,7 @@ body {
 }
 
 /* ===================================
-   🎯 ENHANCED PAGINATION STYLES
+   🎯 ENHANCED PAGINATION STYLES - EXTRACTED FROM JS
    ================================== */
 
 .single-pagination-info {
@@ -2888,8 +3033,8 @@ body {
 }
 
 .nav-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--gradient-trading-purple);
+  border: 1px solid rgba(168, 85, 247, 0.2);
   border-radius: var(--radius-lg);
   padding: 0.75rem;
   color: white;
@@ -2900,19 +3045,19 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.25);
+  box-shadow: var(--shadow-trading);
 }
 
 .nav-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  background: linear-gradient(135deg, var(--trading-purple-dark) 0%, #6b21a8 100%);
   transform: scale(1.1) translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: var(--shadow-trading), 0 8px 25px rgba(168, 85, 247, 0.4);
+  border-color: rgba(168, 85, 247, 0.3);
 }
 
 .nav-btn:active:not(:disabled) {
   transform: scale(1.05) translateY(-1px);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  box-shadow: var(--shadow-trading);
 }
 
 .nav-btn:disabled {
@@ -2936,30 +3081,30 @@ body {
 
 /* Previous button specific styling */
 .nav-btn.prev {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  box-shadow: 0 4px 15px rgba(240, 147, 251, 0.25);
+  background: var(--gradient-trading-purple);
+  box-shadow: var(--shadow-trading);
 }
 
 .nav-btn.prev:hover:not(:disabled) {
-  background: linear-gradient(135deg, #ec4899 0%, #ef4444 100%);
-  box-shadow: 0 8px 25px rgba(240, 147, 251, 0.4);
+  background: linear-gradient(135deg, var(--trading-purple-dark) 0%, #7c3aed 100%);
+  box-shadow: var(--shadow-trading), 0 8px 25px rgba(168, 85, 247, 0.4);
 }
 
 /* Next button specific styling */
 .nav-btn.next {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  box-shadow: 0 4px 15px rgba(79, 172, 254, 0.25);
+  background: var(--gradient-trading-purple);
+  box-shadow: var(--shadow-trading);
 }
 
 .nav-btn.next:hover:not(:disabled) {
-  background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
-  box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
+  background: linear-gradient(135deg, var(--trading-purple-dark) 0%, #6366f1 100%);
+  box-shadow: var(--shadow-trading), 0 8px 25px rgba(168, 85, 247, 0.4);
 }
 
 /* SCROLL MODE STYLES */
 .categories-list.scroll-mode {
   scrollbar-width: thin;
-  scrollbar-color: var(--accent-purple) var(--surface-glass);
+  scrollbar-color: var(--trading-purple) var(--surface-glass);
 }
 
 .categories-list.scroll-mode::-webkit-scrollbar {
@@ -2972,20 +3117,20 @@ body {
 }
 
 .categories-list.scroll-mode::-webkit-scrollbar-thumb {
-  background: var(--gradient-category-primary);
+  background: var(--gradient-trading-purple);
   border-radius: var(--radius-full);
 }
 
 .categories-list.scroll-mode::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+  background: linear-gradient(135deg, var(--trading-purple-dark) 0%, #6d28d9 100%);
 }
 
 /* SIMPLE HIGHLIGHT FOR NEW CATEGORIES */
 .category-item.focused-highlight {
-  background: rgba(139, 92, 246, 0.15);
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.3);
   transform: scale(1.01);
-  box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
   transition: all 0.3s ease;
 }
 
@@ -2997,6 +3142,134 @@ body {
   border-top: 2px solid currentColor;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+/* ===================================
+   🎯 ENHANCED NOTIFICATIONS SCROLLER - EXTRACTED FROM JS
+   ================================== */
+
+/* 🎯 SIMPLE VERTICAL SCROLLBAR FOR NOTIFICATIONS - RIGHT SIDE ONLY */
+
+/* ✅ FIXED: Simple vertical scrollbar when notifications > 3 */
+.notifications-list.enhanced-vertical-scroller {
+  /* Set fixed height and enable ONLY vertical scrolling */
+  max-height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  /* Remove any horizontal scrolling */
+  width: 100%;
+  box-sizing: border-box;
+
+  /* Scrollbar styling - ONLY vertical */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 85, 247, 0.8) rgba(255, 255, 255, 0.1);
+}
+
+/* ✅ WEBKIT SCROLLBAR - VERTICAL ONLY */
+.notifications-list.enhanced-vertical-scroller::-webkit-scrollbar {
+  width: 6px; /* Vertical scrollbar width */
+  background: transparent;
+}
+
+.notifications-list.enhanced-vertical-scroller::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  margin: 8px 0;
+}
+
+.notifications-list.enhanced-vertical-scroller::-webkit-scrollbar-thumb {
+  background: var(--gradient-trading-purple);
+  border-radius: 3px;
+  min-height: 20px;
+  transition: all 0.2s ease;
+}
+
+.notifications-list.enhanced-vertical-scroller::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--trading-purple-dark) 0%, #5b21b6 50%, #0891b2 100%);
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
+}
+
+/* ✅ COMPLETELY DISABLE HORIZONTAL SCROLLBAR */
+.notifications-list.enhanced-vertical-scroller::-webkit-scrollbar:horizontal {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* ✅ ENSURE NOTIFICATION ITEMS NEVER CAUSE HORIZONTAL OVERFLOW */
+.notifications-list.enhanced-vertical-scroller .notification-item {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+.notifications-list.enhanced-vertical-scroller .notification-content {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.notifications-list.enhanced-vertical-scroller .notification-title,
+.notifications-list.enhanced-vertical-scroller .notification-message {
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* ✅ STANDARD NOTIFICATIONS (≤3) - NO SCROLLBAR */
+.notifications-list:not(.enhanced-vertical-scroller) {
+  max-height: none;
+  overflow: visible;
+}
+
+/* 🎨 IMPROVED: Notification hover effects WITHOUT MOVEMENT (like categories) */
+.notification-item {
+  transform-origin: left center;
+  transition: all 0.2s ease;
+  /* ✅ NO transform on hover - prevents movement */
+}
+
+.notification-item:hover {
+  /* ✅ LIKE CATEGORIES: opacity and background changes only */
+  background: var(--surface-glass-hover);
+  opacity: 0.9;
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.15);
+  border-left-color: rgba(168, 85, 247, 0.4);
+  /* ✅ NO transform: translateX() - completely removed */
+}
+
+/* ✅ UNREAD notifications get subtle glow on hover */
+.notification-item.unread:hover {
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+  border-left-color: var(--primary-500);
+}
+
+/* ✅ ENHANCED: Icon gets subtle scale on hover (very small) */
+.notification-item:hover .notification-icon {
+  transform: scale(1.05);
+  opacity: 1;
+}
+
+/* ✅ ENHANCED: Content gets slightly brighter on hover */
+.notification-item:hover .notification-title {
+  color: var(--text-primary);
+}
+
+.notification-item:hover .notification-message {
+  color: var(--text-secondary);
+}
+
+/* 🕒 SIMPLE NOTIFICATION TIME STYLES - NO FANCY COLORS OR ANIMATIONS */
+.notification-time {
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
 }
 
 /* PREVENT MULTIPLE PAGINATION BLOCKS */
@@ -3195,6 +3468,19 @@ body {
     width: 16px;
     height: 16px;
   }
+
+  /* 🎯 MOBILE: Enhanced notifications scroller */
+  .notifications-list.enhanced-vertical-scroller {
+    max-height: 250px; /* Slightly smaller on mobile */
+  }
+
+  .notifications-list.enhanced-vertical-scroller::-webkit-scrollbar {
+    width: 4px; /* Even thinner on mobile */
+  }
+
+  .notifications-list.enhanced-vertical-scroller::-webkit-scrollbar-thumb {
+    min-height: 15px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -3220,9 +3506,22 @@ body {
     align-items: center;
   }
 
+  /* 🎯 FIXED: Mobile button sizing */
   .btn {
     width: 100%;
-    max-width: 250px;
+    max-width: 280px;
+    min-width: 120px;
+    padding: 0.875rem 1rem;
+  }
+
+  .modal-actions .btn {
+    width: 100%;
+    min-width: 120px;
+  }
+
+  .section-action-btn {
+    min-width: 80px;
+    padding: 0.75rem 0.5rem;
   }
 
   .summary-card,
@@ -3364,6 +3663,18 @@ body {
   .notifications-list::-webkit-scrollbar-thumb {
     transition: none;
   }
+
+  /* ✨ Disable trading view animations */
+  .summary-card::before,
+  .transaction-type-card::before,
+  .categories-list-section::before {
+    animation: none;
+  }
+
+  .rotate,
+  .scan {
+    animation: none;
+  }
 }
 
 /* Dark mode specific styles */
@@ -3447,4 +3758,88 @@ body {
     background: white;
     border: 1px solid #ddd;
   }
+}
+
+.categories-empty-state .btn:hover::before {
+  left: 100%;
+}
+
+.categories-empty-state .btn:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: var(--shadow-trading), 0 15px 35px rgba(168, 85, 247, 0.4);
+}
+
+/* PREMIUM CLEAR FILTERS BUTTON */
+.categories-empty-state .btn-secondary {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+  backdrop-filter: blur(15px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.categories-empty-state .btn-secondary:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+  border-color: rgba(168, 85, 247, 0.4);
+  color: var(--text-primary);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow:
+    0 12px 40px rgba(168, 85, 247, 0.2),
+    0 8px 32px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.categories-empty-state .btn-secondary i {
+  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5));
+}
+
+/* Enhanced empty actions layout */
+.categories-empty-state .empty-actions {
+  display: flex;
+  gap: 1.25rem;
+  justify-content: center;
+  width: 100%;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+/* ===================================
+   ENHANCED BUTTONS WITH GLASOMORPHISM
+   ================================== */
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.75rem;
+  border-radius: var(--radius-2xl);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-spring);
+  border: none;
+  text-decoration: none;
+  font-size: 0.925rem;
+  font-family: inherit;
+  justify-content: center;
+  min-height: 48px;
+  position: relative;
+  overflow: hidden;
+  /* 🎯 FIXED: Prevent button resizing during state changes */
+  min-width: 160px;
+  width: auto;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left var(--duration-slower) ease;
 }
