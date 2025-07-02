@@ -57,7 +57,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem; /* ✅ REDUCED: Gap for better fit */
-}/* ✅ NEW: Analytics Container - Proper sizing */
+}
+
+/* ✅ NEW: Analytics Container - Proper sizing */
 .new-analytics-container {
   height: 100%;
   display: flex;
@@ -69,15 +71,20 @@
 
 .analytics-header {
   margin-bottom: var(--space-lg); /* ✅ REDUCE: Bottom margin for consistency */
-}.budget-card:hover .budget-icon {
+}
+
+.budget-card:hover .budget-icon {
   transform: rotate(-5deg) scale(1.1);
   box-shadow: 0 0 35px rgba(59, 130, 246, 0.6);
-}/* ===================================
+}
+
+/* ===================================
    ENHANCED BUDGETS CSS - PURPLE THEME WITH GLASS EFFECTS
    Complete file with ALL original styles plus purple enhancements
    Inspired by dashboard.css with beautiful purple colors and hover effects
    UPDATED: Added purple hover effects for budget card icons (like dashboard)
    ✅ FIXED: Remaining Budget Layout to prevent text cutoff
+   ✅ UPDATED: Summary cards to match categories.css style
    ================================== */
 
 /* ===================================
@@ -1707,7 +1714,7 @@ body {
 }
 
 /* ===================================
-   BUDGET OVERVIEW SECTION - ENHANCED PURPLE THEME
+   BUDGET OVERVIEW SECTION - ENHANCED PURPLE THEME WITH CATEGORIES STYLE
    ================================== */
 
 .budget-overview-section {
@@ -1725,7 +1732,7 @@ body {
   backdrop-filter: blur(20px);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-2xl);
-  padding: var(--space-xl);
+  padding: 1.5rem;
   position: relative;
   overflow: hidden;
   transition: all var(--duration-normal) var(--ease-in-out);
@@ -1791,12 +1798,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-lg);
+  margin-bottom: 1rem;
 }
 
+/* ✅ UPDATED: Card icon to match categories.css - smaller size */
 .card-icon {
-  width: 72px;
-  height: 72px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
@@ -1851,70 +1859,32 @@ body {
   transition: all var(--duration-normal) ease;
 }
 
-/* ✅ ENHANCED: Only the amounts (numbers) get purple color on hover */
-.summary-card:hover .value-amount,
-.summary-card:hover .value-percentage {
-  color: var(--trading-purple) !important;
-  text-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
-  transform: scale(1.05);
-  transition: all var(--duration-normal) ease;
-}
-
-/* ✅ ENHANCED: Trend indicators get enhanced purple styling */
-.summary-card:hover .trend-indicator {
-  background: var(--gradient-trading-purple) !important;
-  border-color: var(--trading-purple) !important;
-  transform: scale(1.1);
-  box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
-  transition: all var(--duration-normal) ease;
-}
-
-.summary-card:hover .trend-text {
-  color: var(--trading-purple-light) !important;
-  font-weight: 600;
-  transition: all var(--duration-normal) ease;
-}
-
 /* Enhanced Card Icon Styles with CONSISTENT GRADIENTS */
 .balance-icon {
   background: var(--gradient-primary);
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  width: 72px !important;
-  height: 72px !important;
 }
 
 .income-icon {
   background: var(--gradient-success);
   box-shadow: 0 0 30px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  width: 72px !important;
-  height: 72px !important;
 }
 
 .expense-icon {
   background: var(--gradient-danger);
   box-shadow: 0 0 30px rgba(244, 63, 94, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  width: 72px !important;
-  height: 72px !important;
 }
 
 .budget-icon {
   background: var(--gradient-primary);
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  width: 72px !important;
-  height: 72px !important;
-  border-radius: var(--radius-xl) !important;
 }
 
-/* ✅ NEW: PURPLE HOVER EFFECT FOR BUDGET ICON SPECIFICALLY */
-.budget-card:hover .budget-icon {
-  transform: rotate(-5deg) scale(1.1);
-  box-shadow: 0 0 35px rgba(168, 85, 247, 0.6);
-}
-
+/* ✅ UPDATED: Card icon size to match categories.css */
 .card-icon i {
   color: white;
-  width: 36px;
-  height: 36px;
+  width: 24px;
+  height: 24px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
@@ -1944,11 +1914,26 @@ body {
   color: var(--text-primary);
 }
 
+/* ✅ UPDATED: Card title to match categories.css - bold, uppercase with underline */
 .card-title {
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 800;
   color: var(--text-secondary);
   margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  position: relative;
+}
+
+.card-title::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 30px;
+  height: 2px;
+  background: var(--gradient-trading-purple);
+  border-radius: 1px;
 }
 
 .card-value {
@@ -1963,6 +1948,7 @@ body {
   font-size: 2rem;
   font-weight: 800;
   color: var(--text-primary);
+  transition: all var(--duration-normal) ease;
 }
 
 .value-currency,
@@ -1972,11 +1958,34 @@ body {
   color: var(--text-secondary);
 }
 
+/* ✅ ENHANCED: Only the amounts (numbers) get purple color on hover */
+.summary-card:hover .value-amount,
+.summary-card:hover .value-percentage {
+  background: var(--gradient-trading-purple);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transform: scale(1.05);
+}
+
 .card-trend {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   font-size: 0.875rem;
+  margin-top: auto;
+  padding-top: 0.5rem;
+  position: relative;
+}
+
+.card-trend::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--trading-purple), transparent);
 }
 
 .trend-indicator {
@@ -1987,16 +1996,38 @@ body {
   height: 20px;
   border-radius: 50%;
   background: var(--surface-glass);
+  transition: all var(--duration-normal) ease;
+}
+
+/* ✅ ENHANCED: Trend indicators get enhanced purple styling */
+.summary-card:hover .trend-indicator {
+  background: var(--gradient-trading-purple) !important;
+  border-color: var(--trading-purple) !important;
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+  transition: all var(--duration-normal) ease;
 }
 
 .trend-indicator i {
   width: 12px;
   height: 12px;
   color: var(--accent-emerald);
+  transition: all var(--duration-normal) ease;
+}
+
+.summary-card:hover .trend-indicator i {
+  color: white;
 }
 
 .trend-text {
   color: var(--text-tertiary);
+  transition: color var(--duration-normal) ease;
+}
+
+.summary-card:hover .trend-text {
+  color: var(--trading-purple-light) !important;
+  font-weight: 600;
+  transition: all var(--duration-normal) ease;
 }
 
 .card-background {
@@ -2014,6 +2045,12 @@ body {
   height: 100%;
   background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0);
   background-size: 20px 20px;
+  animation: float 20s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
 }
 
 /* ===================================
@@ -2390,7 +2427,7 @@ body {
   width: 100%;
 }
 
-/* FIXED: Budget cards - PERFECT SIZE to prevent third card showing - малко по-малки */
+/* FIXED: Budget cards - PERFECT SIZE to prevent third card showing */
 .budgets-grid {
   display: flex !important;
   gap: var(--space-xl);
@@ -2399,9 +2436,9 @@ body {
 }
 
 .budget-card {
-  flex: 0 0 360px;           /* НАМАЛЕНО: От 375px на 360px */
-  min-width: 360px;          /* НАМАЛЕНО: От 375px на 360px */
-  max-width: 360px;          /* НАМАЛЕНО: От 375px на 360px */
+  flex: 0 0 360px;
+  min-width: 360px;
+  max-width: 360px;
   background: var(--gradient-card);
   backdrop-filter: blur(20px);
   border: 1px solid var(--border-glass);
@@ -2455,9 +2492,6 @@ body {
   align-items: center;
   justify-content: center;
   position: relative;
-}
-
-.budget-icon {
   background: var(--gradient-primary);
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
 }
@@ -2798,7 +2832,6 @@ body {
 
 .budget-type-card:hover .type-title {
   color: var(--text-primary);
-  /* Keep white on hover instead of purple */
 }
 
 .type-description {
@@ -2830,7 +2863,6 @@ body {
   color: #ff69b4;
 }
 
-/* ✅ ДОБАВЕНО: Специфичен стил за General Budget секцията */
 .general-type:hover .feature-tag {
   background: rgba(6, 182, 212, 0.1);
   border-color: rgba(6, 182, 212, 0.3);
@@ -2866,8 +2898,7 @@ body {
   box-shadow: 0 10px 30px rgba(233, 30, 99, 0.4);
 }
 
-/* ✅ FIXED: REDESIGNED ANALYTICS SECTION - Perfect Balance & Margins
-   ================================== */
+/* ✅ FIXED: REDESIGNED ANALYTICS SECTION - Perfect Balance & Margins */
 
 .budget-analytics-section {
   margin-top: var(--space-lg);
@@ -2884,19 +2915,17 @@ body {
 .analytics-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-lg); /* ✅ REDUCE: Gap between cards for more space */
-  padding: 0; /* ✅ REMOVE: Grid padding - we'll handle individual card margins */
+  gap: var(--space-lg);
+  padding: 0;
   box-sizing: border-box;
 }
 
-/* ✅ SPECIFIC: Left card (Top Spending Categories) - reduce left margin */
 .analytics-grid .analytics-card:first-child {
-  margin-left: var(--space-sm); /* ✅ SMALL: Left margin for first card */
+  margin-left: var(--space-sm);
 }
 
-/* ✅ SPECIFIC: Right card (Budget Health) - add right margin */
 .analytics-grid .analytics-card:last-child {
-  margin-right: var(--space-lg); /* ✅ PROPER: Right margin to prevent cutoff */
+  margin-right: var(--space-lg);
 }
 
 .analytics-card {
@@ -2909,26 +2938,9 @@ body {
   overflow: hidden;
   min-height: 400px;
   transition: all var(--duration-normal) ease;
-  width: 100%; /* ✅ ENSURE: Full width within grid */
-  max-width: 100%; /* ✅ PREVENT: Overflow beyond container */
-  box-sizing: border-box; /* ✅ INCLUDE: Padding and border in width */
-}
-
-.analytics-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
   width: 100%;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--trading-purple), transparent);
-  animation: scan 3s ease-in-out infinite;
-  z-index: 1;
-}
-
-@keyframes scan {
-  0% { left: -100%; }
-  100% { left: 100%; }
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .analytics-card:hover {
@@ -2954,22 +2966,6 @@ body {
   text-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
 }
 
-.analytics-action {
-  background: var(--surface-glass);
-  border: 1px solid var(--border-glass);
-  border-radius: var(--radius-md);
-  padding: 0.5rem;
-  color: var(--text-tertiary);
-  cursor: pointer;
-  transition: all var(--duration-fast) ease;
-}
-
-.analytics-action:hover {
-  background: var(--gradient-trading-purple);
-  color: white;
-  border-color: var(--trading-purple);
-}
-
 .chart-container {
   padding: 0 var(--space-xl) var(--space-xl);
   height: calc(100% - 80px);
@@ -2977,17 +2973,6 @@ body {
   flex-direction: column;
   position: relative;
   z-index: 2;
-}
-
-/* NEW: Analytics Container */
-.new-analytics-container {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.analytics-header {
-  margin-bottom: var(--space-xl);
 }
 
 .header-info {
@@ -3025,17 +3010,6 @@ body {
 .total-info strong {
   color: var(--text-primary);
   font-weight: 600;
-}
-
-/* NEW: Spending Grid */
-.spending-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  flex: 1;
-  overflow-y: auto;
-  max-height: 300px;
-  padding-right: 0.5rem;
 }
 
 .spending-card {
@@ -3186,17 +3160,6 @@ body {
 .status-badge.over {
   background: rgba(244, 63, 94, 0.15);
   color: var(--accent-rose);
-}
-
-/* NEW: Progress Grid */
-.progress-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  flex: 1;
-  overflow-y: auto;
-  max-height: 300px;
-  padding-right: 0.5rem;
 }
 
 .progress-card {
@@ -3658,19 +3621,29 @@ body {
   border-top: 1px solid var(--border-glass);
 }
 
+/* ===================================
+   ✅ CRITICAL FIX: BUTTON LOADING STATES - COMPLETELY STABLE SIZE WITH SMALL SPINNER
+   ================================== */
 .btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   padding: 0.875rem 1.5rem;
   border-radius: var(--radius-lg);
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--duration-normal) ease;
+  transition: transform var(--duration-normal) ease, box-shadow var(--duration-normal) ease;
   border: none;
   text-decoration: none;
   position: relative;
   overflow: hidden;
+  white-space: nowrap;
+  min-width: 120px;
+  min-height: 48px; /* ✅ FIXED: Lock height to prevent expansion */
+  max-height: 48px; /* ✅ FIXED: Lock height to prevent expansion */
+  height: 48px; /* ✅ FIXED: Exact height lock */
+  box-sizing: border-box;
 }
 
 .btn::before {
@@ -3684,8 +3657,58 @@ body {
   transition: left var(--duration-slower) ease;
 }
 
-.btn:hover::before {
+.btn:hover:not(.loading)::before {
   left: 100%;
+}
+
+/* ✅ CRITICAL FIX: Loading state - ZERO size changes with TINY spinner */
+.btn.loading {
+  pointer-events: none;
+  cursor: default;
+  /* ✅ CRITICAL: Keep ALL original dimensions */
+  transform: none !important; /* ✅ NO transforms during loading */
+  transition: none !important; /* ✅ NO transitions during loading */
+  min-width: 120px; /* ✅ Keep min-width */
+  min-height: 48px !important; /* ✅ Force height lock */
+  max-height: 48px !important; /* ✅ Force height lock */
+  height: 48px !important; /* ✅ Force exact height */
+  padding: 0.875rem 1.5rem !important; /* ✅ Keep exact padding */
+  overflow: hidden;
+}
+
+/* ✅ FIXED: Hide content during loading - invisible but keeps space */
+.btn.loading > * {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* ✅ CRITICAL: Perfect loading spinner like categories.css */
+.btn.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  margin-left: -8px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  box-sizing: border-box;
+  display: block;
+  z-index: 10;
+}
+
+/* ✅ FIXED: Standard spin animation like categories.css */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .btn-primary {
@@ -3694,9 +3717,15 @@ body {
   box-shadow: var(--shadow-trading);
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(.loading) {
   transform: translateY(-2px);
   box-shadow: var(--shadow-trading), 0 10px 30px rgba(168, 85, 247, 0.4);
+}
+
+/* ✅ CRITICAL: NO hover effects during loading */
+.btn-primary.loading {
+  transform: none !important;
+  box-shadow: var(--shadow-trading) !important;
 }
 
 .btn-secondary {
@@ -3705,10 +3734,16 @@ body {
   color: var(--text-secondary);
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(.loading) {
   background: var(--surface-glass-hover);
   color: var(--text-primary);
   border-color: var(--trading-purple);
+}
+
+/* ✅ CRITICAL: NO hover effects during loading */
+.btn-secondary.loading {
+  background: var(--surface-glass) !important;
+  border: 1px solid var(--border-glass) !important;
 }
 
 .btn-danger {
@@ -3717,9 +3752,15 @@ body {
   box-shadow: 0 0 20px rgba(244, 63, 94, 0.3);
 }
 
-.btn-danger:hover {
+.btn-danger:hover:not(.loading) {
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(244, 63, 94, 0.4);
+}
+
+/* ✅ CRITICAL: NO hover effects during loading */
+.btn-danger.loading {
+  transform: none !important;
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.3) !important;
 }
 
 .form-error {
@@ -3728,10 +3769,6 @@ body {
   font-weight: 500;
   margin-top: 0.25rem;
   display: none;
-}
-
-.form-error.visible {
-  display: block;
 }
 
 /* ===================================
@@ -4000,11 +4037,6 @@ body {
   box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 /* ===================================
    TOAST NOTIFICATIONS - ENHANCED PURPLE THEME
    ================================== */
@@ -4169,6 +4201,15 @@ body {
   }
 }
 
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes float {
   0%, 100% {
     transform: translate(0, 0) scale(1);
@@ -4184,7 +4225,6 @@ body {
    RESPONSIVE DESIGN - ENHANCED
    ================================== */
 
-/* ✅ RESPONSIVE: Analytics grid adjustments for perfect balance */
 @media (max-width: 1200px) {
   .overview-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -4196,7 +4236,7 @@ body {
   }
 
   .budget-analytics-section {
-    padding: 0 var(--space-md); /* ✅ REDUCED: Padding when single column */
+    padding: 0 var(--space-md);
   }
 
   .budget-card {
@@ -4240,7 +4280,6 @@ body {
     right: -100%;
   }
 
-  /* ✅ RESPONSIVE: Notifications panel on tablets */
   .notifications-panel {
     width: 100%;
     right: -100%;
@@ -4257,18 +4296,17 @@ body {
     justify-content: space-between;
   }
 
-  /* ✅ ANALYTICS: Tablet margins adjustment */
   .analytics-grid {
     gap: var(--space-md);
   }
 
   .budget-analytics-section {
-    padding: 0 var(--space-sm); /* ✅ MINIMAL: Padding on tablets */
+    padding: 0 var(--space-sm);
   }
 
   .spending-grid,
   .progress-grid {
-    max-height: 220px; /* ✅ REDUCED: Height on tablets */
+    max-height: 220px;
   }
 
   .chart-container {
@@ -4323,7 +4361,7 @@ body {
   }
 
   .budget-card {
-    flex: 0 0 300px;        /* ADJUSTED: From 280px to 300px for mobile */
+    flex: 0 0 300px;
     min-width: 300px;
     max-width: 300px;
     padding: 1rem;
@@ -4338,7 +4376,6 @@ body {
     width: 100%;
   }
 
-  /* ✅ RESPONSIVE: Notifications panel adjustments */
   .notifications-panel {
     width: 320px;
     max-height: 400px;
@@ -4477,7 +4514,6 @@ body {
     max-height: 200px;
   }
 
-  /* ✅ RESPONSIVE: Small mobile notifications */
   .notifications-panel {
     width: 300px;
     right: -10px;
@@ -4672,7 +4708,7 @@ body {
   box-shadow: var(--shadow-trading);
 }
 
-.error-state .btn:hover {
+.error-state .btn:hover:not(.loading) {
   transform: translateY(-3px);
   box-shadow: var(--shadow-trading), 0 10px 30px rgba(168, 85, 247, 0.5);
 }

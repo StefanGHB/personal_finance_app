@@ -8,7 +8,9 @@
  * ✅ NEW: Smart time updates (15min <1h, hourly 1h-1d, hide >1d)
  * ✅ REMOVED: Emoji prefixes from notification messages
  * ✅ FIXED: Total Spent calculation - ONLY from Category Budgets (excluding General Budget)
- * ✅ NEW: Category name truncation - limit to 25 characters with ".." suffix
+ * ✅ UPDATED: Category name truncation - limit to 20 characters with ".." suffix
+ * ✅ FIXED: Validation order for maximum amount check - NOW WORKS CORRECTLY
+ * ✅ COMPLETELY FIXED: Notification logic - proper creation, loading and display
  * FIXED: General Budget logic, analytics calculations, duplicate prevention
  * NEW: Dynamic dropdown sizing for exactly 5 visible options
  * FIXED: Enhanced category dropdown scroller functionality
@@ -21,7 +23,8 @@ class BudgetsManager {
         this.budgets = [];
         this.categories = [];
         this.filteredBudgets = [];
-        this.notifications = [];
+        this.notifications = []; // API notifications
+        this.localNotifications = []; // ✅ НОВО: Локални нотификации
         this.currentBudget = null;
         this.isEditing = false;
         this.timeUpdateInterval = null;
@@ -111,9 +114,9 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ NEW: Truncate category names to 25 characters with ".." suffix
+     * ✅ UPDATED: Truncate category names to 20 characters with ".." suffix
      */
-    truncateCategoryName(categoryName, maxLength = 25) {
+    truncateCategoryName(categoryName, maxLength = 20) {
         if (!categoryName) return 'Unknown Category';
 
         if (categoryName.length <= maxLength) {
@@ -144,22 +147,37 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ NEW: Update notification times and filter old ones
+     * ✅ COMPLETELY FIXED: Update notification times and filter old ones with proper array handling and localStorage sync
      */
     updateNotificationTimes() {
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-        // Filter out notifications older than 1 day
-        const oldCount = this.notifications.length;
+        // ✅ FIXED: Filter API notifications
+        const oldApiCount = this.notifications.length;
         this.notifications = this.notifications.filter(notification => {
             const notificationDate = new Date(notification.createdAt);
             return notificationDate > oneDayAgo;
         });
 
-        const newCount = this.notifications.length;
-        if (oldCount !== newCount) {
-            console.log(`🗑️ Removed ${oldCount - newCount} old notifications (>1 day)`);
+        // ✅ FIXED: Filter local notifications
+        const oldLocalCount = this.localNotifications.length;
+        this.localNotifications = this.localNotifications.filter(notification => {
+            const notificationDate = new Date(notification.createdAt);
+            return notificationDate > oneDayAgo;
+        });
+
+        // ✅ NEW: Save filtered local notifications to localStorage
+        if (oldLocalCount !== this.localNotifications.length) {
+            this.saveLocalNotificationsToStorage();
+        }
+
+        const newApiCount = this.notifications.length;
+        const newLocalCount = this.localNotifications.length;
+        const totalRemoved = (oldApiCount - newApiCount) + (oldLocalCount - newLocalCount);
+
+        if (totalRemoved > 0) {
+            console.log(`🗑️ Removed ${totalRemoved} old notifications (>1 day): ${oldApiCount - newApiCount} API + ${oldLocalCount - newLocalCount} local`);
         }
 
         // Update badge and re-render if panel is open
@@ -418,7 +436,7 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ UPDATED: Translate and truncate category names
+     * ✅ UPDATED: Translate and truncate category names to 20 characters
      */
     translateCategoryName(bulgName) {
         const translations = {
@@ -481,7 +499,7 @@ class BudgetsManager {
         };
 
         const translated = translations[bulgName] || bulgName;
-        // ✅ NEW: Apply truncation to translated category name
+        // ✅ UPDATED: Apply truncation to translated category name to 20 characters
         return this.truncateCategoryName(translated);
     }
 
@@ -515,7 +533,7 @@ class BudgetsManager {
             this.categories.forEach(category => {
                 const option = document.createElement('option');
                 option.value = category.id;
-                // ✅ UPDATED: Use truncated category name for display
+                // ✅ UPDATED: Use truncated category name for display (20 characters)
                 option.textContent = this.translateCategoryName(category.name);
                 option.style.color = category.color || '#6366f1';
                 // ✅ NEW: Add title attribute to show full name on hover
@@ -732,7 +750,44 @@ class BudgetsManager {
         const healthElement = document.getElementById('budget-health');
         if (healthElement) {
             const percentage = this.summaryData.budgetHealth;
-            healthElement.innerHTML = `<span class="value-percentage">${percentage}%</span><span class="value-symbol">used</span>`;
+
+            // ✅ SMART LIMIT: Cap percentage display at 8 digits maximum
+            let displayPercentage;
+            if (percentage >= 99999999) { // 8 digits: 99,999,999%
+                displayPercentage = '99999999'; // Max 8 digits
+            } else {
+                displayPercentage = percentage.toString();
+            }
+
+            // ✅ SMART RESPONSIVE: Adjust layout based on percentage length
+            let layout;
+            if (displayPercentage.length >= 7) {
+                // Very large numbers (7-8 digits): Stack vertically, smaller text, with % symbol
+                layout = `
+                    <div class="health-display vertical">
+                        <span class="value-percentage large-number">${displayPercentage}%</span>
+                        <span class="value-symbol compact">used</span>
+                    </div>
+                `;
+            } else if (displayPercentage.length >= 4) {
+                // Large numbers (4-6 digits): Compact horizontal with smaller symbol
+                layout = `
+                    <div class="health-display compact">
+                        <span class="value-percentage">${displayPercentage}%</span>
+                        <span class="value-symbol small">used</span>
+                    </div>
+                `;
+            } else {
+                // Normal numbers (1-3 digits): Standard layout
+                layout = `
+                    <div class="health-display standard">
+                        <span class="value-percentage">${displayPercentage}%</span>
+                        <span class="value-symbol">used</span>
+                    </div>
+                `;
+            }
+
+            healthElement.innerHTML = layout;
         }
 
         const healthStatusElement = document.getElementById('health-status');
@@ -768,7 +823,7 @@ class BudgetsManager {
             }
         }
 
-        console.log('✅ Summary cards updated with fixed Total Spent logic');
+        console.log('✅ Summary cards updated with SMART responsive budget health layout');
     }
 
     /**
@@ -1166,7 +1221,7 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ UPDATED: Create budget card with truncated category names
+     * ✅ UPDATED: Create budget card with truncated category names (20 characters)
      */
     createBudgetCardHTML(budget) {
         // Handle dummy cards
@@ -1206,7 +1261,7 @@ class BudgetsManager {
             statusIcon = 'alert-triangle';
         }
 
-        // ✅ UPDATED: Use truncated category name with full name in title for tooltip
+        // ✅ UPDATED: Use truncated category name (20 characters) with full name in title for tooltip
         const categoryName = budget.isGeneralBudget ?
             'General Budget' :
             this.translateCategoryName(budget.categoryName);
@@ -1355,7 +1410,7 @@ class BudgetsManager {
         const budgetData = this.budgets
             .filter(b => !b.isGeneralBudget && parseFloat(b.plannedAmount) > 0)
             .map(b => ({
-                name: this.translateCategoryName(b.categoryName), // ✅ Already truncated
+                name: this.translateCategoryName(b.categoryName), // ✅ Already truncated to 20 characters
                 planned: parseFloat(b.plannedAmount),
                 spent: parseFloat(b.spentAmount),
                 efficiency: parseFloat(b.plannedAmount) > 0 ? (parseFloat(b.spentAmount) / parseFloat(b.plannedAmount)) * 100 : 0,
@@ -1533,7 +1588,7 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ UPDATED: Budget Trends Analysis with FIXED Total Spent calculation and truncated names
+     * ✅ UPDATED: Budget Trends Analysis with FIXED Total Spent calculation and truncated names (20 characters)
      */
     renderBudgetTrendsAnalysis(container) {
         let trendsHTML = '<div class="innovative-analytics-container">';
@@ -1564,7 +1619,7 @@ class BudgetsManager {
 
             trendsHTML += '<div class="trends-grid">';
 
-            // ✅ FIXED: Top 3 spending categories with proper calculation and truncated names
+            // ✅ FIXED: Top 3 spending categories with proper calculation and truncated names (20 characters)
             const categoryBudgets = this.budgets.filter(b => !b.isGeneralBudget && parseFloat(b.spentAmount) > 0);
             const topCategories = categoryBudgets
                 .sort((a, b) => parseFloat(b.spentAmount) - parseFloat(a.spentAmount))
@@ -1600,7 +1655,7 @@ class BudgetsManager {
                 topCategories.forEach((budget, index) => {
                     // ✅ FIXED: Calculate percentage based on category spending only
                     const percentage = categoryTotalSpent > 0 ? (parseFloat(budget.spentAmount) / categoryTotalSpent) * 100 : 0;
-                    // ✅ UPDATED: Use truncated category name for display (limit to 15 chars for space)
+                    // ✅ UPDATED: Use truncated category name for display (limit to 15 chars for space in analytics)
                     const categoryName = this.truncateCategoryName(this.translateCategoryName(budget.categoryName), 15);
                     const fullCategoryName = this.translateCategoryName(budget.categoryName, 100); // Full name for tooltip
 
@@ -1881,19 +1936,25 @@ class BudgetsManager {
                 result = await this.updateBudget(this.currentBudget.id, budgetData);
                 this.showToast('Budget updated successfully!', 'success');
 
-                this.addNotification({
+                // ✅ FIXED: Add notification with proper data structure
+                this.addLocalNotification({
                     title: 'Budget Updated',
                     message: `${budgetData.type === 'general' ? 'General' : 'Category'} budget of €${budgetData.plannedAmount} updated`,
-                    type: 'info'
+                    categoryName: budgetData.type === 'general' ? 'General Budget' : this.getCategoryName(budgetData.categoryId),
+                    type: 'info',
+                    severity: 'info'
                 });
             } else {
                 result = await this.createBudget(budgetData);
                 this.showToast('Budget created successfully!', 'success');
 
-                this.addNotification({
+                // ✅ FIXED: Add notification with proper data structure
+                this.addLocalNotification({
                     title: 'New Budget Created',
                     message: `${budgetData.type === 'general' ? 'General' : 'Category'} budget of €${budgetData.plannedAmount} created`,
-                    type: 'success'
+                    categoryName: budgetData.type === 'general' ? 'General Budget' : this.getCategoryName(budgetData.categoryId),
+                    type: 'success',
+                    severity: 'success'
                 });
             }
 
@@ -1914,38 +1975,100 @@ class BudgetsManager {
         }
     }
 
+    /**
+     * ✅ NEW: Get category name by ID
+     */
+    getCategoryName(categoryId) {
+        if (!categoryId) return 'General Budget';
+        const category = this.categories.find(cat => cat.id == categoryId);
+        return category ? this.translateCategoryName(category.name) : 'Unknown Category';
+    }
+
+    /**
+     * ✅ COMPLETELY FIXED: Validation with STRING-BASED check for large numbers
+     * CRITICAL FIX: Check large numbers as STRING before parseFloat converts to scientific notation
+     */
     validateBudgetForm(form) {
         let isValid = true;
         this.clearFormErrors();
 
         const amount = form.plannedAmount.value;
-        const amountValue = parseFloat(amount);
 
-        // ✅ NEW: Basic amount validation
-        if (!amount || amountValue <= 0) {
-            this.showFieldError('amount-error', 'Amount must be greater than 0');
+        // ✅ FIRST: Check if there's any input at all
+        if (!amount || amount.trim() === '') {
+            this.showFieldError('amount-error', 'Amount is required');
             isValid = false;
+            return isValid; // Stop here if no input
         }
 
-        // ✅ NEW: Maximum amount validation to prevent database errors
-        const MAX_BUDGET_AMOUNT = 9999999999; // 9.999 billion - safe database limit (10 digits)
+        // ✅ CRITICAL FIX: Check for maximum amount AS STRING - BEFORE parseFloat
+        // This catches numbers like 10000000000 BEFORE they get converted to scientific notation
+        const MAX_BUDGET_AMOUNT = 9999999999;
+        const cleanAmount = amount.trim().replace(/^[+\-]/, ''); // Remove sign for length check
+
+        // Check if it's a pure number string (digits and optional decimal point)
+        if (/^\d*\.?\d*$/.test(cleanAmount)) {
+            // For pure integers, check digit count
+            if (!cleanAmount.includes('.')) {
+                if (cleanAmount.length > 10) { // 9999999999 has 10 digits
+                    this.showFieldError('amount-error',
+                        `Budget amount is too large. Maximum allowed is €${MAX_BUDGET_AMOUNT.toLocaleString()}`);
+                    isValid = false;
+                    return isValid;
+                }
+            }
+
+            // For numbers with decimals, check if integer part exceeds limit
+            const integerPart = cleanAmount.split('.')[0];
+            if (integerPart.length > 10) {
+                this.showFieldError('amount-error',
+                    `Budget amount is too large. Maximum allowed is €${MAX_BUDGET_AMOUNT.toLocaleString()}`);
+                isValid = false;
+                return isValid;
+            }
+
+            // Additional check: if integer part has 10 digits, compare value
+            if (integerPart.length === 10) {
+                const integerValue = parseInt(integerPart);
+                if (integerValue > MAX_BUDGET_AMOUNT) {
+                    this.showFieldError('amount-error',
+                        `Budget amount is too large. Maximum allowed is €${MAX_BUDGET_AMOUNT.toLocaleString()}`);
+                    isValid = false;
+                    return isValid;
+                }
+            }
+        }
+
+        const amountValue = parseFloat(amount);
+
+        // ✅ SECOND: Check for valid number
+        if (isNaN(amountValue) || !isFinite(amountValue)) {
+            this.showFieldError('amount-error', 'Please enter a valid budget amount');
+            isValid = false;
+            return isValid;
+        }
+
+        // ✅ THIRD: Final safety check for maximum amount (for edge cases)
         if (amountValue > MAX_BUDGET_AMOUNT) {
             this.showFieldError('amount-error',
                 `Budget amount is too large. Maximum allowed is €${MAX_BUDGET_AMOUNT.toLocaleString()}`);
             isValid = false;
+            return isValid;
         }
 
-        // ✅ NEW: Check for invalid numbers (NaN, Infinity)
-        if (!isFinite(amountValue)) {
-            this.showFieldError('amount-error', 'Please enter a valid budget amount');
+        // ✅ FOURTH: Check for negative/zero values
+        if (amountValue <= 0) {
+            this.showFieldError('amount-error', 'Amount must be greater than 0');
             isValid = false;
+            return isValid;
         }
 
-        // ✅ NEW: Check for too many decimal places
+        // ✅ FIFTH: Check for too many decimal places
         const decimalPlaces = amount.includes('.') ? amount.split('.')[1]?.length || 0 : 0;
         if (decimalPlaces > 2) {
             this.showFieldError('amount-error', 'Budget amount can have maximum 2 decimal places');
             isValid = false;
+            return isValid;
         }
 
         const activeBudgetType = document.querySelector('.toggle-btn.active')?.dataset.type;
@@ -2040,7 +2163,7 @@ class BudgetsManager {
 
         this.currentBudget = budget;
 
-        // ✅ UPDATED: Use truncated category name for display
+        // ✅ UPDATED: Use truncated category name for display (20 characters)
         const categoryName = budget.isGeneralBudget ? 'General Budget' : this.translateCategoryName(budget.categoryName);
 
         preview.innerHTML = `
@@ -2059,7 +2182,7 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ FIXED: Confirm delete budget with proper success message
+     * ✅ FIXED: Confirm delete budget with proper success message and notification
      */
     async confirmDeleteBudget() {
         if (!this.currentBudget) return;
@@ -2086,13 +2209,16 @@ class BudgetsManager {
                 }
             }
 
-            // ✅ SUCCESS - Show proper success message with truncated name
+            // ✅ SUCCESS - Show proper success message with truncated name (20 characters)
             this.showToast(`Budget "${this.translateCategoryName(budgetName)}" deleted successfully!`, 'success');
 
-            this.addNotification({
+            // ✅ FIXED: Add notification with proper data structure
+            this.addLocalNotification({
                 title: 'Budget Deleted',
                 message: `Budget for ${this.translateCategoryName(budgetName)} has been removed`,
-                type: 'warning'
+                categoryName: this.translateCategoryName(budgetName),
+                type: 'warning',
+                severity: 'warning'
             });
 
             this.signalBudgetUpdate();
@@ -2201,29 +2327,80 @@ class BudgetsManager {
         return count;
     }
 
+    /**
+     * ✅ COMPLETELY FIXED: Initialize notifications with proper structure and localStorage persistence
+     */
     async initializeNotifications() {
         try {
+            // ✅ NEW: Load local notifications from localStorage first
+            this.loadLocalNotificationsFromStorage();
+
             await this.loadNotifications();
             this.updateNotificationBadge();
-            console.log('✅ Notifications initialized');
+            console.log('✅ Notifications initialized:', {
+                apiNotifications: this.notifications.length,
+                localNotifications: this.localNotifications.length
+            });
         } catch (error) {
             console.error('❌ Failed to initialize notifications:', error);
         }
     }
 
+    /**
+     * ✅ NEW: Load local notifications from localStorage
+     */
+    loadLocalNotificationsFromStorage() {
+        try {
+            const stored = localStorage.getItem('budgetLocalNotifications');
+            if (stored) {
+                const parsedNotifications = JSON.parse(stored);
+
+                // ✅ FILTER: Only load notifications less than 1 day old
+                const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                this.localNotifications = parsedNotifications.filter(notification => {
+                    const notificationDate = new Date(notification.createdAt);
+                    return notificationDate > oneDayAgo;
+                });
+
+                // ✅ SAVE: Update localStorage with filtered notifications
+                this.saveLocalNotificationsToStorage();
+
+                console.log(`✅ Loaded ${this.localNotifications.length} local notifications from storage (filtered from ${parsedNotifications.length})`);
+            } else {
+                this.localNotifications = [];
+                console.log('✅ No local notifications found in storage');
+            }
+        } catch (error) {
+            console.error('❌ Failed to load local notifications from storage:', error);
+            this.localNotifications = [];
+        }
+    }
+
+    /**
+     * ✅ NEW: Save local notifications to localStorage
+     */
+    saveLocalNotificationsToStorage() {
+        try {
+            localStorage.setItem('budgetLocalNotifications', JSON.stringify(this.localNotifications));
+            console.log(`💾 Saved ${this.localNotifications.length} local notifications to storage`);
+        } catch (error) {
+            console.error('❌ Failed to save local notifications to storage:', error);
+        }
+    }
     async loadNotifications() {
         try {
-            const alerts = await this.fetchAPI('/alerts');
-            this.notifications = alerts.map(notification => {
-                // ✅ TRANSLATE: Convert all Bulgarian messages to English
-                return {
-                    ...notification,
-                    message: this.translateNotificationMessage(notification.message),
-                    title: this.translateNotificationTitle(notification.title)
-                };
-            });
+            // Load API notifications
+            const apiAlerts = await this.fetchAPI('/alerts');
+            this.notifications = apiAlerts.map(notification => ({
+                ...notification,
+                message: this.translateNotificationMessage(notification.message),
+                title: this.translateNotificationTitle(notification.title),
+                source: 'api' // ✅ Mark as API source
+            }));
+
+            console.log(`✅ Loaded ${this.notifications.length} API notifications`);
         } catch (error) {
-            console.error('❌ Failed to load notifications:', error);
+            console.error('❌ Failed to load API notifications:', error);
             this.notifications = [];
         }
     }
@@ -2256,7 +2433,7 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ UPDATED: Translate Bulgarian notification messages to English and remove emojis
+     * ✅ UPDATED: Translate Bulgarian notification messages to English, remove emojis and truncate category names in messages
      */
     translateNotificationMessage(message) {
         if (!message) return 'Budget notification';
@@ -2328,7 +2505,26 @@ class BudgetsManager {
             translatedMessage = translatedMessage.replace(new RegExp(bulgarian, 'gi'), english);
         });
 
-        return translatedMessage;
+        // ✅ NEW: Truncate long category names within the message content
+        // Look for patterns like 'category name' in quotes and truncate them
+        translatedMessage = translatedMessage.replace(/'([^']{21,})'/g, (match, categoryName) => {
+            const truncated = this.truncateCategoryName(categoryName, 20);
+            return `'${truncated}'`;
+        });
+
+        // ✅ NEW: Also handle category names without quotes that are very long
+        // Split by spaces and truncate any word longer than 25 characters (likely a category name)
+        const words = translatedMessage.split(' ');
+        const processedWords = words.map(word => {
+            // Skip if it's a number, currency, or contains special characters
+            if (/^\d+[\.,\d]*$/.test(word) || /[€$%]/.test(word) || word.length <= 25) {
+                return word;
+            }
+            // Truncate very long words that are likely category names
+            return this.truncateCategoryName(word, 20);
+        });
+
+        return processedWords.join(' ');
     }
 
     toggleNotifications() {
@@ -2365,18 +2561,24 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ UPDATED: Render notifications with English messages, smart scrollbar logic and truncated category names
+     * ✅ COMPLETELY FIXED: Render notifications with proper merging of API and local notifications
      */
     renderNotifications() {
         const container = document.getElementById('notifications-list');
         if (!container) return;
 
+        // ✅ FIXED: Merge API and local notifications properly
+        const allNotifications = this.getAllNotifications();
+
         // ✅ FILTER: Only show notifications less than 1 day old
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const validNotifications = this.notifications.filter(notification => {
+        const validNotifications = allNotifications.filter(notification => {
             const notificationDate = new Date(notification.createdAt);
             return notificationDate > oneDayAgo;
         });
+
+        // ✅ SORT: Most recent first
+        validNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         // ✅ SMART SCROLLBAR: Show scrollbar only when more than 3 notifications
         if (validNotifications.length > 3) {
@@ -2397,12 +2599,15 @@ class BudgetsManager {
             `;
         } else {
             container.innerHTML = validNotifications.map(notification => {
-                // ✅ UPDATED: Use truncated category name for notifications
-                const categoryName = this.translateCategoryName(notification.categoryName || 'General Budget');
+                // ✅ FIXED: Use truncated category name for notifications (20 characters with ..)
+                const categoryName = this.truncateCategoryName(
+                    this.translateCategoryName(notification.categoryName || 'General Budget'),
+                    20  // ✅ Apply 20 character limit with .. suffix
+                );
                 const fullCategoryName = this.translateCategoryName(notification.categoryName || 'General Budget', 100);
 
                 return `
-                    <div class="notification-item ${notification.isRead ? '' : 'unread'}"
+                    <div class="notification-item ${notification.isRead ? '' : 'unread'} ${notification.source === 'local' ? 'local-notification' : ''}"
                          onclick="budgetsManager.markNotificationAsRead(${notification.id})">
                         <div class="notification-icon ${this.getNotificationSeverity(notification)}">
                             <i data-lucide="${this.getNotificationIcon(notification)}"></i>
@@ -2414,7 +2619,7 @@ class BudgetsManager {
                             </div>
                             <div class="notification-meta">
                                 <span class="notification-category" title="${this.escapeHtml(fullCategoryName)}">${this.escapeHtml(categoryName)}</span>
-                                <span class="notification-period">${notification.budgetPeriod || 'Current Period'}</span>
+                                <span class="notification-period">${notification.budgetPeriod || this.getCurrentPeriodString()}</span>
                             </div>
                             <div class="notification-time">${this.formatSmartRelativeTime(notification.createdAt)}</div>
                         </div>
@@ -2427,7 +2632,29 @@ class BudgetsManager {
             lucide.createIcons();
         }
 
-        console.log(`📱 Rendered ${validNotifications.length} notifications with ${validNotifications.length > 3 ? 'scrollbar' : 'no scrollbar'}`);
+        console.log(`📱 Rendered ${validNotifications.length} total notifications (${this.notifications.length} API + ${this.localNotifications.length} local)`);
+    }
+
+    /**
+     * ✅ COMPLETELY NEW: Get all notifications merged and sorted
+     */
+    getAllNotifications() {
+        // Combine API and local notifications
+        const combined = [
+            ...this.notifications.map(n => ({ ...n, source: 'api' })),
+            ...this.localNotifications.map(n => ({ ...n, source: 'local' }))
+        ];
+
+        // Remove duplicates based on a combination of timestamp and message
+        const unique = combined.filter((notification, index, array) =>
+            index === array.findIndex(n =>
+                n.createdAt === notification.createdAt &&
+                n.message === notification.message
+            )
+        );
+
+        // Sort by creation date (most recent first)
+        return unique.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
     /**
@@ -2489,18 +2716,21 @@ class BudgetsManager {
         }
     }
 
+    /**
+     * ✅ COMPLETELY FIXED: Update notification badge with proper counting
+     */
     updateNotificationBadge() {
         const badge = document.getElementById('notification-badge');
         if (!badge) return;
 
         // ✅ FILTER: Only count notifications less than 1 day old
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const validNotifications = this.notifications.filter(notification => {
+        const allNotifications = this.getAllNotifications();
+
+        const unreadCount = allNotifications.filter(notification => {
             const notificationDate = new Date(notification.createdAt);
             return notificationDate > oneDayAgo && !notification.isRead;
-        });
-
-        const unreadCount = validNotifications.length;
+        }).length;
 
         if (unreadCount > 0) {
             badge.textContent = unreadCount;
@@ -2508,39 +2738,66 @@ class BudgetsManager {
         } else {
             badge.style.display = 'none';
         }
+
+        console.log(`🔔 Badge updated: ${unreadCount} unread notifications`);
     }
 
+    /**
+     * ✅ FIXED: Mark notification as read with proper handling of local vs API notifications and localStorage sync
+     */
     async markNotificationAsRead(notificationId) {
         try {
-            await this.fetchAPI(`/alerts/${notificationId}/read`, 'PUT');
-
-            const notification = this.notifications.find(n => n.id === notificationId);
-            if (notification) {
-                notification.isRead = true;
+            // Find in local notifications first
+            const localNotification = this.localNotifications.find(n => n.id === notificationId);
+            if (localNotification) {
+                localNotification.isRead = true;
+                // ✅ NEW: Save to localStorage after marking as read
+                this.saveLocalNotificationsToStorage();
+                console.log(`✅ Marked local notification ${notificationId} as read`);
+            } else {
+                // Try API notification
+                await this.fetchAPI(`/alerts/${notificationId}/read`, 'PUT');
+                const apiNotification = this.notifications.find(n => n.id === notificationId);
+                if (apiNotification) {
+                    apiNotification.isRead = true;
+                }
+                console.log(`✅ Marked API notification ${notificationId} as read`);
             }
 
             this.updateNotificationBadge();
             this.renderNotifications();
 
-            console.log(`✅ Marked notification ${notificationId} as read`);
         } catch (error) {
             console.error('❌ Failed to mark notification as read:', error);
         }
     }
 
+    /**
+     * ✅ FIXED: Mark all notifications as read with proper handling and localStorage sync
+     */
     async markAllNotificationsAsRead() {
         try {
-            await this.fetchAPI('/alerts/read-all', 'PUT');
+            // Mark all API notifications as read
+            if (this.notifications.length > 0) {
+                await this.fetchAPI('/alerts/read-all', 'PUT');
+                this.notifications.forEach(notification => {
+                    notification.isRead = true;
+                });
+            }
 
-            this.notifications.forEach(notification => {
+            // Mark all local notifications as read
+            this.localNotifications.forEach(notification => {
                 notification.isRead = true;
             });
+
+            // ✅ NEW: Save to localStorage after marking all as read
+            this.saveLocalNotificationsToStorage();
 
             this.updateNotificationBadge();
             this.renderNotifications();
             this.showToast('All notifications marked as read', 'success');
 
-            console.log('✅ Marked all notifications as read');
+            console.log('✅ Marked all notifications as read (API + local)');
         } catch (error) {
             console.error('❌ Failed to mark all notifications as read:', error);
             this.showToast('Failed to update notifications', 'error');
@@ -2548,31 +2805,60 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ UPDATED: Add notification with English messages (no emojis)
+     * ✅ COMPLETELY FIXED: Add local notification with proper structure, deduplication and localStorage persistence
      */
-    addNotification(notification) {
+    addLocalNotification(notification) {
         const newNotification = {
-            id: Date.now() + Math.random(),
+            id: Date.now() + Math.random(), // Unique ID for local notifications
             title: notification.title || 'Budget Alert',
-            message: notification.message, // Already in English when called
+            message: notification.message || 'Budget notification',
             categoryName: notification.categoryName || 'General Budget',
             budgetPeriod: notification.budgetPeriod || this.getCurrentPeriodString(),
             type: notification.type || 'info',
             severity: notification.severity || notification.type || 'info',
             isRead: false,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            source: 'local'
         };
 
-        this.notifications.unshift(newNotification);
+        // ✅ PREVENT DUPLICATES: Check if similar notification already exists
+        const isDuplicate = this.localNotifications.some(existing =>
+            existing.message === newNotification.message &&
+            existing.categoryName === newNotification.categoryName &&
+            Math.abs(new Date(existing.createdAt) - new Date(newNotification.createdAt)) < 5000 // Within 5 seconds
+        );
 
-        // Keep only last 20 notifications
-        if (this.notifications.length > 20) {
-            this.notifications.splice(20);
+        if (isDuplicate) {
+            console.log('🚫 Duplicate notification prevented:', newNotification.message);
+            return;
         }
+
+        // Add to local notifications
+        this.localNotifications.unshift(newNotification);
+
+        // Keep only last 20 local notifications
+        if (this.localNotifications.length > 20) {
+            this.localNotifications.splice(20);
+        }
+
+        // ✅ NEW: Save to localStorage immediately after adding
+        this.saveLocalNotificationsToStorage();
 
         this.updateNotificationBadge();
 
-        console.log('📬 Added notification:', newNotification);
+        console.log('📬 Added local notification:', {
+            title: newNotification.title,
+            message: newNotification.message,
+            categoryName: newNotification.categoryName,
+            type: newNotification.type
+        });
+    }
+
+    /**
+     * ✅ LEGACY: Keep old method for compatibility but redirect to new one
+     */
+    addNotification(notification) {
+        return this.addLocalNotification(notification);
     }
 
     /**
@@ -2646,17 +2932,42 @@ class BudgetsManager {
     }
 
     showFieldError(errorId, message) {
+        console.log('🔴 DEBUG: showFieldError called with:', { errorId, message });
+
         const errorElement = document.getElementById(errorId);
+        console.log('🔴 DEBUG: Error element found:', errorElement);
+
         if (errorElement) {
+            // ✅ ENHANCED: Force display the error message
             errorElement.textContent = message;
             errorElement.classList.add('visible');
+            errorElement.style.display = 'block'; // ✅ Force display
+            errorElement.style.color = '#ef4444'; // ✅ Force red color
+            errorElement.style.fontSize = '0.875rem';
+            errorElement.style.marginTop = '0.5rem';
+            errorElement.style.fontWeight = '500';
+
+            console.log('🔴 DEBUG: Error message set:', {
+                textContent: errorElement.textContent,
+                classes: errorElement.classList.toString(),
+                display: errorElement.style.display,
+                color: errorElement.style.color
+            });
+        } else {
+            console.error('❌ DEBUG: Error element not found with ID:', errorId);
+            // ✅ FALLBACK: Show alert if element not found
+            alert(`Field Error: ${message}`);
         }
     }
 
     clearFormErrors() {
+        console.log('🔄 DEBUG: Clearing form errors');
+
         document.querySelectorAll('.form-error').forEach(error => {
             error.classList.remove('visible');
             error.textContent = '';
+            error.style.display = 'none'; // ✅ Force hide
+            console.log('🔄 DEBUG: Cleared error element:', error.id || error.className);
         });
     }
 
@@ -2907,7 +3218,7 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ UPDATED: Cleanup method with time interval cleanup
+     * ✅ UPDATED: Cleanup method with time interval cleanup, proper notification clearing and localStorage cleanup
      */
     cleanup() {
         // Clear time update interval
@@ -2926,10 +3237,14 @@ class BudgetsManager {
             clearInterval(this.refreshTimer);
         }
 
-        // Clear notifications
-        this.notifications = [];
+        // ✅ NEW: Save local notifications to localStorage before cleanup
+        this.saveLocalNotificationsToStorage();
 
-        console.log('🧹 BudgetsManager cleanup completed with time interval cleared');
+        // Clear both notification arrays from memory
+        this.notifications = [];
+        this.localNotifications = [];
+
+        console.log('🧹 BudgetsManager cleanup completed with localStorage save and notifications cleared');
     }
 }
 
