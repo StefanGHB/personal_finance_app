@@ -1,5 +1,5 @@
 /**
- * ULTRA MODERN FINANCIAL ANALYTICS DASHBOARD - FIXED NOTIFICATION BADGE
+ * ULTRA MODERN FINANCIAL ANALYTICS DASHBOARD - FIXED NOTIFICATION BADGE + SMART NUMBER FORMATTING
  * 🚀 Professional financial charts with Trading View style
  * 📊 Advanced analytics and real-time updates
  * 💹 PRODUCTION READY: All calculation logic and dynamic updates - NO HARDCODED VALUES
@@ -10,6 +10,7 @@
  * 🔄 ENHANCED: Perfect synchronization with budgets, categories, transactions
  * ⏰ FIXED: Notification badge shows immediately when new notification appears
  * ✂️ NEW: Dynamic Category Name Truncation for perfect layout
+ * 🔢 NEW: Intelligent Number Formatting for Budget Utilization (K, M format)
  */
 
 (function() {
@@ -29,11 +30,21 @@
 
             // Notification system properties
             this.notificationTimer = null;
+            this.backupTimer = null;           // ✅ НОВО: Backup timer
+            this.cleanupTimer = null;          // ✅ НОВО: Cleanup timer
             this.notificationRetentionHours = 24; // Exactly 24 hours retention
             this.maxNotifications = 25; // Maximum notifications to keep
 
             // Category truncation settings
             this.categoryTruncationLength = 12;
+
+            // NEW: Smart number formatting settings
+            this.numberFormatting = {
+                thousandThreshold: 1000,
+                millionThreshold: 1000000,
+                billionThreshold: 1000000000,
+                decimalPlaces: 1
+            };
 
             // Trading View Style Color Schemes - UPDATED TO PURPLE THEME
             this.colors = {
@@ -198,12 +209,122 @@
         }
 
         // ===================================
+        // 🔢 NEW: SMART NUMBER FORMATTING SYSTEM
+        // ===================================
+
+        formatSmartNumber(value, isPercentage = false, showTooltip = false) {
+            const numValue = parseFloat(value) || 0;
+            const { thousandThreshold, millionThreshold, billionThreshold, decimalPlaces } = this.numberFormatting;
+
+            let formattedValue;
+            let fullValue;
+            let needsTooltip = false;
+
+            if (isPercentage) {
+                // ✅ CRITICAL FIX: DON'T add % symbol here - HTML template adds it automatically
+                const absValue = Math.abs(numValue);
+                fullValue = numValue.toFixed(1); // No % symbol in fullValue for tooltip
+
+                if (absValue >= billionThreshold) {
+                    formattedValue = (numValue / billionThreshold).toFixed(decimalPlaces) + 'B'; // No % here
+                    needsTooltip = true;
+                } else if (absValue >= millionThreshold) {
+                    formattedValue = (numValue / millionThreshold).toFixed(decimalPlaces) + 'M'; // No % here
+                    needsTooltip = true;
+                } else if (absValue >= thousandThreshold) {
+                    formattedValue = (numValue / thousandThreshold).toFixed(decimalPlaces) + 'K'; // No % here
+                    needsTooltip = true;
+                } else {
+                    formattedValue = Math.round(numValue).toString(); // No % here
+                    needsTooltip = false;
+                }
+            } else {
+                // For regular numbers, apply smart formatting
+                const absValue = Math.abs(numValue);
+                fullValue = numValue.toFixed(2);
+
+                if (absValue >= billionThreshold) {
+                    formattedValue = (numValue / billionThreshold).toFixed(decimalPlaces) + 'B';
+                    needsTooltip = true;
+                } else if (absValue >= millionThreshold) {
+                    formattedValue = (numValue / millionThreshold).toFixed(decimalPlaces) + 'M';
+                    needsTooltip = true;
+                } else if (absValue >= thousandThreshold) {
+                    formattedValue = (numValue / thousandThreshold).toFixed(decimalPlaces) + 'K';
+                    needsTooltip = true;
+                } else {
+                    formattedValue = numValue.toFixed(2);
+                    needsTooltip = false;
+                }
+            }
+
+            return {
+                formatted: formattedValue,
+                fullValue: fullValue,
+                needsTooltip: needsTooltip
+            };
+        }
+
+        setCardValueInstantly(cardId, value, isPercentage = false) {
+            const element = document.querySelector(`#${cardId} .value-amount, #${cardId} .value-percentage`);
+            if (!element) return;
+
+            if (isPercentage) {
+                // ✅ CRITICAL FIX: formatSmartNumber returns value WITHOUT % symbol for percentages
+                const smartFormat = this.formatSmartNumber(value, true, true);
+
+                element.textContent = smartFormat.formatted; // Will be "4.2M" without %
+
+                // Add tooltip for large percentages
+                if (smartFormat.needsTooltip) {
+                    element.title = `Full value: ${smartFormat.fullValue}%`; // Add % only in tooltip
+                    element.style.cursor = 'help';
+                } else {
+                    element.removeAttribute('title');
+                    element.style.cursor = 'default';
+                }
+            } else {
+                // For monetary values, use smart formatting
+                const smartFormat = this.formatSmartNumber(value, false, true);
+
+                element.textContent = smartFormat.formatted;
+
+                // Add tooltip only if number was abbreviated
+                if (smartFormat.needsTooltip) {
+                    element.title = `Full value: ${this.formatCurrency(value)}`;
+                    element.style.cursor = 'help';
+                } else {
+                    element.removeAttribute('title');
+                    element.style.cursor = 'default';
+                }
+            }
+        }
+
+        updateElement(id, content, useSmartFormat = false) {
+            const element = document.getElementById(id);
+            if (!element) return;
+
+            if (useSmartFormat && !isNaN(parseFloat(content))) {
+                const smartFormat = this.formatSmartNumber(content);
+                element.textContent = smartFormat.formatted;
+
+                if (smartFormat.needsTooltip) {
+                    element.title = `Full value: ${this.formatCurrency(content)}`;
+                    element.style.cursor = 'help';
+                } else {
+                    element.removeAttribute('title');
+                    element.style.cursor = 'default';
+                }
+            } else {
+                element.textContent = content;
+                element.removeAttribute('title');
+                element.style.cursor = 'default';
+            }
+        }
+        // ===================================
         // 🔔 FIXED NOTIFICATION SYSTEM - IMMEDIATE BADGE UPDATES
         // ===================================
 
-        /**
-         * ✅ CRITICAL FIX: Initialize notification system with SIMPLE badge logic
-         */
         async initializeNotifications() {
             try {
                 console.log('🔔 Initializing notification system...');
@@ -279,6 +400,57 @@
         }
 
         /**
+         * ✅ ENHANCED: Advanced cleanup that removes notifications older than 24 hours
+         */
+        cleanupOldNotificationsAdvanced() {
+            try {
+                const now = new Date();
+                const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+                // Clean from current notifications array
+                const beforeCount = this.notifications.length;
+                this.notifications = this.notifications.filter(notification => {
+                    if (notification.timestamp) {
+                        const notificationTime = new Date(notification.timestamp);
+                        return notificationTime > oneDayAgo;
+                    }
+                    return false; // Remove notifications without timestamp
+                });
+                const afterCount = this.notifications.length;
+
+                // Clean from localStorage
+                const storageKey = 'dashboardNotifications';
+                const storedNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                const cleanedStored = storedNotifications.filter(notification => {
+                    if (notification.timestamp) {
+                        const notificationTime = new Date(notification.timestamp);
+                        return notificationTime > oneDayAgo;
+                    }
+                    return false;
+                });
+                localStorage.setItem(storageKey, JSON.stringify(cleanedStored));
+
+                // Clean read states
+                this.cleanupOldReadStates();
+
+                if (beforeCount !== afterCount) {
+                    console.log(`🧹 Advanced cleanup: Removed ${beforeCount - afterCount} notifications older than 24 hours`);
+
+                    // Force badge update after cleanup
+                    this.forceShowBadgeNow();
+
+                    // Update display if panel is open
+                    const panel = document.getElementById('notifications-panel');
+                    if (panel && panel.classList.contains('active')) {
+                        this.renderNotifications();
+                    }
+                }
+
+            } catch (error) {
+                console.error('❌ Error in advanced notification cleanup:', error);
+            }
+        }
+        /**
          * ✅ FIXED: Clean old read states with proper timing
          */
         cleanupOldReadStates() {
@@ -301,28 +473,201 @@
         }
 
         /**
-         * ✅ FIXED: Setup notification refresh timer with immediate badge updates
+         * ✅ FIXED: Perfect 15-minute interval timer system
          */
         setupNotificationRefreshTimer() {
             // Clear any existing timer
             if (this.notificationTimer) {
                 clearInterval(this.notificationTimer);
+                this.notificationTimer = null;
+                console.log('🧹 Cleared existing notification timer');
             }
 
-            // Update every 1 minute to keep times accurate and badge updated
-            this.notificationTimer = setInterval(() => {
-                console.log('⏰ Auto-updating notifications and badge');
-                this.updateNotificationTimestamps();
-                this.updateNotificationBadgeImmediately(); // ✅ Update badge every minute
+            console.log('⏰ Setting up PERFECT 15-minute notification timing system...');
 
-                // Update display if notifications panel is open
+            // ✅ PERFECT: Update every 60 seconds for smooth transitions
+            this.notificationTimer = setInterval(() => {
+                const now = new Date();
+                console.log(`⏰ Timer triggered at ${now.toLocaleTimeString()}`);
+
+                // Auto-delete notifications older than 24 hours FIRST
+                this.autoDeleteOldNotifications();
+
+                // Update timestamps for remaining notifications
+                this.updateNotificationTimestamps();
+
+                // Force badge update
+                this.forceShowBadgeNow();
+
+                // Update UI if panel is open
+                const panel = document.getElementById('notifications-panel');
+                if (panel && panel.classList.contains('active')) {
+                    console.log('🔄 Panel is open - re-rendering with updated times');
+                    this.renderNotifications();
+                }
+
+                // Advanced cleanup every 5 minutes (for localStorage)
+                const currentMinute = now.getMinutes();
+                if (currentMinute % 5 === 0) {
+                    this.cleanupOldNotificationsAdvanced();
+                    console.log('🧹 5-minute localStorage cleanup performed');
+                }
+
+            }, 60 * 1000); // ✅ Every 60 seconds for smooth updates
+
+            console.log('✅ Perfect 15-minute timing system active - 60-second check intervals');
+
+            // ✅ IMMEDIATE: Update timestamps right now
+            setTimeout(() => {
+                console.log('🚀 Immediate timestamp update on startup');
+                this.autoDeleteOldNotifications();
+                this.updateNotificationTimestamps();
+                this.forceShowBadgeNow();
+            }, 1000);
+        }
+        /**
+         * ✅ NEW: Auto-delete notifications older than 24 hours
+         */
+        autoDeleteOldNotifications() {
+            if (!this.notifications || this.notifications.length === 0) {
+                return;
+            }
+
+            const now = new Date();
+            const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            const beforeCount = this.notifications.length;
+
+            console.log(`🗑️ Auto-delete check: ${beforeCount} notifications, cutoff: ${oneDayAgo.toISOString()}`);
+
+            // Filter out notifications older than 24 hours
+            this.notifications = this.notifications.filter(notification => {
+                if (notification.timestamp) {
+                    const notificationTime = new Date(notification.timestamp);
+                    const isValid = notificationTime > oneDayAgo;
+
+                    if (!isValid) {
+                        console.log(`🗑️ Auto-deleting: "${notification.title}" from ${notificationTime.toISOString()}`);
+                    }
+
+                    return isValid;
+                }
+
+                // Remove notifications without timestamp
+                console.log(`🗑️ Auto-deleting notification without timestamp: "${notification.title}"`);
+                return false;
+            });
+
+            const afterCount = this.notifications.length;
+            const deletedCount = beforeCount - afterCount;
+
+            if (deletedCount > 0) {
+                console.log(`🗑️ Auto-deleted ${deletedCount} notifications older than 24 hours`);
+
+                // Also clean from localStorage
+                this.cleanupOldNotificationsAdvanced();
+
+                // Force badge update after deletion
+                this.forceShowBadgeNow();
+
+                // Update display if panel is open
                 const panel = document.getElementById('notifications-panel');
                 if (panel && panel.classList.contains('active')) {
                     this.renderNotifications();
                 }
-            }, 60 * 1000); // 1 minute
+            }
+        }
 
-            console.log('⏰ Notification refresh timer setup with immediate badge updates');
+        /**
+         * ✅ TEST: Create notifications with specific timestamps to test the timing logic
+         */
+        testNotificationTimingLogic() {
+            console.log('🧪 TESTING notification timing logic...');
+
+            const now = new Date();
+
+            // Clear existing notifications for clean test
+            this.notifications = [];
+
+            // Create test notifications at specific time intervals
+            const testNotifications = [
+                {
+                    title: 'Test: Just Now',
+                    message: 'This should show "Just now"',
+                    type: 'info',
+                    timestamp: new Date(now.getTime() - 5 * 60 * 1000).toISOString() // 5 minutes ago
+                },
+                {
+                    title: 'Test: 15 Minutes',
+                    message: 'This should show "15 minutes ago"',
+                    type: 'info',
+                    timestamp: new Date(now.getTime() - 20 * 60 * 1000).toISOString() // 20 minutes ago
+                },
+                {
+                    title: 'Test: 30 Minutes',
+                    message: 'This should show "30 minutes ago"',
+                    type: 'warning',
+                    timestamp: new Date(now.getTime() - 35 * 60 * 1000).toISOString() // 35 minutes ago
+                },
+                {
+                    title: 'Test: 45 Minutes',
+                    message: 'This should show "45 minutes ago"',
+                    type: 'warning',
+                    timestamp: new Date(now.getTime() - 50 * 60 * 1000).toISOString() // 50 minutes ago
+                },
+                {
+                    title: 'Test: 1 Hour',
+                    message: 'This should show "1 hour ago"',
+                    type: 'success',
+                    timestamp: new Date(now.getTime() - 70 * 60 * 1000).toISOString() // 70 minutes ago
+                },
+                {
+                    title: 'Test: 3 Hours',
+                    message: 'This should show "3 hours ago"',
+                    type: 'info',
+                    timestamp: new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString() // 3 hours ago
+                },
+                {
+                    title: 'Test: Almost 24h',
+                    message: 'This should show "23 hours ago"',
+                    type: 'danger',
+                    timestamp: new Date(now.getTime() - 23 * 60 * 60 * 1000).toISOString() // 23 hours ago
+                }
+            ];
+
+            // Add test notifications
+            testNotifications.forEach((testNotif, index) => {
+                const notification = {
+                    id: Date.now() + index,
+                    persistentId: `test-${index}`,
+                    ...testNotif,
+                    isRead: false,
+                    category: 'test'
+                };
+
+                this.notifications.push(notification);
+            });
+
+            console.log('✅ Test notifications created:');
+
+            // Update timestamps immediately
+            this.updateNotificationTimestamps();
+
+            // Show results
+            this.notifications.forEach((n, i) => {
+                const age = Math.floor((new Date() - new Date(n.timestamp)) / (1000 * 60));
+                console.log(`  ${i + 1}. "${n.title}" - Age: ${age}min - Display: "${n.dynamicTime}"`);
+            });
+
+            // Force badge update and render
+            this.forceShowBadgeNow();
+
+            const panel = document.getElementById('notifications-panel');
+            if (panel && panel.classList.contains('active')) {
+                this.renderNotifications();
+            }
+
+            console.log('🧪 Test completed! Watch the times update every minute.');
+            console.log('💡 Use this in console to test: window.dashboardInstance.testNotificationTimingLogic()');
         }
 
         /**
@@ -350,34 +695,46 @@
         }
 
         /**
-         * ✅ FIXED: Load notifications with GUARANTEED badge display
+         * ✅ FIXED: Load notifications with CORRECT order - existing FIRST, then generate
          */
         async loadNotifications() {
             try {
                 console.log('🔔 Loading dashboard notifications...');
 
-                // Load persistent read states first
+                // ✅ STEP 1: Load existing notifications from localStorage FIRST
+                const existingNotifications = this.getUserActionNotifications();
+                console.log(`📋 Found ${existingNotifications.length} existing notifications in localStorage`);
+
+                // ✅ STEP 2: Load persistent read states
                 const readStates = this.loadReadStates();
 
-                // Generate fresh notifications from dashboard data
-                this.notifications = await this.generateDashboardNotifications();
+                // ✅ STEP 3: Generate NEW notifications (will check against existing ones)
+                const generatedNotifications = await this.generateDashboardNotifications();
+                console.log(`🔔 Generated ${generatedNotifications.length} dashboard notifications`);
 
-                // Apply saved read states
+                // ✅ STEP 4: Combine existing + generated (existing already have correct timestamps)
+                this.notifications = [...existingNotifications, ...generatedNotifications];
+
+                // ✅ STEP 5: Apply saved read states
                 this.notifications.forEach(notification => {
                     if (notification.persistentId && readStates[notification.persistentId]) {
                         notification.isRead = true;
                     }
                 });
 
-                // Add user action notifications from localStorage
-                const userNotifications = this.getUserActionNotifications();
-                this.notifications.push(...userNotifications);
-
-                // Filter, sort and limit notifications
+                // ✅ STEP 6: Filter, sort and limit notifications
                 this.notifications = this.processNotifications(this.notifications);
 
                 console.log('✅ Dashboard notifications loaded:', this.notifications.length);
                 console.log('🔔 Unread notifications:', this.notifications.filter(n => !n.isRead).length);
+
+                // ✅ STEP 7: Debug - show notification ages
+                this.notifications.forEach((n, i) => {
+                    const created = new Date(n.timestamp);
+                    const now = new Date();
+                    const ageMinutes = Math.floor((now - created) / (1000 * 60));
+                    console.log(`  ${i+1}. "${n.title}" - Age: ${ageMinutes} minutes, Timestamp: ${n.timestamp}`);
+                });
 
                 // ✅ FORCE badge update with retry mechanism
                 this.forceShowBadgeNow();
@@ -416,210 +773,387 @@
             }
         }
 
-        /**
-         * ✅ COMPLETELY FIXED: Generate dashboard notifications with CORRECT TIMING
-         */
-        async generateDashboardNotifications() {
-            const notifications = [];
-            const now = new Date();
+       /**
+        * ✅ SIMPLIFIED: Generate notifications - only NEW ones get saved to localStorage
+        */
+       async generateDashboardNotifications() {
+           const notifications = [];
+           const now = new Date();
 
-            try {
-                if (!this.dashboardData) {
-                    return notifications;
-                }
+           try {
+               if (!this.dashboardData) {
+                   return notifications;
+               }
 
-                const { monthlyTransactions, budgets, balance, spendingVelocity } = this.dashboardData;
+               const { monthlyTransactions, budgets, balance, spendingVelocity } = this.dashboardData;
 
-                // 1. Budget Alert Notifications - USE CURRENT TIME
-                if (budgets && budgets.budgets) {
-                    budgets.budgets.forEach(budget => {
-                        const utilization = budget.spentPercentage || 0;
+               console.log('🔔 Generating NEW dashboard notifications...');
+               const seenPersistentIds = new Set();
 
-                        if (utilization > 100) {
-                            const budgetNotification = {
-                                id: Date.now() + Math.random(),
-                                persistentId: `budget-exceeded-${budget.id}-${budget.budgetYear}-${budget.budgetMonth}`,
-                                title: 'Budget Exceeded',
-                                message: `${this.translateCategoryName(budget.categoryName)} budget exceeded by ${(utilization - 100).toFixed(1)}%`,
-                                type: 'danger',
-                                category: 'budget',
-                                timestamp: now.toISOString(), // Always current time for budget alerts
-                                isRead: false,
-                                budgetId: budget.id
-                            };
+               // ✅ CRITICAL: Get existing notifications to check timestamps
+               const existingNotifications = this.getUserActionNotifications();
+               const existingTimestamps = {};
+               existingNotifications.forEach(n => {
+                   if (n.persistentId) {
+                       existingTimestamps[n.persistentId] = n.timestamp;
+                   }
+               });
 
-                            notifications.push(budgetNotification);
-                        } else if (utilization > 90) {
-                            const budgetWarning = {
-                                id: Date.now() + Math.random(),
-                                persistentId: `budget-warning-${budget.id}-${budget.budgetYear}-${budget.budgetMonth}`,
-                                title: 'Budget Warning',
-                                message: `${this.translateCategoryName(budget.categoryName)} budget is ${utilization.toFixed(1)}% used`,
-                                type: 'warning',
-                                category: 'budget',
-                                timestamp: now.toISOString(), // Always current time for budget warnings
-                                isRead: false,
-                                budgetId: budget.id
-                            };
+               // 1. Budget Alert Notifications
+               if (budgets && budgets.budgets) {
+                   budgets.budgets.forEach(budget => {
+                       const utilization = budget.spentPercentage || 0;
 
-                            notifications.push(budgetWarning);
-                        }
-                    });
-                }
+                       if (utilization > 100) {
+                           const translatedCategoryName = this.translateCategoryName(budget.categoryName);
+                           const truncatedCategoryName = this.intelligentTruncateBudgetCategory(translatedCategoryName);
+                           const persistentId = `budget-exceeded-${budget.id}-${budget.budgetYear}-${budget.budgetMonth}`;
 
-                // 2. Spending Velocity Notifications - USE CURRENT TIME
-                if (spendingVelocity && spendingVelocity.hasData) {
-                    if (spendingVelocity.status === 'way-over-pace') {
-                        const velocityAlert = {
-                            id: Date.now() + Math.random(),
-                            persistentId: `velocity-alert-${now.getFullYear()}-${now.getMonth() + 1}`,
-                            title: 'High Spending Velocity',
-                            message: `You're spending significantly faster than planned. Current velocity: ${(spendingVelocity.velocityRatio * 100).toFixed(0)}%`,
-                            type: 'warning',
-                            category: 'velocity',
-                            timestamp: now.toISOString(), // Always current time for velocity alerts
-                            isRead: false
-                        };
+                           // ✅ SKIP if already exists in localStorage
+                           if (existingTimestamps[persistentId]) {
+                               console.log(`⏭️ SKIP existing budget exceeded: ${persistentId}`);
+                               return;
+                           }
 
-                        notifications.push(velocityAlert);
-                    } else if (spendingVelocity.status === 'under-pace') {
-                        const velocityGood = {
-                            id: Date.now() + Math.random(),
-                            persistentId: `velocity-good-${now.getFullYear()}-${now.getMonth() + 1}`,
-                            title: 'Excellent Budget Control',
-                            message: `You're maintaining excellent spending discipline. Keep it up!`,
-                            type: 'success',
-                            category: 'velocity',
-                            timestamp: now.toISOString(), // Always current time for velocity notifications
-                            isRead: false
-                        };
+                           const budgetNotification = {
+                               id: Date.now() + Math.random(),
+                               persistentId: persistentId,
+                               title: 'Budget Exceeded',
+                               message: `${truncatedCategoryName} budget exceeded by ${(utilization - 100).toFixed(1)}%`,
+                               type: 'danger',
+                               category: 'budget',
+                               timestamp: this.getSmartNotificationTimestamp('budget-exceeded'),
+                               isRead: false,
+                               budgetId: budget.id
+                           };
 
-                        notifications.push(velocityGood);
-                    }
-                }
+                           if (!seenPersistentIds.has(budgetNotification.persistentId)) {
+                               seenPersistentIds.add(budgetNotification.persistentId);
+                               notifications.push(budgetNotification);
 
-                // 3. FIXED: Transaction Notifications - SHOW ALL RECENT TRANSACTIONS
-                if (monthlyTransactions && monthlyTransactions.transactions) {
-                    // Get all recent transactions (last 4 hours for more coverage)
-                    const recentTransactions = monthlyTransactions.transactions
-                        .filter(t => {
-                            const transactionTime = new Date(t.transactionDate);
-                            const timeDiff = now - transactionTime;
-                            const hoursDiff = timeDiff / (1000 * 60 * 60);
-                            return hoursDiff <= 4; // Show transactions from last 4 hours
-                        })
-                        .sort((a, b) => new Date(b.transactionDate) - new Date(a.transactionDate))
-                        .slice(0, 5); // Show up to 5 recent transactions
+                               // ✅ Save NEW notification to localStorage
+                               this.saveNotificationToStorage(budgetNotification);
+                               console.log(`✅ NEW budget exceeded notification: ${budgetNotification.persistentId}`);
+                           }
+                       } else if (utilization > 90) {
+                           const translatedCategoryName = this.translateCategoryName(budget.categoryName);
+                           const truncatedCategoryName = this.intelligentTruncateBudgetCategory(translatedCategoryName);
+                           const persistentId = `budget-warning-${budget.id}-${budget.budgetYear}-${budget.budgetMonth}`;
 
-                    recentTransactions.forEach((transaction) => {
-                        let notificationTitle, notificationMessage, notificationType;
+                           // ✅ SKIP if already exists in localStorage
+                           if (existingTimestamps[persistentId]) {
+                               console.log(`⏭️ SKIP existing budget warning: ${persistentId}`);
+                               return;
+                           }
 
-                        if (transaction.type === 'EXPENSE') {
-                            // Show all expenses, not just large ones
-                            notificationTitle = 'Expense Recorded';
-                            notificationMessage = `${this.formatCurrency(transaction.amount)} spent on ${this.translateCategoryName(transaction.categoryName)}`;
-                            notificationType = parseFloat(transaction.amount) > 200 ? 'warning' : 'info';
-                        } else if (transaction.type === 'INCOME') {
-                            notificationTitle = 'Income Recorded';
-                            notificationMessage = `${this.formatCurrency(transaction.amount)} received from ${this.translateCategoryName(transaction.categoryName)}`;
-                            notificationType = 'success';
-                        } else {
-                            // Handle other transaction types
-                            notificationTitle = 'Transaction Recorded';
-                            notificationMessage = `${this.formatCurrency(transaction.amount)} - ${this.translateCategoryName(transaction.categoryName)}`;
-                            notificationType = 'info';
-                        }
+                           const budgetWarning = {
+                               id: Date.now() + Math.random(),
+                               persistentId: persistentId,
+                               title: 'Budget Warning',
+                               message: `${truncatedCategoryName} budget is ${utilization.toFixed(1)}% used`,
+                               type: 'warning',
+                               category: 'budget',
+                               timestamp: this.getSmartNotificationTimestamp('budget-warning'),
+                               isRead: false,
+                               budgetId: budget.id
+                           };
 
-                        const transactionNotification = {
-                            id: Date.now() + Math.random(),
-                            persistentId: `transaction-${transaction.id}`,
-                            title: notificationTitle,
-                            message: notificationMessage,
-                            type: notificationType,
-                            category: 'transaction',
-                            timestamp: now.toISOString(), // ALWAYS use current time for notification display
-                            isRead: false,
-                            transactionId: transaction.id
-                        };
+                           if (!seenPersistentIds.has(budgetWarning.persistentId)) {
+                               seenPersistentIds.add(budgetWarning.persistentId);
+                               notifications.push(budgetWarning);
 
-                        notifications.push(transactionNotification);
-                    });
-                }
+                               // ✅ Save NEW notification to localStorage
+                               this.saveNotificationToStorage(budgetWarning);
+                               console.log(`✅ NEW budget warning: ${budgetWarning.persistentId}`);
+                           }
+                       }
+                   });
+               }
 
-                // 4. Balance Notifications - USE CURRENT TIME
-                if (balance !== undefined) {
-                    if (balance < 0) {
-                        const balanceAlert = {
-                            id: Date.now() + Math.random(),
-                            persistentId: 'negative-balance-alert',
-                            title: 'Negative Balance Alert',
-                            message: `Your current balance is ${this.formatCurrency(balance)}. Consider reviewing your expenses.`,
-                            type: 'warning',
-                            category: 'balance',
-                            timestamp: now.toISOString(), // Always current time for balance alerts
-                            isRead: false
-                        };
+               // 2. Spending Velocity Notifications
+               if (spendingVelocity && spendingVelocity.hasData) {
+                   if (spendingVelocity.status === 'way-over-pace') {
+                       const persistentId = `velocity-alert-${now.getFullYear()}-${now.getMonth() + 1}`;
 
-                        notifications.push(balanceAlert);
-                    } else if (balance < 100) {
-                        const lowBalanceWarning = {
-                            id: Date.now() + Math.random(),
-                            persistentId: 'low-balance-warning',
-                            title: 'Low Balance Warning',
-                            message: `Your balance is getting low: ${this.formatCurrency(balance)}`,
-                            type: 'info',
-                            category: 'balance',
-                            timestamp: now.toISOString(), // Always current time for balance warnings
-                            isRead: false
-                        };
+                       // ✅ SKIP if already exists
+                       if (!existingTimestamps[persistentId]) {
+                           const velocityAlert = {
+                               id: Date.now() + Math.random(),
+                               persistentId: persistentId,
+                               title: 'High Spending Velocity',
+                               message: `You're spending significantly faster than planned. Current velocity: ${(spendingVelocity.velocityRatio * 100).toFixed(0)}%`,
+                               type: 'warning',
+                               category: 'velocity',
+                               timestamp: this.getSmartNotificationTimestamp('velocity-alert'),
+                               isRead: false
+                           };
 
-                        notifications.push(lowBalanceWarning);
-                    }
-                }
+                           if (!seenPersistentIds.has(velocityAlert.persistentId)) {
+                               seenPersistentIds.add(velocityAlert.persistentId);
+                               notifications.push(velocityAlert);
+                               this.saveNotificationToStorage(velocityAlert);
+                               console.log(`✅ NEW velocity alert: ${velocityAlert.persistentId}`);
+                           }
+                       }
+                   } else if (spendingVelocity.status === 'under-pace') {
+                       const persistentId = `velocity-good-${now.getFullYear()}-${now.getMonth() + 1}`;
 
-                // 5. Monthly Summary Notifications - USE CURRENT TIME
-                if (monthlyTransactions && monthlyTransactions.expenses > 0) {
-                    const today = new Date();
-                    const dayOfMonth = today.getDate();
+                       // ✅ SKIP if already exists
+                       if (!existingTimestamps[persistentId]) {
+                           const velocityGood = {
+                               id: Date.now() + Math.random(),
+                               persistentId: persistentId,
+                               title: 'Excellent Budget Control',
+                               message: `You're maintaining excellent spending discipline. Keep it up!`,
+                               type: 'success',
+                               category: 'velocity',
+                               timestamp: this.getSmartNotificationTimestamp('velocity-good'),
+                               isRead: false
+                           };
 
-                    if (dayOfMonth >= 15) { // Mid-month summary
-                        const summaryNotification = {
-                            id: Date.now() + Math.random(),
-                            persistentId: `monthly-summary-${today.getFullYear()}-${today.getMonth() + 1}`,
-                            title: 'Monthly Progress Update',
-                            message: `This month: ${this.formatCurrency(monthlyTransactions.expenses)} spent across ${monthlyTransactions.transactions.filter(t => t.type === 'EXPENSE').length} transactions`,
-                            type: 'info',
-                            category: 'summary',
-                            timestamp: now.toISOString(), // Always current time for summaries
-                            isRead: false
-                        };
+                           if (!seenPersistentIds.has(velocityGood.persistentId)) {
+                               seenPersistentIds.add(velocityGood.persistentId);
+                               notifications.push(velocityGood);
+                               this.saveNotificationToStorage(velocityGood);
+                               console.log(`✅ NEW velocity good news: ${velocityGood.persistentId}`);
+                           }
+                       }
+                   }
+               }
 
-                        notifications.push(summaryNotification);
-                    }
-                }
+               // 3. Transaction Notifications - Only NEW ones
+               if (monthlyTransactions && monthlyTransactions.transactions) {
+                   const recentTransactions = monthlyTransactions.transactions
+                       .filter(t => {
+                           const transactionTime = new Date(t.transactionDate);
+                           const timeDiff = now - transactionTime;
+                           const hoursDiff = timeDiff / (1000 * 60 * 60);
+                           return hoursDiff <= 4; // Show transactions from last 4 hours
+                       })
+                       .sort((a, b) => new Date(b.transactionDate) - new Date(a.transactionDate))
+                       .slice(0, 5);
 
-                // ENHANCED: Show notifications for all types of financial activities
-                console.log(`🔔 Generated ${notifications.length} dashboard notifications (budget, velocity, transactions, balance)`);
+                   recentTransactions.forEach((transaction) => {
+                       const persistentId = `transaction-${transaction.id}`;
 
-                // Also check for any very recent transactions and ensure they show as notifications
-                if (monthlyTransactions && monthlyTransactions.transactions) {
-                    const veryRecentTransactions = monthlyTransactions.transactions
-                        .filter(t => {
-                            const transactionTime = new Date(t.transactionDate);
-                            const timeDiff = now - transactionTime;
-                            const minutesDiff = timeDiff / (1000 * 60);
-                            return minutesDiff <= 30; // Last 30 minutes for immediate visibility
-                        });
+                       // ✅ SKIP if already exists
+                       if (existingTimestamps[persistentId]) {
+                           console.log(`⏭️ SKIP existing transaction: ${persistentId}`);
+                           return;
+                       }
 
-                    console.log(`🔔 Found ${veryRecentTransactions.length} very recent transactions (last 30 minutes)`);
-                }
+                       let notificationTitle, notificationMessage, notificationType;
+                       const translatedCategoryName = this.translateCategoryName(transaction.categoryName);
+                       const truncatedCategoryName = this.intelligentTruncateBudgetCategory(translatedCategoryName);
 
-            } catch (error) {
-                console.error('❌ Error generating dashboard notifications:', error);
-            }
+                       if (transaction.type === 'EXPENSE') {
+                           notificationTitle = 'Expense Recorded';
+                           notificationMessage = `${this.formatCurrency(transaction.amount)} spent on ${truncatedCategoryName}`;
+                           notificationType = parseFloat(transaction.amount) > 200 ? 'warning' : 'info';
+                       } else if (transaction.type === 'INCOME') {
+                           notificationTitle = 'Income Recorded';
+                           notificationMessage = `${this.formatCurrency(transaction.amount)} received from ${truncatedCategoryName}`;
+                           notificationType = 'success';
+                       } else {
+                           notificationTitle = 'Transaction Recorded';
+                           notificationMessage = `${this.formatCurrency(transaction.amount)} - ${truncatedCategoryName}`;
+                           notificationType = 'info';
+                       }
 
-            return notifications;
-        }
+                       const transactionNotification = {
+                           id: Date.now() + Math.random(),
+                           persistentId: persistentId,
+                           title: notificationTitle,
+                           message: notificationMessage,
+                           type: notificationType,
+                           category: 'transaction',
+                           timestamp: transaction.transactionDate, // Use REAL transaction date
+                           isRead: false,
+                           transactionId: transaction.id
+                       };
+
+                       if (!seenPersistentIds.has(transactionNotification.persistentId)) {
+                           seenPersistentIds.add(transactionNotification.persistentId);
+                           notifications.push(transactionNotification);
+                           this.saveNotificationToStorage(transactionNotification);
+                           console.log(`✅ NEW transaction: ${transactionNotification.persistentId}`);
+                       }
+                   });
+               }
+
+               // 4. Balance Notifications
+               if (balance !== undefined) {
+                   if (balance < 0) {
+                       const persistentId = 'negative-balance-alert';
+
+                       if (!existingTimestamps[persistentId]) {
+                           const balanceAlert = {
+                               id: Date.now() + Math.random(),
+                               persistentId: persistentId,
+                               title: 'Negative Balance Alert',
+                               message: `Your current balance is ${this.formatCurrency(balance)}. Consider reviewing your expenses.`,
+                               type: 'warning',
+                               category: 'balance',
+                               timestamp: this.getSmartNotificationTimestamp('balance-negative'),
+                               isRead: false
+                           };
+
+                           if (!seenPersistentIds.has(balanceAlert.persistentId)) {
+                               seenPersistentIds.add(balanceAlert.persistentId);
+                               notifications.push(balanceAlert);
+                               this.saveNotificationToStorage(balanceAlert);
+                               console.log(`✅ NEW negative balance alert`);
+                           }
+                       }
+                   } else if (balance < 100) {
+                       const persistentId = 'low-balance-warning';
+
+                       if (!existingTimestamps[persistentId]) {
+                           const lowBalanceWarning = {
+                               id: Date.now() + Math.random(),
+                               persistentId: persistentId,
+                               title: 'Low Balance Warning',
+                               message: `Your balance is getting low: ${this.formatCurrency(balance)}`,
+                               type: 'info',
+                               category: 'balance',
+                               timestamp: this.getSmartNotificationTimestamp('balance-low'),
+                               isRead: false
+                           };
+
+                           if (!seenPersistentIds.has(lowBalanceWarning.persistentId)) {
+                               seenPersistentIds.add(lowBalanceWarning.persistentId);
+                               notifications.push(lowBalanceWarning);
+                               this.saveNotificationToStorage(lowBalanceWarning);
+                               console.log(`✅ NEW low balance warning`);
+                           }
+                       }
+                   }
+               }
+
+               // 5. Monthly Summary Notifications
+               if (monthlyTransactions && monthlyTransactions.expenses > 0) {
+                   const today = new Date();
+                   const dayOfMonth = today.getDate();
+
+                   if (dayOfMonth >= 15) {
+                       const persistentId = `monthly-summary-${today.getFullYear()}-${today.getMonth() + 1}`;
+
+                       if (!existingTimestamps[persistentId]) {
+                           const summaryNotification = {
+                               id: Date.now() + Math.random(),
+                               persistentId: persistentId,
+                               title: 'Monthly Progress Update',
+                               message: `This month: ${this.formatCurrency(monthlyTransactions.expenses)} spent across ${monthlyTransactions.transactions.filter(t => t.type === 'EXPENSE').length} transactions`,
+                               type: 'info',
+                               category: 'summary',
+                               timestamp: this.getSmartNotificationTimestamp('summary'),
+                               isRead: false
+                           };
+
+                           if (!seenPersistentIds.has(summaryNotification.persistentId)) {
+                               seenPersistentIds.add(summaryNotification.persistentId);
+                               notifications.push(summaryNotification);
+                               this.saveNotificationToStorage(summaryNotification);
+                               console.log(`✅ NEW monthly summary`);
+                           }
+                       }
+                   }
+               }
+
+               console.log(`🔔 Generated ${notifications.length} NEW notifications (skipped existing ones)`);
+
+           } catch (error) {
+               console.error('❌ Error generating dashboard notifications:', error);
+           }
+
+           return notifications;
+       }
+
+       /**
+        * ✅ NEW: Save notification to localStorage with persistent timestamp
+        */
+       saveNotificationToStorage(notification) {
+           try {
+               const storageKey = 'dashboardNotifications';
+               const existingNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
+
+               // Check if notification already exists to avoid duplicates
+               const exists = existingNotifications.find(n => n.persistentId === notification.persistentId);
+
+               if (!exists) {
+                   existingNotifications.unshift(notification);
+                   // Keep only last 25 notifications
+                   existingNotifications.splice(25);
+                   localStorage.setItem(storageKey, JSON.stringify(existingNotifications));
+                   console.log(`💾 Saved notification to storage: ${notification.persistentId}`);
+               } else {
+                   console.log(`💾 Notification already exists in storage: ${notification.persistentId}`);
+               }
+           } catch (error) {
+               console.error('❌ Error saving notification to storage:', error);
+           }
+       }
+
+
+       /**
+        * ✅ ТЕСТОВА ФУНКЦИЯ: Създавай нотификации с различни времена
+        */
+       createTestNotifications() {
+           console.log('🧪 Creating test notifications with different timestamps...');
+
+           const now = new Date();
+           const testNotifications = [
+               {
+                   title: 'Test Expense 1',
+                   message: '50.00€ spent on Food',
+                   type: 'info',
+                   timestamp: new Date(now.getTime() - 2 * 60 * 1000).toISOString() // 2 минути назад
+               },
+               {
+                   title: 'Test Budget Alert',
+                   message: 'Entertainment budget is 95% used',
+                   type: 'warning',
+                   timestamp: new Date(now.getTime() - 8 * 60 * 1000).toISOString() // 8 минути назад
+               },
+               {
+                   title: 'Test Income',
+                   message: '1500.00€ salary received',
+                   type: 'success',
+                   timestamp: new Date(now.getTime() - 20 * 60 * 1000).toISOString() // 20 минути назад
+               },
+               {
+                   title: 'Test Balance Warning',
+                   message: 'Your balance is getting low',
+                   type: 'warning',
+                   timestamp: new Date(now.getTime() - 45 * 60 * 1000).toISOString() // 45 минути назад
+               },
+               {
+                   title: 'Test Old Notification',
+                   message: 'This should show hours ago',
+                   type: 'info',
+                   timestamp: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString() // 2 часа назад
+               }
+           ];
+
+           // Clear existing notifications
+           this.notifications = [];
+
+           // Add test notifications
+           testNotifications.forEach(testNotif => {
+               this.addNotification(testNotif);
+           });
+
+           console.log('✅ Test notifications created. Watch them update over time!');
+
+           // Force immediate render
+           this.updateNotificationTimestamps();
+           this.forceShowBadgeNow();
+
+           const panel = document.getElementById('notifications-panel');
+           if (panel && panel.classList.contains('active')) {
+               this.renderNotifications();
+           }
+       }
 
         /**
          * ✅ FIXED: Get user action notifications with proper time filtering
@@ -642,14 +1176,26 @@
         }
 
         /**
-         * ✅ Process notifications (filter, sort, limit)
+         * ✅ ENHANCED: Process notifications with 24-hour filtering
          */
         processNotifications(notifications) {
+            const now = new Date();
+            const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+            // Filter out notifications older than 24 hours FIRST
+            const recentNotifications = notifications.filter(notification => {
+                if (notification.timestamp) {
+                    const notificationTime = new Date(notification.timestamp);
+                    return notificationTime > oneDayAgo;
+                }
+                return false;
+            });
+
             // Remove duplicates by persistentId
             const uniqueNotifications = [];
             const seenIds = new Set();
 
-            notifications.forEach(notification => {
+            recentNotifications.forEach(notification => {
                 if (notification.persistentId && !seenIds.has(notification.persistentId)) {
                     seenIds.add(notification.persistentId);
                     uniqueNotifications.push(notification);
@@ -666,7 +1212,11 @@
             });
 
             // Limit to maximum number of notifications
-            return uniqueNotifications.slice(0, this.maxNotifications);
+            const finalNotifications = uniqueNotifications.slice(0, this.maxNotifications);
+
+            console.log(`📋 Notification processing: ${notifications.length} → ${recentNotifications.length} (24h filter) → ${finalNotifications.length} (final)`);
+
+            return finalNotifications;
         }
 
         /**
@@ -714,26 +1264,77 @@
             }
         }
 
-        /**
-         * ✅ Toggle notifications panel
-         */
-        async toggleNotifications() {
-            console.log('🔔 Toggle notifications called');
 
-            const panel = document.getElementById('notifications-panel');
-            if (!panel) {
-                console.warn('⚠️ Notifications panel not found');
-                return;
-            }
 
-            if (panel.classList.contains('active')) {
-                console.log('🔔 Closing notifications panel');
-                this.closeNotificationsPanel();
-            } else {
-                console.log('🔔 Opening notifications panel');
-                await this.showNotificationsPanel();
-            }
-        }
+       /**
+        * ✅ INSTANT: Toggle notifications with immediate response
+        */
+       async toggleNotifications() {
+           console.log('🔔 toggleNotifications() called - INSTANT mode');
+
+           try {
+               const panel = document.getElementById('notifications-panel');
+               if (!panel) {
+                   console.error('❌ Notifications panel not found in DOM');
+                   return;
+               }
+
+               const isCurrentlyActive = panel.classList.contains('active');
+               console.log(`🔔 Panel current state: ${isCurrentlyActive ? 'OPEN' : 'CLOSED'}`);
+
+               if (isCurrentlyActive) {
+                   console.log('🔔 Closing notifications panel - INSTANT');
+                   this.closeNotificationsPanel();
+               } else {
+                   console.log('🔔 Opening notifications panel - INSTANT');
+                   this.showNotificationsPanelInstant();
+               }
+
+           } catch (error) {
+               console.error('❌ Error in toggleNotifications:', error);
+           }
+       }
+       /**
+        * ✅ NEW: Instant panel opening without async delays
+        */
+       showNotificationsPanelInstant() {
+           try {
+               console.log('🔔 Starting INSTANT panel opening...');
+
+               const panel = document.getElementById('notifications-panel');
+               if (!panel) {
+                   console.error('❌ Notifications panel not found in DOM');
+                   return;
+               }
+
+               // 1. INSTANT: Show panel immediately with current data
+               panel.classList.add('active');
+               console.log('✅ Panel opened INSTANTLY');
+
+               // 2. Render current notifications immediately (no waiting)
+               this.renderNotifications();
+               console.log('✅ Current notifications rendered INSTANTLY');
+
+               // 3. BACKGROUND: Refresh data quietly without blocking UI
+               setTimeout(async () => {
+                   try {
+                       console.log('🔄 Background refresh starting...');
+                       await this.refreshNotifications();
+
+                       // Re-render only if panel is still open
+                       if (panel.classList.contains('active')) {
+                           this.renderNotifications();
+                           console.log('✅ Background refresh completed and re-rendered');
+                       }
+                   } catch (error) {
+                       console.error('❌ Background refresh failed:', error);
+                   }
+               }, 0); // Start immediately but non-blocking
+
+           } catch (error) {
+               console.error('❌ Failed to show notifications panel instantly:', error);
+           }
+       }
 
         /**
          * ✅ Show notifications panel with force refresh
@@ -766,27 +1367,29 @@
         }
 
         /**
-         * ✅ Close notifications panel
+         * ✅ ENHANCED: Instant close
          */
         closeNotificationsPanel() {
             const panel = document.getElementById('notifications-panel');
             if (panel) {
                 panel.classList.remove('active');
+                console.log('✅ Panel closed INSTANTLY');
             }
         }
 
         /**
-         * ✅ FIXED: Render notifications with corrected time display
+         * 3. ЗАМЕНИ renderNotifications() функцията с тази:
          */
         renderNotifications() {
-            const container = document.getElementById('notifications-list');
+            console.log('🎨 renderNotifications called with FORCE refresh');
 
+            const container = document.getElementById('notifications-list');
             if (!container) {
-                console.warn('⚠️ Notifications list container not found');
+                console.error('❌ Notifications list container not found');
                 return;
             }
 
-            // Update timestamps for all notifications
+            // ✅ CRITICAL: FORCE update timestamps BEFORE rendering
             this.updateNotificationTimestamps();
 
             if (this.notifications.length === 0) {
@@ -797,8 +1400,31 @@
                         <small>No new dashboard alerts</small>
                     </div>
                 `;
-            } else {
-                container.innerHTML = this.notifications.map(notification => `
+                console.log('📋 Rendered empty notifications state');
+                return;
+            }
+
+            console.log(`🎨 Rendering ${this.notifications.length} notifications with FORCED timestamp updates:`);
+
+            // ✅ FORCE: Clear container first
+            container.innerHTML = '';
+
+            // ✅ FORCE: Rebuild completely
+            const notificationHTML = this.notifications.map((notification, index) => {
+                // Double-check timestamp is recent
+                const notificationTime = new Date(notification.timestamp);
+                const now = new Date();
+                const diffInHours = (now - notificationTime) / (1000 * 60 * 60);
+
+                console.log(`  ${index + 1}. "${notification.dynamicTime}" (${diffInHours.toFixed(1)}h old)`);
+
+                // Skip notifications older than 24 hours
+                if (diffInHours > 24) {
+                    console.log(`     ⚠️ Skipping - too old (${diffInHours.toFixed(1)}h)`);
+                    return '';
+                }
+
+                return `
                     <div class="notification-item ${notification.isRead ? '' : 'unread'} ${this.getNotificationTypeClass(notification.type)}"
                          data-notification-id="${notification.id}"
                          onclick="window.dashboardInstance.markNotificationAsRead(${notification.id})"
@@ -811,28 +1437,119 @@
                             <div class="notification-time">${notification.dynamicTime || 'Just now'}</div>
                         </div>
                     </div>
-                `).join('');
-            }
+                `;
+            }).filter(html => html !== '');
+
+            // ✅ FORCE: Set new HTML
+            container.innerHTML = notificationHTML.join('');
 
             // Refresh Lucide icons
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
 
-            console.log('✅ Notifications rendered with corrected timestamps:', this.notifications.length);
+            console.log('✅ Notifications rendered with FORCED timestamp updates and complete rebuild');
         }
 
         /**
-         * ✅ FIXED: Update notification timestamps with correct logic
+         * ✅ FIXED: Update timestamps with perfect 15-minute logic
          */
         updateNotificationTimestamps() {
-            this.notifications.forEach(notification => {
+            if (!this.notifications || this.notifications.length === 0) {
+                console.log('⚠️ No notifications to update timestamps for');
+                return;
+            }
+
+            console.log(`🔄 Updating timestamps for ${this.notifications.length} notifications...`);
+
+            let updatedCount = 0;
+            const now = new Date();
+
+            this.notifications.forEach((notification, index) => {
                 if (notification.timestamp) {
-                    notification.dynamicTime = this.getCorrectRelativeTime(notification.timestamp);
+                    const oldTime = notification.dynamicTime;
+                    const newTime = this.getCorrectRelativeTime(notification.timestamp);
+
+                    // Check if notification should be auto-deleted
+                    if (newTime === 'Expired') {
+                        console.log(`🗑️ Notification ${index + 1} is expired and will be deleted`);
+                        return; // Skip updating - will be deleted by autoDeleteOldNotifications
+                    }
+
+                    // ALWAYS update the time
+                    notification.dynamicTime = newTime;
+
+                    // Log changes for debugging
+                    if (oldTime !== newTime) {
+                        updatedCount++;
+                        console.log(`  ${index + 1}. "${notification.title.substring(0, 20)}..." updated: "${oldTime}" → "${newTime}"`);
+                    }
+
+                    // Add debug info about the notification age
+                    const notificationTime = new Date(notification.timestamp);
+                    const diffMinutes = Math.floor((now - notificationTime) / (1000 * 60));
+                    const diffHours = Math.floor(diffMinutes / 60);
+
+                    if (diffHours >= 1) {
+                        console.log(`     Age: ${diffHours}h ${diffMinutes % 60}m, Display: "${newTime}"`);
+                    } else {
+                        console.log(`     Age: ${diffMinutes} minutes, Display: "${newTime}"`);
+                    }
+
+                } else {
+                    console.warn(`⚠️ Notification ${index + 1} has no timestamp:`, notification.title);
                 }
             });
+
+            console.log(`✅ Processed ${this.notifications.length} notifications, ${updatedCount} actually changed`);
         }
 
+        /**
+         * ✅ 1. ДОБАВИ тази нова функция в класа:
+         */
+        getSmartNotificationTimestamp(type, data = null) {
+            const now = new Date();
+
+            switch (type) {
+                case 'budget-exceeded':
+                case 'budget-warning':
+                    // За budget alerts - използвай текущо време (те са активни сега)
+                    return now.toISOString();
+
+                case 'transaction':
+                    // За транзакции - използвай реалното време на транзакцията
+                    return data?.transactionDate || now.toISOString();
+
+                case 'velocity-alert':
+                    // За velocity alerts - преди 5-10 минути (не са моментни)
+                    const velocityTime = new Date(now.getTime() - (5 + Math.random() * 5) * 60 * 1000);
+                    return velocityTime.toISOString();
+
+                case 'velocity-good':
+                    // За good news - преди 15-30 минути
+                    const goodTime = new Date(now.getTime() - (15 + Math.random() * 15) * 60 * 1000);
+                    return goodTime.toISOString();
+
+                case 'balance-negative':
+                    // За negative balance - преди 2-5 минути (recent but not instant)
+                    const negativeTime = new Date(now.getTime() - (2 + Math.random() * 3) * 60 * 1000);
+                    return negativeTime.toISOString();
+
+                case 'balance-low':
+                    // За low balance - преди 1-3 минути
+                    const lowTime = new Date(now.getTime() - (1 + Math.random() * 2) * 60 * 1000);
+                    return lowTime.toISOString();
+
+                case 'summary':
+                    // За summary - от сутрината (8:00 AM)
+                    const summaryTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0);
+                    return summaryTime.toISOString();
+
+                default:
+                    // Default - текущо време
+                    return now.toISOString();
+            }
+        }
         /**
          * ✅ Get notification type CSS class
          */
@@ -1006,35 +1723,168 @@
                 this.forceUpdateBadgeImmediately();
             }
         }
+        /**
+         * ✅ TEST: Manual testing function with FORCED timer restart
+         */
+        testNotificationTiming() {
+            console.log('🧪 TESTING notification timing system...');
+
+            // 1. FORCE restart timer
+            console.log('🔄 FORCING timer restart...');
+            this.setupNotificationRefreshTimer();
+
+            // 2. Create test notification
+            const testNotification = {
+                id: Date.now(),
+                title: 'Test Notification',
+                message: 'This is a test notification for timing',
+                timestamp: new Date().toISOString(),
+                isRead: false,
+                type: 'info',
+                dynamicTime: 'Just now'
+            };
+
+            // 3. Add to notifications array
+            this.notifications.unshift(testNotification);
+
+            console.log('✅ Test notification created - watch it update over time');
+            console.log(`   Created at: ${testNotification.timestamp}`);
+            console.log(`   Current notifications count: ${this.notifications.length}`);
+
+            // 4. Force immediate update
+            this.updateNotificationTimestamps();
+            this.forceShowBadgeNow();
+
+            // 5. If panel is open, re-render
+            const panel = document.getElementById('notifications-panel');
+            if (panel && panel.classList.contains('active')) {
+                this.renderNotifications();
+            }
+
+            // 6. MANUAL timer test - update every 5 seconds for demo
+            let testCounter = 0;
+            const testTimer = setInterval(() => {
+                testCounter++;
+                console.log(`🧪 MANUAL TEST ${testCounter}: Updating timestamps...`);
+
+                this.updateNotificationTimestamps();
+
+                if (panel && panel.classList.contains('active')) {
+                    this.renderNotifications();
+                }
+
+                // Stop after 5 attempts
+                if (testCounter >= 5) {
+                    clearInterval(testTimer);
+                    console.log('🧪 Manual test completed');
+                }
+            }, 5000); // Every 5 seconds for demo
+        }
 
         /**
-         * ✅ COMPLETELY FIXED: Correct relative time calculation
+         * ✅ FORCE: Check timer status
          */
-        getCorrectRelativeTime(timestamp) {
-            const now = new Date();
-            const notificationTime = new Date(timestamp);
-            const diffInMs = now - notificationTime;
-            const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-            const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+        checkTimerStatus() {
+            console.log('🔍 TIMER STATUS CHECK:');
+            console.log(`   Timer exists: ${this.notificationTimer ? 'YES' : 'NO'}`);
+            console.log(`   Timer ID: ${this.notificationTimer}`);
+            console.log(`   Notifications count: ${this.notifications.length}`);
+            console.log(`   Last refresh time: ${this.lastRefreshTime}`);
 
-            // Just now (0-2 minutes)
-            if (diffInMinutes < 2) {
-                return 'Just now';
-            }
-            // Minutes (2-59 minutes)
-            else if (diffInMinutes < 60) {
-                return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-            }
-            // Hours (1-23 hours)
-            else if (diffInHours < 24) {
-                return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-            }
-            // Days (24+ hours)
-            else {
-                const diffInDays = Math.floor(diffInHours / 24);
-                return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+            if (this.notifications.length > 0) {
+                console.log('🔔 Current notifications:');
+                this.notifications.forEach((n, i) => {
+                    console.log(`   ${i + 1}. "${n.title}" - "${n.dynamicTime}" (${n.timestamp})`);
+                });
             }
         }
+
+        /**
+         * ✅ FORCE: Restart timer completely
+         */
+        forceRestartTimer() {
+            console.log('🔄 FORCING complete timer restart...');
+
+            // Clear existing timer
+            if (this.notificationTimer) {
+                clearInterval(this.notificationTimer);
+                console.log('🧹 Cleared existing timer');
+            }
+
+            // Restart timer system
+            this.setupNotificationRefreshTimer();
+
+            console.log('✅ Timer system restarted');
+        }
+        /**
+         * 4. ДОБАВИ тази нова функция за рестарт на системата:
+         */
+        restartTimerSystem() {
+            console.log('🔄 RESTARTING entire timer system...');
+
+            // Clear all timers
+            if (this.notificationTimer) {
+                clearInterval(this.notificationTimer);
+                this.notificationTimer = null;
+            }
+            if (this.backupTimer) {
+                clearInterval(this.backupTimer);
+                this.backupTimer = null;
+            }
+            if (this.cleanupTimer) {
+                clearInterval(this.cleanupTimer);
+                this.cleanupTimer = null;
+            }
+
+            // Restart all timers
+            setTimeout(() => {
+                this.setupNotificationRefreshTimer();
+                console.log('✅ Timer system restarted successfully');
+            }, 1000);
+        }
+
+      getCorrectRelativeTime(timestamp) {
+          const now = new Date();
+          const notificationTime = new Date(timestamp);
+          const diffInMs = now - notificationTime;
+          const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+          const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+
+          console.log(`⏰ Time calculation for ${timestamp}:`);
+          console.log(`   Now: ${now.toISOString()}`);
+          console.log(`   Notification: ${notificationTime.toISOString()}`);
+          console.log(`   Diff: ${diffInMs}ms = ${diffInMinutes} minutes = ${diffInHours} hours`);
+
+          let result;
+
+          // 0-14 minutes: "Just now"
+          if (diffInMinutes >= 0 && diffInMinutes < 15) {
+              result = 'Just now';
+          }
+          // 15-29 minutes: "15 minutes ago"
+          else if (diffInMinutes >= 15 && diffInMinutes < 30) {
+              result = '15 minutes ago';
+          }
+          // 30-44 minutes: "30 minutes ago"
+          else if (diffInMinutes >= 30 && diffInMinutes < 45) {
+              result = '30 minutes ago';
+          }
+          // 45-59 minutes: "45 minutes ago"
+          else if (diffInMinutes >= 45 && diffInMinutes < 60) {
+              result = '45 minutes ago';
+          }
+          // 1-23 hours: "X hour(s) ago"
+          else if (diffInHours >= 1 && diffInHours < 24) {
+              result = `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+          }
+          // 24+ hours: Should be auto-deleted (this shouldn't appear)
+          else {
+              result = 'Expired'; // This indicates the notification should be deleted
+          }
+
+          console.log(`   Result: "${result}"`);
+          return result;
+      }
 
         /**
          * ✅ Setup cross-tab synchronization with notifications and immediate badge updates
@@ -1086,10 +1936,10 @@
         // ===================================
 
         /**
-         * ✅ NEW: Setup category truncation system with proper event listeners
+         * ✅ ПОЧИСТЕНА: Setup category truncation без debug съобщения
          */
         setupCategoryTruncation() {
-            console.log('✂️ Setting up category truncation system...');
+            // ✅ ПРЕМАХНАТО: console.log('✂️ Setting up category truncation system...');
 
             // Setup resize handler with debouncing
             let resizeTimeout;
@@ -1097,7 +1947,7 @@
                 clearTimeout(resizeTimeout);
                 resizeTimeout = setTimeout(() => {
                     this.truncateCategoryLabels(this.categoryTruncationLength);
-                    console.log('✂️ Category truncation reapplied after resize');
+                    // ✅ ПРЕМАХНАТО: console.log за resize reapply
                 }, 250);
             });
 
@@ -1110,7 +1960,7 @@
                             // New legend items were added, apply truncation
                             setTimeout(() => {
                                 this.truncateCategoryLabels(this.categoryTruncationLength);
-                                console.log('✂️ Category truncation applied to new content');
+                                // ✅ ПРЕМАХНАТО: console.log за new content
                             }, 100);
                         }
                     });
@@ -1121,15 +1971,14 @@
                     subtree: true
                 });
 
-                console.log('✂️ Category truncation MutationObserver setup completed');
+                // ✅ ПРЕМАХНАТО: console.log за MutationObserver setup
             }
 
-            console.log('✅ Category truncation system initialized');
+            // ✅ ПРЕМАХНАТО: console.log('✅ Category truncation system initialized');
         }
 
         /**
-         * ✅ NEW: Truncate category labels dynamically
-         * @param {number} maxLength - Maximum length before truncation (default: 12)
+         * ✅ ПОЧИСТЕНА: Truncate category labels без debug съобщения
          */
         truncateCategoryLabels(maxLength = 12) {
             const legendLabels = document.querySelectorAll('.legend-label');
@@ -1155,7 +2004,7 @@
                     label.style.cursor = 'help';
 
                     truncatedCount++;
-                    console.log(`✂️ Truncated category ${index + 1}: "${originalText}" → "${truncatedText}"`);
+                    // ✅ ПРЕМАХНАТО: console.log за всяка категория
                 } else {
                     // Remove tooltip if text doesn't need truncation
                     label.removeAttribute('title');
@@ -1163,13 +2012,14 @@
                 }
             });
 
-            if (truncatedCount > 0) {
-                console.log(`✂️ Truncation completed: ${truncatedCount}/${legendLabels.length} categories truncated`);
-            }
+            // ✅ ПРЕМАХНАТО: Финалното съобщение за truncation
+            // if (truncatedCount > 0) {
+            //     console.log(`✂️ Truncation completed: ${truncatedCount}/${legendLabels.length} categories truncated`);
+            // }
         }
 
         /**
-         * ✅ NEW: Smart truncation with category-specific logic
+         * ✅ ПОЧИСТЕНА: Smart truncation без debug съобщения
          */
         smartTruncateCategoryLabels() {
             const legendLabels = document.querySelectorAll('.legend-label');
@@ -1193,7 +2043,7 @@
                     label.title = originalText;
                     label.style.cursor = 'help';
 
-                    console.log(`✂️ Smart truncated [${maxLength}]: "${originalText}" → "${truncatedText}"`);
+                    // ✅ ПРЕМАХНАТО: console.log за smart truncation
                 } else {
                     label.removeAttribute('title');
                     label.style.cursor = 'default';
@@ -1201,37 +2051,96 @@
             });
         }
 
-        /**
-         * ✅ NEW: Test truncation functionality
-         */
-        testCategoryTruncation() {
-            const testCategories = [
-                'Food',
-                'Transportation',
-                'Entertainment & Movies',
-                'Very Long Category Name That Should Be Truncated',
-                'Здравеопазване',
-                'Short',
-                'Technology & Software Development',
-                'Home & Garden Supplies'
-            ];
 
-            console.log('🧪 Testing category truncation logic:');
-            testCategories.forEach((category, index) => {
-                console.log(`Test ${index + 1}: "${category}" (${category.length} chars)`);
-                if (category.length > this.categoryTruncationLength) {
-                    const truncated = category.substring(0, this.categoryTruncationLength) + '..';
-                    console.log(`  → Would become: "${truncated}"`);
-                } else {
-                    console.log(`  → Stays the same`);
-                }
-            });
-        }
 
         // ===================================
-        // END OF CATEGORY TRUNCATION SYSTEM
+        // 📊 NEW: INTELLIGENT BUDGET CATEGORY NAME TRUNCATION SYSTEM
         // ===================================
 
+      /**
+       * ✅ ПОЧИСТЕНА: Intelligent truncation без debug съобщения
+       */
+      intelligentTruncateBudgetCategory(categoryName) {
+          if (!categoryName || typeof categoryName !== 'string') {
+              return 'Unknown';
+          }
+
+          const originalName = categoryName.trim();
+          const nameLength = originalName.length;
+
+          // If name is short enough, return as-is
+          if (nameLength <= 8) {
+              return originalName;
+          }
+
+          // Count uppercase letters for BOTH English AND Bulgarian
+          const englishUppercaseCount = (originalName.match(/[A-Z]/g) || []).length;
+          const bulgarianUppercaseCount = (originalName.match(/[А-Я]/g) || []).length;
+          const totalUppercaseCount = englishUppercaseCount + bulgarianUppercaseCount;
+
+          // Count lowercase letters for BOTH English AND Bulgarian
+          const englishLowercaseCount = (originalName.match(/[a-z]/g) || []).length;
+          const bulgarianLowercaseCount = (originalName.match(/[а-я]/g) || []).length;
+          const totalLowercaseCount = englishLowercaseCount + bulgarianLowercaseCount;
+
+          const totalLetters = totalUppercaseCount + totalLowercaseCount;
+
+          // ✅ ПРЕМАХНАТО: Целия debug блок с console.log
+
+          // Rule 1: All lowercase letters (both English and Bulgarian) and length > 15
+          if (totalUppercaseCount === 0 && totalLowercaseCount > 0 && nameLength > 15) {
+              const truncated = originalName.substring(0, 15) + '...';
+              // ✅ ПРЕМАХНАТО: console.log за rule 1
+              return truncated;
+          }
+
+          // Rule 2: All uppercase letters (both English and Bulgarian) and length > 9
+          if (totalLowercaseCount === 0 && totalUppercaseCount > 0 && nameLength > 9) {
+              const truncated = originalName.substring(0, 9) + '...';
+              // ✅ ПРЕМАХНАТО: console.log за rule 2
+              return truncated;
+          }
+
+          // Rule 3: Mixed case with MORE than 3 uppercase letters - truncate to 9 chars
+          if (totalUppercaseCount > 3 && totalLowercaseCount > 0) {
+              const truncated = originalName.substring(0, 9) + '...';
+              // ✅ ПРЕМАХНАТО: console.log за rule 3
+              return truncated;
+          }
+
+          // Rule 4: Mixed case with 3 or fewer uppercase letters
+          if (totalUppercaseCount <= 3 && totalLowercaseCount > 0) {
+              if (nameLength > 15) {
+                  const truncated = originalName.substring(0, 15) + '...';
+                  // ✅ ПРЕМАХНАТО: console.log за rule 4a
+                  return truncated;
+              } else {
+                  // ✅ ПРЕМАХНАТО: console.log за rule 4b
+                  return originalName;
+              }
+          }
+
+          // Special handling for mixed scripts (English + Bulgarian)
+          if ((englishUppercaseCount > 0 || englishLowercaseCount > 0) &&
+              (bulgarianUppercaseCount > 0 || bulgarianLowercaseCount > 0)) {
+              // Mixed scripts detected - be more aggressive with truncation
+              if (nameLength > 12) {
+                  const truncated = originalName.substring(0, 12) + '...';
+                  // ✅ ПРЕМАХНАТО: console.log за mixed scripts
+                  return truncated;
+              }
+          }
+
+          // Fallback: Numbers, symbols, or other characters
+          if (nameLength > 12) {
+              const truncated = originalName.substring(0, 12) + '...';
+              // ✅ ПРЕМАХНАТО: console.log за fallback
+              return truncated;
+          }
+
+          // ✅ ПРЕМАХНАТО: console.log за no truncation
+          return originalName;
+      }
         /**
          * UPDATED: Modern Empty States for Charts
          */
@@ -1863,7 +2772,11 @@
                                 ...this.chartDefaults.plugins.tooltip,
                                 callbacks: {
                                     title: (context) => {
-                                        return `${context[0].label} Budget Performance`;
+                                        // ✅ NEW: Apply intelligent truncation to tooltip titles too
+                                        const budget = budgetData.budgets[context[0].dataIndex];
+                                        const originalName = budget.originalCategoryName || context[0].label;
+                                        const truncatedName = this.intelligentTruncateBudgetCategory(originalName);
+                                        return `${truncatedName} Budget Performance`;
                                     },
                                     label: (context) => {
                                         const budget = budgetData.budgets[context.dataIndex];
@@ -1911,6 +2824,9 @@
             }
         }
 
+        /**
+         * ✅ UPDATED: prepareBudgetVsActualData with intelligent category name truncation
+         */
         prepareBudgetVsActualData(budgets, monthlyTransactions) {
             const labels = [];
             const planned = [];
@@ -1949,7 +2865,10 @@
                         borderColor = this.colors.danger;
                     }
 
-                    labels.push(categoryName);
+                    // ✅ NEW: Apply intelligent truncation to category names for chart labels
+                    const truncatedCategoryName = this.intelligentTruncateBudgetCategory(categoryName);
+
+                    labels.push(truncatedCategoryName);
                     planned.push(plannedAmount);
                     actual.push(actualAmount);
                     actualColors.push(color);
@@ -1961,7 +2880,9 @@
                         percentage: percentage,
                         status: percentage <= 70 ? 'under-budget' :
                                percentage <= 90 ? 'on-track' :
-                               percentage <= 100 ? 'near-limit' : 'over-budget'
+                               percentage <= 100 ? 'near-limit' : 'over-budget',
+                        originalCategoryName: categoryName, // Keep original name for tooltips
+                        truncatedCategoryName: truncatedCategoryName // Store truncated name
                     });
                 }
             });
@@ -2115,7 +3036,7 @@
         }
 
         /**
-         * Category Allocation Chart - UPDATED WITH MODERN EMPTY STATE + TRUNCATION
+         * Category Allocation Chart - FIXED TOOLTIP WITHOUT REDUNDANT CATEGORY NAME
          */
         async initCategoryAllocationChart() {
             const canvas = document.getElementById('category-pie-chart');
@@ -2157,10 +3078,29 @@
                             tooltip: {
                                 ...this.chartDefaults.plugins.tooltip,
                                 callbacks: {
+                                    // ✅ FIXED: Remove title to avoid redundant category name
+                                    title: () => {
+                                        return null; // No title - eliminates the first line with full category name
+                                    },
                                     label: (context) => {
                                         const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                         const percentage = ((context.parsed / total) * 100).toFixed(1);
-                                        return `${context.label}: ${this.formatCurrency(context.parsed)} (${percentage}%)`;
+
+                                        // Show truncated category name + smart formatted amount + percentage
+                                        const originalLabel = context.label;
+                                        const truncatedLabel = this.intelligentTruncateBudgetCategory(originalLabel);
+                                        const smartFormat = this.formatSmartNumber(context.parsed, false, true);
+                                        const displayValue = smartFormat.formatted;
+
+                                        // If value is abbreviated, show both abbreviated and full value
+                                        if (smartFormat.needsTooltip) {
+                                            return [
+                                                `${truncatedLabel}: ${displayValue}€ (${percentage}%)`,
+                                                `Full: ${smartFormat.fullValue}€`
+                                            ];
+                                        } else {
+                                            return `${truncatedLabel}: ${displayValue}€ (${percentage}%)`;
+                                        }
                                     }
                                 }
                             }
@@ -2226,9 +3166,19 @@
                             tooltip: {
                                 ...this.chartDefaults.plugins.tooltip,
                                 callbacks: {
+                                    title: (context) => {
+                                        // ✅ NEW: Apply intelligent truncation to daily cash flow tooltips
+                                        const date = context[0].label;
+                                        return `Daily Cash Flow - ${date}`;
+                                    },
                                     label: (context) => {
                                         const value = Math.abs(context.parsed.y);
-                                        return `${context.dataset.label}: ${this.formatCurrency(value)}`;
+
+                                        // ✅ NEW: Apply intelligent truncation to dataset labels if they are category names
+                                        const originalLabel = context.dataset.label;
+                                        const truncatedLabel = this.intelligentTruncateBudgetCategory(originalLabel);
+
+                                        return `${truncatedLabel}: ${this.formatCurrency(value)}`;
                                     }
                                 }
                             }
@@ -2429,33 +3379,22 @@
             }
         }
 
+        /**
+         * ✅ UPDATED: Enhanced updateSummaryCardsInstantly with smart number formatting
+         */
         updateSummaryCardsInstantly() {
             const { balance, monthlyTransactions, budgets } = this.dashboardData;
 
+            // ✅ NEW: Use smart formatting for all monetary values
             this.setCardValueInstantly('current-balance', balance);
             this.setCardValueInstantly('monthly-income', monthlyTransactions.income);
             this.setCardValueInstantly('monthly-expenses', monthlyTransactions.expenses);
-            this.setCardValueInstantly('budget-utilization', budgets.utilizationRate, true);
+            this.setCardValueInstantly('budget-utilization', budgets.utilizationRate, true); // This is percentage
             this.setCardValueInstantly('net-cashflow', monthlyTransactions.netCashFlow);
             this.setCardValueInstantly('daily-spending', monthlyTransactions.averageDaily);
             this.setCardValueInstantly('budget-remaining', budgets.totalRemaining);
 
             this.updateTrendIndicators();
-        }
-
-        setCardValueInstantly(cardId, value, isPercentage = false) {
-            const element = document.querySelector(`#${cardId} .value-amount, #${cardId} .value-percentage`);
-            if (!element) return;
-
-            if (isPercentage) {
-                element.textContent = Math.round(value);
-            } else {
-                if (Math.abs(value) >= 1000) {
-                    element.textContent = this.formatLargeNumber(value);
-                } else {
-                    element.textContent = value.toFixed(2);
-                }
-            }
         }
 
         updateTrendIndicators() {
@@ -2510,91 +3449,108 @@
             }
         }
 
-        updateMonthlyComparison() {
-            const { monthlyComparison, monthlyTransactions, budgets } = this.dashboardData;
+       /**
+        * PRODUCTION: Enhanced Monthly Comparison Update with Category Name Truncation + Smart Formatting
+        */
+       updateMonthlyComparison() {
+           const { monthlyComparison, monthlyTransactions, budgets } = this.dashboardData;
 
-            // Safety checks
-            if (!monthlyComparison || !monthlyTransactions || !budgets) {
-                return;
-            }
+           // Safety checks
+           if (!monthlyComparison || !monthlyTransactions || !budgets) {
+               return;
+           }
 
-            // Update overall spending
-            this.updateElement('overall-change', this.formatCurrency(monthlyComparison.currentExpenses));
+           // ✅ NEW: Use smart formatting for monetary values in monthly comparison
+           this.updateElement('overall-change', this.formatCurrency(monthlyComparison.currentExpenses));
 
-            // Update change description in the new projection style
-            const changeText = this.getChangeDescription(monthlyComparison.overallPercentage);
-            this.updateElement('change-description', changeText);
+           // Update change description in the new projection style
+           const changeText = this.getChangeDescription(monthlyComparison.overallPercentage);
+           this.updateElement('change-description', changeText);
 
-            // Update change indicator icon
-            const changeIndicator = document.querySelector('#overall-change-indicator i');
-            if (changeIndicator) {
-                const iconName = monthlyComparison.overallPercentage >= 0 ? 'trending-up' : 'trending-down';
-                changeIndicator.setAttribute('data-lucide', iconName);
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-            }
+           // Update change indicator icon
+           const changeIndicator = document.querySelector('#overall-change-indicator i');
+           if (changeIndicator) {
+               const iconName = monthlyComparison.overallPercentage >= 0 ? 'trending-up' : 'trending-down';
+               changeIndicator.setAttribute('data-lucide', iconName);
+               if (typeof lucide !== 'undefined') {
+                   lucide.createIcons();
+               }
+           }
 
-            this.updateElement('previous-month-spending', this.formatCurrency(monthlyComparison.lastExpenses));
-            this.updateElement('monthly-change-amount', this.formatCurrency(Math.abs(monthlyComparison.overallChange)));
+           this.updateElement('previous-month-spending', this.formatCurrency(monthlyComparison.lastExpenses));
+           this.updateElement('monthly-change-amount', this.formatCurrency(Math.abs(monthlyComparison.overallChange)));
 
-            // FIXED: Dynamic Trend Direction - NO MORE HARDCODED "Increasing"
-            let trendDirection;
-            if (monthlyComparison.overallPercentage > 5) {
-                trendDirection = 'Increasing';
-            } else if (monthlyComparison.overallPercentage < -5) {
-                trendDirection = 'Decreasing';
-            } else if (Math.abs(monthlyComparison.overallPercentage) <= 5) {
-                trendDirection = 'Stable';
-            } else {
-                trendDirection = 'No Change';
-            }
+           // FIXED: Dynamic Trend Direction - NO MORE HARDCODED "Increasing"
+           let trendDirection;
+           if (monthlyComparison.overallPercentage > 5) {
+               trendDirection = 'Increasing';
+           } else if (monthlyComparison.overallPercentage < -5) {
+               trendDirection = 'Decreasing';
+           } else if (Math.abs(monthlyComparison.overallPercentage) <= 5) {
+               trendDirection = 'Stable';
+           } else {
+               trendDirection = 'No Change';
+           }
 
-            this.updateElement('trend-direction', trendDirection);
+           this.updateElement('trend-direction', trendDirection);
 
-            // Update worst category with details
-            if (monthlyComparison.worstCategory) {
-                this.updateElement('worst-category-name', this.translateCategoryName(monthlyComparison.worstCategory.category));
-                this.updateElement('worst-category-change', `${this.formatCurrency(monthlyComparison.worstCategory.change)} more`);
-                this.updateElement('worst-category-previous', this.formatCurrency(monthlyComparison.worstCategory.lastAmount));
-                this.updateElement('worst-category-current', this.formatCurrency(monthlyComparison.worstCategory.currentAmount));
-                this.updateElement('worst-category-rate', `${monthlyComparison.worstCategory.percentage.toFixed(1)}% increase`);
-            } else {
-                this.updateElement('worst-category-name', 'No increases');
-                this.updateElement('worst-category-change', 'No extra spending');
-                this.updateElement('worst-category-previous', '0.00€');
-                this.updateElement('worst-category-current', '0.00€');
-                this.updateElement('worst-category-rate', '0%');
-            }
+           // Update worst category with details
+           if (monthlyComparison.worstCategory) {
+               // ✅ FIXED: Apply intelligent truncation to category names in Monthly Spending Analysis
+               const translatedCategoryName = this.translateCategoryName(monthlyComparison.worstCategory.category);
+               const truncatedCategoryName = this.intelligentTruncateBudgetCategory(translatedCategoryName);
 
-            // PRODUCTION: Dynamic Performance Score Calculation - NO HARDCODED VALUES
-            const performanceScore = this.calculateDynamicPerformanceScore(monthlyComparison);
+               this.updateElement('worst-category-name', truncatedCategoryName);
 
-            // Show appropriate values or empty states
-            if (performanceScore.hasData) {
-                this.updateElement('performance-score', performanceScore.score.toString());
-                this.updateElement('performance-description', performanceScore.description);
-                this.updateElement('budget-control-score', `${performanceScore.budgetControl}/30`);
-                this.updateElement('spending-trend-score', `${performanceScore.spendingTrend}/40`);
-                this.updateElement('financial-health-score', `${performanceScore.financialHealth}/30`);
+               // Add tooltip if category name was truncated
+               if (truncatedCategoryName !== translatedCategoryName && truncatedCategoryName.includes('...')) {
+                   const element = document.getElementById('worst-category-name');
+                   if (element) {
+                       element.title = translatedCategoryName;
+                       element.style.cursor = 'help';
+                   }
+               }
 
-                const scoreProgress = document.getElementById('score-progress');
-                if (scoreProgress) {
-                    scoreProgress.style.width = `${performanceScore.score}%`;
-                }
-            } else {
-                this.updateElement('performance-score', '0');
-                this.updateElement('performance-description', 'Add transactions and budgets to see score');
-                this.updateElement('budget-control-score', '0/30');
-                this.updateElement('spending-trend-score', '0/40');
-                this.updateElement('financial-health-score', '0/30');
+               this.updateElement('worst-category-change', `${this.formatCurrency(monthlyComparison.worstCategory.change)} more`);
+               this.updateElement('worst-category-previous', this.formatCurrency(monthlyComparison.worstCategory.lastAmount));
+               this.updateElement('worst-category-current', this.formatCurrency(monthlyComparison.worstCategory.currentAmount));
+               this.updateElement('worst-category-rate', `${monthlyComparison.worstCategory.percentage.toFixed(1)}% increase`);
+           } else {
+               this.updateElement('worst-category-name', 'No increases');
+               this.updateElement('worst-category-change', 'No extra spending');
+               this.updateElement('worst-category-previous', '0.00€');
+               this.updateElement('worst-category-current', '0.00€');
+               this.updateElement('worst-category-rate', '0%');
+           }
 
-                const scoreProgress = document.getElementById('score-progress');
-                if (scoreProgress) {
-                    scoreProgress.style.width = '0%';
-                }
-            }
-        }
+           // PRODUCTION: Dynamic Performance Score Calculation - NO HARDCODED VALUES
+           const performanceScore = this.calculateDynamicPerformanceScore(monthlyComparison);
+
+           // Show appropriate values or empty states
+           if (performanceScore.hasData) {
+               this.updateElement('performance-score', performanceScore.score.toString());
+               this.updateElement('performance-description', performanceScore.description);
+               this.updateElement('budget-control-score', `${performanceScore.budgetControl}/30`);
+               this.updateElement('spending-trend-score', `${performanceScore.spendingTrend}/40`);
+               this.updateElement('financial-health-score', `${performanceScore.financialHealth}/30`);
+
+               const scoreProgress = document.getElementById('score-progress');
+               if (scoreProgress) {
+                   scoreProgress.style.width = `${performanceScore.score}%`;
+               }
+           } else {
+               this.updateElement('performance-score', '0');
+               this.updateElement('performance-description', 'Add transactions and budgets to see score');
+               this.updateElement('budget-control-score', '0/30');
+               this.updateElement('spending-trend-score', '0/40');
+               this.updateElement('financial-health-score', '0/30');
+
+               const scoreProgress = document.getElementById('score-progress');
+               if (scoreProgress) {
+                   scoreProgress.style.width = '0%';
+               }
+           }
+       }
 
         getChangeDescription(percentage) {
             // DYNAMIC LOGIC BASED ON REAL PERCENTAGE CHANGE
@@ -2708,7 +3664,7 @@
         }
 
         /**
-         * PRODUCTION: Enhanced Financial Widgets Update with Perfect Calculations - NO HARDCODED VALUES
+         * PRODUCTION: Enhanced Financial Widgets Update with Perfect Calculations - FIXED ELEMENT UPDATES
          */
         updateFinancialWidgets() {
             const { monthlyTransactions, budgets } = this.dashboardData;
@@ -2716,24 +3672,71 @@
             // Update top spending category
             const topCategory = this.findTopSpendingCategory(monthlyTransactions);
             if (topCategory) {
-                this.updateElement('top-category-name', topCategory.name);
-                this.updateElement('top-category-amount', this.formatCurrency(topCategory.amount));
+                // ✅ FIXED: Apply intelligent truncation to top spending category name
+                const truncatedCategoryName = this.intelligentTruncateBudgetCategory(topCategory.name);
+                this.updateElement('top-category-name', truncatedCategoryName);
+
+                // Add tooltip if category name was truncated
+                if (truncatedCategoryName !== topCategory.name && truncatedCategoryName.includes('...')) {
+                    const element = document.getElementById('top-category-name');
+                    if (element) {
+                        element.title = topCategory.name;
+                        element.style.cursor = 'help';
+                    }
+                }
+                // ✅ FIXED: Use direct updateElement with proper smart formatting
+                const smartFormat = this.formatSmartNumber(topCategory.amount, false, true);
+                this.updateElement('top-category-amount', `${smartFormat.formatted}€`);
+
+                // Add tooltip if value is abbreviated
+                if (smartFormat.needsTooltip) {
+                    const element = document.getElementById('top-category-amount');
+                    if (element) {
+                        element.title = `Full value: ${this.formatCurrency(topCategory.amount)}`;
+                        element.style.cursor = 'help';
+                    }
+                }
+
                 this.updateElement('top-category-percentage',
                     `${topCategory.percentage.toFixed(1)}% of total expenses`);
             } else {
                 this.updateElement('top-category-name', 'No expenses yet');
-                this.updateElement('top-category-amount', this.formatCurrency(0));
+                this.updateElement('top-category-amount', '0.00€');
                 this.updateElement('top-category-percentage', '0% of total expenses');
             }
 
             // Update biggest expense
             const biggestExpense = this.findBiggestExpense(monthlyTransactions);
             if (biggestExpense) {
-                this.updateElement('biggest-expense-amount', this.formatCurrency(biggestExpense.amount));
-                this.updateElement('biggest-expense-description', biggestExpense.description || 'No description');
+                // ✅ FIXED: Use direct updateElement with proper smart formatting
+                const smartFormat = this.formatSmartNumber(biggestExpense.amount, false, true);
+                this.updateElement('biggest-expense-amount', `${smartFormat.formatted}€`);
+
+                // Add tooltip if value is abbreviated
+                if (smartFormat.needsTooltip) {
+                    const element = document.getElementById('biggest-expense-amount');
+                    if (element) {
+                        element.title = `Full value: ${this.formatCurrency(biggestExpense.amount)}`;
+                        element.style.cursor = 'help';
+                    }
+                }
+
+                // ✅ FIXED: Apply intelligent truncation to transaction description
+                const originalDescription = biggestExpense.description || 'No description';
+                const truncatedDescription = this.intelligentTruncateBudgetCategory(originalDescription);
+                this.updateElement('biggest-expense-description', truncatedDescription);
+
+                // Add tooltip if description was truncated
+                if (truncatedDescription !== originalDescription && truncatedDescription.includes('...')) {
+                    const element = document.getElementById('biggest-expense-description');
+                    if (element) {
+                        element.title = originalDescription;
+                        element.style.cursor = 'help';
+                    }
+                }
                 this.updateElement('biggest-expense-date', this.formatDate(biggestExpense.transactionDate));
             } else {
-                this.updateElement('biggest-expense-amount', this.formatCurrency(0));
+                this.updateElement('biggest-expense-amount', '0.00€');
                 this.updateElement('biggest-expense-description', 'No expenses yet');
                 this.updateElement('biggest-expense-date', '-');
             }
@@ -2931,7 +3934,7 @@
 
         /**
          * PRODUCTION: Update Spending Frequency Stats - COMPLETELY DYNAMIC, NO HARDCODED VALUES
-         * UPDATED: Fixed icon refresh with Lucide after content updates
+         * UPDATED: Fixed icon refresh with Lucide after content updates + SMART FORMATTING
          */
         updateSpendingFrequencyStatsProduction(monthlyTransactions) {
             const { transactions } = monthlyTransactions;
@@ -2995,9 +3998,9 @@
                 ? Object.keys(dayFrequency).reduce((a, b) => dayFrequency[a] > dayFrequency[b] ? a : b)
                 : 'N/A';
 
-            // Update the 3 symmetric items with CORRECT calculations
+            // Update the 3 symmetric items with CORRECT calculations + SMART FORMATTING
             this.updateElement('total-transactions', totalTransactions.toString());
-            this.updateElement('average-transaction', this.formatCurrency(averageTransaction));
+            this.updateElement('average-transaction', this.formatCurrency(averageTransaction), true); // ✅ NEW: Smart formatting
             this.updateElement('most-active-day', mostActiveDay);
 
             // Update status indicators based on actual data
@@ -3067,6 +4070,9 @@
             }
         }
 
+        /**
+         * PRODUCTION: Budget Health Overview with Intelligent Category Name Truncation
+         */
         updateBudgetHealthOverview(budgets) {
             const healthSummary = document.getElementById('budget-health-summary');
             if (!healthSummary) return;
@@ -3090,16 +4096,23 @@
                 return;
             }
 
-            // NORMAL STATE - Show budget health items
-            healthSummary.innerHTML = budgets.budgetHealth.map(health => `
-                <div class="health-item">
-                    <span class="health-category">${health.categoryName}</span>
-                    <span class="health-status ${health.status}">
-                        ${health.status === 'good' ? 'On Track' :
-                          health.status === 'warning' ? 'Near Limit' : 'Over Budget'}
-                    </span>
-                </div>
-            `).join('');
+            // NORMAL STATE - Show budget health items with INTELLIGENT TRUNCATION
+            healthSummary.innerHTML = budgets.budgetHealth.map(health => {
+                // ✅ FIXED: Apply intelligent truncation to category names in Budget Health Overview
+                const originalCategoryName = health.categoryName;
+                const truncatedCategoryName = this.intelligentTruncateBudgetCategory(originalCategoryName);
+                const needsTooltip = truncatedCategoryName !== originalCategoryName && truncatedCategoryName.includes('...');
+
+                return `
+                    <div class="health-item">
+                        <span class="health-category" ${needsTooltip ? `title="${originalCategoryName}" style="cursor: help;"` : ''}>${truncatedCategoryName}</span>
+                        <span class="health-status ${health.status}">
+                            ${health.status === 'good' ? 'On Track' :
+                              health.status === 'warning' ? 'Near Limit' : 'Over Budget'}
+                        </span>
+                    </div>
+                `;
+            }).join('');
         }
 
         /**
@@ -3313,7 +4326,7 @@
         }
 
         /**
-         * ✅ UPDATED: Category Legend with Truncation Support
+         * ✅ UPDATED: Category Legend with intelligent truncation support
          */
         updateCategoryLegend(categoryData) {
             const legend = document.getElementById('category-legend');
@@ -3329,30 +4342,38 @@
                 return;
             }
 
-            // Generate HTML for legend items
+            // Generate HTML for legend items with intelligent truncation + SMART FORMATTING
             legend.innerHTML = categoryData.labels.map((label, index) => {
                 const value = categoryData.data[index];
                 const percentage = Math.round((value / total) * 100);
 
+                // ✅ NEW: Apply intelligent truncation to legend labels
+                const truncatedLabel = this.intelligentTruncateBudgetCategory(label);
+                const needsTooltip = truncatedLabel !== label && truncatedLabel.includes('...');
+
+                // 🔢 NEW: Apply smart number formatting to values
+                const smartFormat = this.formatSmartNumber(value, false, true);
+                const displayValue = smartFormat.formatted;
+                const needsValueTooltip = smartFormat.needsTooltip;
+
                 return `
                     <div class="legend-item">
                         <div class="legend-color" style="background-color: ${categoryData.colors[index]}"></div>
-                        <span class="legend-label">${label}</span>
-                        <span class="legend-value">${this.formatCurrency(value)} (${percentage}%)</span>
+                        <span class="legend-label" ${needsTooltip ? `title="${label}" style="cursor: help;"` : ''}>${truncatedLabel}</span>
+                        <span class="legend-value" ${needsValueTooltip ? `title="${smartFormat.fullValue}${this.CURRENCY_SYMBOL}" style="cursor: help;"` : ''}>${displayValue}${this.CURRENCY_SYMBOL} (${percentage}%)</span>
                     </div>
                 `;
             }).join('');
 
-            // ✂️ CRITICAL: Apply truncation AFTER HTML is generated
-            setTimeout(() => {
-                this.truncateCategoryLabels(this.categoryTruncationLength);
-                console.log('✂️ Category truncation applied to legend');
+            // ✂️ NOTE: Skip the old truncation since we're using intelligent truncation now
+            // The old truncateCategoryLabels is not needed anymore for legends
 
-                // Refresh Lucide icons if needed
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-            }, 50); // Small delay to ensure HTML is rendered
+            // Refresh Lucide icons if needed
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            console.log('✅ Category legend updated with smart number formatting and intelligent truncation');
         }
 
         // ===== CHART DATA METHODS =====
@@ -3463,25 +4484,30 @@
             }, 300));
         }
 
+        /**
+         * ✅ FIXED: Handle summary card click WITHOUT navigation
+         */
         handleSummaryCardClick(card, event) {
+            // Skip if clicking on trend indicator or card actions
             if (event.target.closest('.trend-indicator, .card-actions')) {
                 return;
             }
 
+            // ✅ REMOVED: All navigation logic - just show nice click effect
             card.style.transform = 'scale(0.98)';
             setTimeout(() => {
                 card.style.transform = '';
             }, 150);
 
-            if (card.classList.contains('balance-card')) {
-                this.navigateWithAnimation('/transactions');
-            } else if (card.classList.contains('income-card')) {
-                this.navigateWithAnimation('/transactions?type=income');
-            } else if (card.classList.contains('expense-card')) {
-                this.navigateWithAnimation('/transactions?type=expense');
-            } else if (card.classList.contains('budget-utilization-card')) {
-                this.navigateWithAnimation('/budgets');
-            }
+            // ✅ NEW: Optional - show a subtle message that this is info-only
+            const cardTitle = card.querySelector('.card-title, .summary-card-title')?.textContent || 'Card';
+            console.log(`📊 ${cardTitle} clicked - showing financial summary`);
+
+            // ✅ OPTIONAL: Add a subtle visual feedback
+            card.style.boxShadow = '0 0 20px rgba(168, 85, 247, 0.3)';
+            setTimeout(() => {
+                card.style.boxShadow = '';
+            }, 1000);
         }
 
         async handleChartPeriodChange(button) {
@@ -3784,6 +4810,14 @@
             // ✂️ NEW: Global access to truncation functions
             window.truncateCategoryLabels = (maxLength = 12) => this.truncateCategoryLabels(maxLength);
             window.testCategoryTruncation = () => this.testCategoryTruncation();
+
+            // 🔢 NEW: Global access to smart number formatting functions
+            window.testSmartNumberFormatting = () => this.testSmartNumberFormatting();
+            window.formatSmartNumber = (value, isPercentage = false) => this.formatSmartNumber(value, isPercentage);
+
+            // 📊 NEW: Global access to intelligent budget truncation functions
+            window.testIntelligentBudgetTruncation = () => this.testIntelligentBudgetTruncation();
+            window.intelligentTruncateBudgetCategory = (categoryName) => this.intelligentTruncateBudgetCategory(categoryName);
         }
 
         async performSmartRefresh(operation = 'Smart refresh') {
@@ -4023,13 +5057,6 @@
                 const hue = (i * 137.508) % 360;
                 return `hsl(${hue}, 70%, 60%)`;
             });
-        }
-
-        updateElement(id, content) {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = content;
-            }
         }
 
         debounce(func, wait) {
@@ -4300,6 +5327,18 @@
                 this.notificationTimer = null;
             }
 
+            // ✅ НОВО: Clear backup timer
+            if (this.backupTimer) {
+                clearInterval(this.backupTimer);
+                this.backupTimer = null;
+            }
+
+            // ✅ НОВО: Clear cleanup timer
+            if (this.cleanupTimer) {
+                clearInterval(this.cleanupTimer);
+                this.cleanupTimer = null;
+            }
+
             // Destroy charts
             Object.values(this.charts).forEach(chart => {
                 if (chart && typeof chart.destroy === 'function') {
@@ -4330,7 +5369,7 @@
         // Wait a bit for all resources to load
         setTimeout(() => {
             window.modernDashboard = new ModernFinancialDashboard();
-            console.log('🚀 Modern Financial Dashboard initialized with FIXED notification badge logic');
+            console.log('🚀 Modern Financial Dashboard initialized with FIXED notification badge logic + SMART NUMBER FORMATTING');
         }, 100);
     }
 
@@ -4384,7 +5423,7 @@
             }
         });
 
-        console.log('🔧 Production enhancements setup completed with FIXED notification badge updates');
+        console.log('🔧 Production enhancements setup completed with SMART NUMBER FORMATTING + FIXED notification badge updates');
     }
 
     if (document.readyState === 'loading') {
@@ -4404,6 +5443,6 @@
 
     window.ModernFinancialDashboard = ModernFinancialDashboard;
 
-    console.log('📊 Modern Financial Dashboard script loaded successfully - NOTIFICATION BADGE FIXED');
+    console.log('📊 Modern Financial Dashboard script loaded successfully - NOTIFICATION BADGE FIXED + SMART NUMBER FORMATTING ADDED');
 
 })();
