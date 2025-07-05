@@ -6,6 +6,7 @@
  * Enhanced: Modern notifications scroller for 3+ notifications
  * NEW: Vertical scrollbar for notifications (right side)
  * NEW: Smart notifications time system with 15min/1hour updates
+ * UPDATED: Smart uppercase truncation logic (4 chars for all-uppercase, 6 chars for mixed case)
  */
 
 class CategoriesManager {
@@ -548,9 +549,9 @@ class CategoriesManager {
             this.updateElement('income-categories', this.summaryData.incomeCategories);
             this.updateElement('expense-categories', this.summaryData.expenseCategories);
 
-            // ✅ ULTRA SHORT: Max 6 characters + ".." for perfect layout
+            // ✅ ENHANCED: Smart truncation with uppercase detection
             const mostUsedName = this.summaryData.mostUsedCategory.name;
-            const truncatedName = this.truncateCategoryName(mostUsedName, 6);
+            const truncatedName = this.truncateCategoryName(mostUsedName);
             this.updateElement('most-used-category', truncatedName);
 
             this.updateElement('most-used-count', `${this.summaryData.mostUsedCategory.count} uses`);
@@ -569,20 +570,48 @@ class CategoriesManager {
     }
 
     /**
-     * ✅ ULTRA SHORT: Truncation to 6 chars + ".." for perfect layout
+     * ✅ ENHANCED: Smart truncation with uppercase detection and mixed case logic
+     * - If category name contains only uppercase letters, use 3 characters limit
+     * - If category name has mixed case with 2+ uppercase letters, use 4 characters limit
+     * - If category name has mixed case with 0-1 uppercase letters, use 6 characters limit
+     * - If name is shorter than limit, show full name without ".."
      */
-    truncateCategoryName(name, maxLength = 6) {
+    truncateCategoryName(name) {
         if (!name || name === 'None') {
             return name;
         }
 
-        // If name is within limit, return as is
+        // ✅ Check if category name is ALL uppercase
+        const isAllUppercase = name === name.toUpperCase() && name !== name.toLowerCase();
+
+        // ✅ NEW: Count uppercase letters in mixed case names
+        const uppercaseLetters = (name.match(/[A-ZА-Я]/g) || []).length;
+        const lowercaseLetters = (name.match(/[a-zа-я]/g) || []).length;
+        const isMixedCase = uppercaseLetters > 0 && lowercaseLetters > 0;
+
+        // ✅ ENHANCED: Smart limit based on case and uppercase count
+        let maxLength;
+        if (isAllUppercase) {
+            maxLength = 3; // Only uppercase letters
+        } else if (isMixedCase && uppercaseLetters > 1) {
+            maxLength = 4; // Mixed case with 2+ uppercase letters
+        } else {
+            maxLength = 6; // Mixed case with 0-1 uppercase or all lowercase
+        }
+
+        console.log(`🔤 Truncation logic: "${name}" - All uppercase: ${isAllUppercase} - Mixed case: ${isMixedCase} - Uppercase count: ${uppercaseLetters} - Max length: ${maxLength}`);
+
+        // ✅ FIXED: If name is within limit, return full name WITHOUT ".."
         if (name.length <= maxLength) {
+            console.log(`✅ Name "${name}" is within limit (${name.length} <= ${maxLength}), showing full name`);
             return name;
         }
 
-        // ✅ ULTRA SHORT: 6 characters + ".." (total = 8 chars max)
-        return name.substring(0, maxLength) + '..';
+        // ✅ SMART: Truncate with appropriate limit only when needed
+        const truncated = name.substring(0, maxLength) + '..';
+        console.log(`✂️ Truncated: "${name}" → "${truncated}"`);
+
+        return truncated;
     }
 
     /**

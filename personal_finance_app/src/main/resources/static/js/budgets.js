@@ -9,8 +9,10 @@
  * ✅ REMOVED: Emoji prefixes from notification messages
  * ✅ FIXED: Total Spent calculation - ONLY from Category Budgets (excluding General Budget)
  * ✅ UPDATED: Category name truncation - limit to 20 characters with ".." suffix
+ * ✅ ENHANCED: Smart category truncation based on case patterns (15 chars for mixed/uppercase)
  * ✅ FIXED: Validation order for maximum amount check - NOW WORKS CORRECTLY
  * ✅ COMPLETELY FIXED: Notification logic - proper creation, loading and display
+ * ✅ NEW: Analytics-specific truncation - mixed case with >3 uppercase letters = 7 chars for Top Spending Categories
  * FIXED: General Budget logic, analytics calculations, duplicate prevention
  * NEW: Dynamic dropdown sizing for exactly 5 visible options
  * FIXED: Enhanced category dropdown scroller functionality
@@ -114,16 +116,99 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ UPDATED: Truncate category names to 20 characters with ".." suffix
+     * ✅ ENHANCED: Smart category name truncation based on case patterns (supports Cyrillic + Latin)
+     * - If category has mixed case (upper + lower) and has >5 uppercase letters: truncate to 15 chars
+     * - If category is all uppercase: truncate to 15 chars
+     * - Otherwise: use default maxLength (20 chars)
+     * - Supports both Bulgarian/Cyrillic and English/Latin characters
      */
     truncateCategoryName(categoryName, maxLength = 20) {
         if (!categoryName) return 'Unknown Category';
 
-        if (categoryName.length <= maxLength) {
+        // ✅ ENHANCED: Analyze case patterns for both Cyrillic and Latin characters
+        // Cyrillic uppercase: А-Я, Latin uppercase: A-Z
+        const uppercaseLetters = (categoryName.match(/[А-ЯA-Z]/g) || []).length;
+        // Cyrillic lowercase: а-я, Latin lowercase: a-z
+        const lowercaseLetters = (categoryName.match(/[а-яa-z]/g) || []).length;
+        const totalLetters = uppercaseLetters + lowercaseLetters;
+
+        // Check if category is all uppercase (Bulgarian + English)
+        const isAllUppercase = totalLetters > 0 && uppercaseLetters === totalLetters;
+
+        // Check if category has mixed case with >5 uppercase letters (Bulgarian + English)
+        const isMixedCaseWithManyUpper = uppercaseLetters > 5 && lowercaseLetters > 0;
+
+        // ✅ SMART TRUNCATION: Apply 15-character limit for specific cases
+        let effectiveMaxLength = maxLength;
+        if (isAllUppercase || isMixedCaseWithManyUpper) {
+            effectiveMaxLength = 15;
+            console.log(`📝 Smart truncation applied to "${categoryName}": ${isAllUppercase ? 'ALL_UPPERCASE' : 'MIXED_CASE_MANY_UPPER'} -> ${effectiveMaxLength} chars (Cyrillic+Latin support)`);
+        }
+
+        // Apply truncation if needed
+        if (categoryName.length <= effectiveMaxLength) {
             return categoryName;
         }
 
-        return categoryName.substring(0, maxLength) + '..';
+        return categoryName.substring(0, effectiveMaxLength) + '..';
+    }
+
+    /**
+     * ✅ UPDATED: Analytics-specific category truncation for Top Spending Categories
+     * NEW LOGIC: If category has mixed case with >2 uppercase letters, truncate to 7 chars
+     * Otherwise, use the existing analytics truncation logic
+     */
+    truncateTopSpendingCategory(categoryName) {
+        if (!categoryName) return 'Unknown Category';
+
+        // ✅ UPDATED: Check case patterns for both Cyrillic and Latin characters
+        const uppercaseLetters = (categoryName.match(/[А-ЯA-Z]/g) || []).length;
+        const lowercaseLetters = (categoryName.match(/[а-яa-z]/g) || []).length;
+        const totalLetters = uppercaseLetters + lowercaseLetters;
+
+        const isAllUppercase = totalLetters > 0 && uppercaseLetters === totalLetters;
+        const isMixedCaseWithManyUpper = uppercaseLetters > 2 && lowercaseLetters > 0; // ✅ UPDATED: >2 instead of >3
+
+        // ✅ UPDATED LOGIC: Apply 7-character limit for Top Spending Categories
+        let effectiveMaxLength = 12; // ✅ UPDATED: Default 12 chars for analytics (instead of 15)
+
+        if (isAllUppercase && categoryName.length > 7) {
+            effectiveMaxLength = 7;
+            console.log(`📊 Top Spending truncation applied to "${categoryName}": ALL_UPPERCASE >7 chars -> 7 chars`);
+        } else if (isMixedCaseWithManyUpper) {
+            effectiveMaxLength = 7; // ✅ UPDATED: Mixed case with >2 uppercase = 7 chars
+            console.log(`📊 Top Spending truncation applied to "${categoryName}": MIXED_CASE_>2_UPPER -> 7 chars`);
+        }
+
+        // Apply truncation if needed
+        if (categoryName.length <= effectiveMaxLength) {
+            return categoryName;
+        }
+
+        return categoryName.substring(0, effectiveMaxLength) + '..';
+    }
+
+    /**
+     * ✅ UPDATED: Analytics truncation method for other parts - now uses 12 chars instead of 15
+     */
+    truncateAnalyticsCategory(categoryName) {
+        if (!categoryName) return 'Unknown Category';
+
+        // ✅ Check if category is all uppercase (Bulgarian + English)
+        const uppercaseLetters = (categoryName.match(/[А-ЯA-Z]/g) || []).length;
+        const lowercaseLetters = (categoryName.match(/[а-яa-z]/g) || []).length;
+        const totalLetters = uppercaseLetters + lowercaseLetters;
+
+        const isAllUppercase = totalLetters > 0 && uppercaseLetters === totalLetters;
+
+        // ✅ If all uppercase and exceeds 7 characters, truncate to 7
+        if (isAllUppercase && categoryName.length > 7) {
+            console.log(`📊 Analytics truncation applied to "${categoryName}": ALL_UPPERCASE >7 chars -> 7 chars`);
+            return categoryName.substring(0, 7) + '..';
+        }
+
+        // ✅ UPDATED: Use 12 chars for analytics (instead of 15)
+        return this.truncateCategoryName(categoryName, 12);
     }
 
     /**
@@ -436,7 +521,7 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ UPDATED: Translate and truncate category names to 20 characters
+     * ✅ ENHANCED: Translate and apply smart truncation to category names
      */
     translateCategoryName(bulgName) {
         const translations = {
@@ -499,7 +584,7 @@ class BudgetsManager {
         };
 
         const translated = translations[bulgName] || bulgName;
-        // ✅ UPDATED: Apply truncation to translated category name to 20 characters
+        // ✅ ENHANCED: Apply smart truncation to translated category name
         return this.truncateCategoryName(translated);
     }
 
@@ -529,11 +614,11 @@ class BudgetsManager {
             }
             select.appendChild(defaultOption);
 
-            // Add category options with truncated names
+            // Add category options with smart truncated names
             this.categories.forEach(category => {
                 const option = document.createElement('option');
                 option.value = category.id;
-                // ✅ UPDATED: Use truncated category name for display (20 characters)
+                // ✅ ENHANCED: Use smart truncated category name for display
                 option.textContent = this.translateCategoryName(category.name);
                 option.style.color = category.color || '#6366f1';
                 // ✅ NEW: Add title attribute to show full name on hover
@@ -1221,7 +1306,7 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ UPDATED: Create budget card with truncated category names (20 characters)
+     * ✅ ENHANCED: Create budget card with smart truncated category names
      */
     createBudgetCardHTML(budget) {
         // Handle dummy cards
@@ -1261,7 +1346,7 @@ class BudgetsManager {
             statusIcon = 'alert-triangle';
         }
 
-        // ✅ UPDATED: Use truncated category name (20 characters) with full name in title for tooltip
+        // ✅ ENHANCED: Use smart truncated category name with full name in title for tooltip
         const categoryName = budget.isGeneralBudget ?
             'General Budget' :
             this.translateCategoryName(budget.categoryName);
@@ -1410,7 +1495,7 @@ class BudgetsManager {
         const budgetData = this.budgets
             .filter(b => !b.isGeneralBudget && parseFloat(b.plannedAmount) > 0)
             .map(b => ({
-                name: this.translateCategoryName(b.categoryName), // ✅ Already truncated to 20 characters
+                name: this.translateCategoryName(b.categoryName), // ✅ Already applies smart truncation
                 planned: parseFloat(b.plannedAmount),
                 spent: parseFloat(b.spentAmount),
                 efficiency: parseFloat(b.plannedAmount) > 0 ? (parseFloat(b.spentAmount) / parseFloat(b.plannedAmount)) * 100 : 0,
@@ -1588,7 +1673,7 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ UPDATED: Budget Trends Analysis with FIXED Total Spent calculation and truncated names (20 characters)
+     * ✅ ENHANCED: Budget Trends Analysis with FIXED Total Spent calculation and NEW Top Spending Categories truncation
      */
     renderBudgetTrendsAnalysis(container) {
         let trendsHTML = '<div class="innovative-analytics-container">';
@@ -1619,7 +1704,7 @@ class BudgetsManager {
 
             trendsHTML += '<div class="trends-grid">';
 
-            // ✅ FIXED: Top 3 spending categories with proper calculation and truncated names (20 characters)
+            // ✅ FIXED: Top 3 spending categories with proper calculation and NEW Top Spending Categories truncation
             const categoryBudgets = this.budgets.filter(b => !b.isGeneralBudget && parseFloat(b.spentAmount) > 0);
             const topCategories = categoryBudgets
                 .sort((a, b) => parseFloat(b.spentAmount) - parseFloat(a.spentAmount))
@@ -1655,11 +1740,13 @@ class BudgetsManager {
                 topCategories.forEach((budget, index) => {
                     // ✅ FIXED: Calculate percentage based on category spending only
                     const percentage = categoryTotalSpent > 0 ? (parseFloat(budget.spentAmount) / categoryTotalSpent) * 100 : 0;
-                    // ✅ UPDATED: Use truncated category name for display (limit to 15 chars for space in analytics)
-                    const categoryName = this.truncateCategoryName(this.translateCategoryName(budget.categoryName), 15);
+
+                    // ✅ NEW: Apply TOP SPENDING CATEGORIES specific truncation
+                    const translatedName = this.translateCategoryName(budget.categoryName);
+                    const categoryName = this.truncateTopSpendingCategory(translatedName);
                     const fullCategoryName = this.translateCategoryName(budget.categoryName, 100); // Full name for tooltip
 
-                    console.log(`📊 Category ${categoryName}: €${budget.spentAmount} = ${percentage.toFixed(1)}%`);
+                    console.log(`📊 Top Spending Category ${categoryName}: €${budget.spentAmount} = ${percentage.toFixed(1)}%`);
 
                     trendsHTML += `
                         <div class="distribution-item">
@@ -2163,7 +2250,7 @@ class BudgetsManager {
 
         this.currentBudget = budget;
 
-        // ✅ UPDATED: Use truncated category name for display (20 characters)
+        // ✅ ENHANCED: Use smart truncated category name for display
         const categoryName = budget.isGeneralBudget ? 'General Budget' : this.translateCategoryName(budget.categoryName);
 
         preview.innerHTML = `
@@ -2209,7 +2296,7 @@ class BudgetsManager {
                 }
             }
 
-            // ✅ SUCCESS - Show proper success message with truncated name (20 characters)
+            // ✅ SUCCESS - Show proper success message with smart truncated name
             this.showToast(`Budget "${this.translateCategoryName(budgetName)}" deleted successfully!`, 'success');
 
             // ✅ FIXED: Add notification with proper data structure
@@ -2387,6 +2474,7 @@ class BudgetsManager {
             console.error('❌ Failed to save local notifications to storage:', error);
         }
     }
+
     async loadNotifications() {
         try {
             // Load API notifications
@@ -2433,7 +2521,7 @@ class BudgetsManager {
     }
 
     /**
-     * ✅ UPDATED: Translate Bulgarian notification messages to English, remove emojis and truncate category names in messages
+     * ✅ ENHANCED: Translate Bulgarian notification messages to English, remove emojis and apply smart truncation to category names
      */
     translateNotificationMessage(message) {
         if (!message) return 'Budget notification';
@@ -2505,23 +2593,23 @@ class BudgetsManager {
             translatedMessage = translatedMessage.replace(new RegExp(bulgarian, 'gi'), english);
         });
 
-        // ✅ NEW: Truncate long category names within the message content
+        // ✅ ENHANCED: Apply smart truncation to long category names within the message content
         // Look for patterns like 'category name' in quotes and truncate them
-        translatedMessage = translatedMessage.replace(/'([^']{21,})'/g, (match, categoryName) => {
-            const truncated = this.truncateCategoryName(categoryName, 20);
+        translatedMessage = translatedMessage.replace(/'([^']{16,})'/g, (match, categoryName) => {
+            const truncated = this.truncateCategoryName(categoryName);
             return `'${truncated}'`;
         });
 
-        // ✅ NEW: Also handle category names without quotes that are very long
-        // Split by spaces and truncate any word longer than 25 characters (likely a category name)
+        // ✅ ENHANCED: Also handle category names without quotes that are very long
+        // Split by spaces and apply smart truncation to any word longer than 25 characters (likely a category name)
         const words = translatedMessage.split(' ');
         const processedWords = words.map(word => {
             // Skip if it's a number, currency, or contains special characters
             if (/^\d+[\.,\d]*$/.test(word) || /[€$%]/.test(word) || word.length <= 25) {
                 return word;
             }
-            // Truncate very long words that are likely category names
-            return this.truncateCategoryName(word, 20);
+            // Apply smart truncation to very long words that are likely category names
+            return this.truncateCategoryName(word);
         });
 
         return processedWords.join(' ');
@@ -2599,10 +2687,9 @@ class BudgetsManager {
             `;
         } else {
             container.innerHTML = validNotifications.map(notification => {
-                // ✅ FIXED: Use truncated category name for notifications (20 characters with ..)
+                // ✅ ENHANCED: Use smart truncated category name for notifications
                 const categoryName = this.truncateCategoryName(
-                    this.translateCategoryName(notification.categoryName || 'General Budget'),
-                    20  // ✅ Apply 20 character limit with .. suffix
+                    this.translateCategoryName(notification.categoryName || 'General Budget')
                 );
                 const fullCategoryName = this.translateCategoryName(notification.categoryName || 'General Budget', 100);
 
