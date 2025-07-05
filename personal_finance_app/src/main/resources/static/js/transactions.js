@@ -3,6 +3,8 @@
  * Complete transaction management with newest transactions always appearing first
  * ✅ COMPLETELY FIXED: New transactions appear at the top of page 1
  * ✅ GUARANTEED: Newest transactions are always shown first
+ * ✅ FIXED: Category names over 20 characters are truncated with ...
+ * ✅ FIXED: User-friendly error messages for database errors
  */
 
 class TransactionsManager {
@@ -376,6 +378,7 @@ class TransactionsManager {
 
         return false;
     }
+
     addEventListeners(listeners) {
         listeners.forEach(([id, event, handler]) => {
             const element = document.getElementById(id);
@@ -407,6 +410,171 @@ class TransactionsManager {
             console.error('❌ Failed to load categories:', error);
             this.showToast('Failed to load categories. Some features may be limited.', 'warning');
         }
+    }
+
+    /**
+     * ✅ NEW: Truncate transaction description for delete modal display
+     */
+    truncateDescriptionForModal(description, maxLength = 15) {
+        if (!description) return 'No description';
+
+        // Include spaces in character count
+        if (description.length > maxLength) {
+            return description.substring(0, maxLength) + '...';
+        }
+
+        return description;
+    }
+
+    /**
+     * ✅ NEW: Truncate transaction descriptions for notifications only
+     */
+    truncateTransactionDescription(description, maxLength = 20) {
+        if (!description) return '';
+
+        // Include spaces in character count
+        if (description.length > maxLength) {
+            return description.substring(0, maxLength) + '...';
+        }
+
+        return description;
+    }
+
+    /**
+     * ✅ NEW: Intelligently truncate category names for Recent Transactions display
+     * Handles all edge cases: long names, uppercase text, special characters
+     * Uses 60 character limit for Recent Transactions (more space available)
+     */
+    truncateCategoryForDisplay(categoryName, maxLength = 60) {
+        if (!categoryName) return '';
+
+        // Step 1: Translate the category name first
+        const translatedName = this.translateCategoryName(categoryName);
+
+        // Step 2: Check if truncation is needed
+        if (translatedName.length <= maxLength) {
+            return translatedName;
+        }
+
+        // Step 3: Smart truncation logic
+        // Try to truncate at word boundaries for better readability
+        const words = translatedName.split(' ');
+
+        if (words.length > 1) {
+            // Multi-word category - try to keep full words
+            let truncated = '';
+            for (let i = 0; i < words.length; i++) {
+                const testString = truncated + (i > 0 ? ' ' : '') + words[i];
+                if (testString.length <= maxLength - 3) { // -3 for "..."
+                    truncated = testString;
+                } else {
+                    break;
+                }
+            }
+
+            // If we got at least one full word, use it
+            if (truncated.length > 0) {
+                return truncated + '...';
+            }
+        }
+
+        // Single word or couldn't fit any full words - simple truncation
+        return translatedName.substring(0, maxLength - 3) + '...';
+    }
+
+    /**
+     * ✅ NEW: Advanced truncation for categories in buttons and modals (NOT filters)
+     * Handles multiple truncation rules based on letter case patterns
+     */
+    truncateCategoryForButtonsAndModals(categoryName) {
+        if (!categoryName) return '';
+
+        // Step 1: Translate the category name first
+        const translatedName = this.translateCategoryName(categoryName);
+
+        // Step 2: Analyze the text pattern
+        const uppercaseCount = (translatedName.match(/[A-ZА-Я]/g) || []).length;
+        const lowercaseCount = (translatedName.match(/[a-zа-я]/g) || []).length;
+        const hasLetters = /[A-Za-zА-Яа-я]/.test(translatedName);
+
+        if (!hasLetters) {
+            // No letters - return as is
+            return translatedName;
+        }
+
+        // Step 3: Apply truncation rules based on case patterns
+
+        // Rule 1: ALL CAPS - truncate to 10 characters
+        const isAllUppercase = translatedName === translatedName.toUpperCase() &&
+                              translatedName !== translatedName.toLowerCase() &&
+                              hasLetters;
+
+        if (isAllUppercase) {
+            if (translatedName.length > 10) {
+                return translatedName.substring(0, 10) + '...';
+            }
+            return translatedName;
+        }
+
+        // Rule 2: Mixed case with more than 4 uppercase letters - truncate to 15 characters
+        const hasMixedCase = uppercaseCount > 0 && lowercaseCount > 0;
+        const hasMoreThan4Uppercase = uppercaseCount > 4;
+
+        if (hasMixedCase && hasMoreThan4Uppercase) {
+            if (translatedName.length > 15) {
+                return translatedName.substring(0, 15) + '...';
+            }
+            return translatedName;
+        }
+
+        // Rule 3: Default case - truncate to 20 characters
+        if (translatedName.length > 20) {
+            return translatedName.substring(0, 20) + '...';
+        }
+
+        return translatedName;
+    }
+
+    /**
+     * ✅ NEW: Special truncation for categories in ALL CAPS (buttons and filters)
+     * Truncates to 10 characters + "..." only if the category is entirely uppercase
+     */
+    truncateCategoryForButtons(categoryName, maxLength = 20) {
+        if (!categoryName) return '';
+
+        // Step 1: Translate the category name first
+        const translatedName = this.translateCategoryName(categoryName);
+
+        // Step 2: Check if the category is entirely in uppercase
+        const isAllUppercase = translatedName === translatedName.toUpperCase() &&
+                              translatedName !== translatedName.toLowerCase() &&
+                              /[A-Za-zА-Яа-я]/.test(translatedName); // Contains letters
+
+        if (isAllUppercase) {
+            // Special handling for ALL CAPS - truncate to 10 characters
+            if (translatedName.length > 10) {
+                return translatedName.substring(0, 10) + '...';
+            }
+            return translatedName;
+        }
+
+        // Normal handling for mixed case - use standard maxLength
+        if (translatedName.length > maxLength) {
+            return translatedName.substring(0, maxLength) + '...';
+        }
+
+        return translatedName;
+    }
+
+    /**
+     * ✅ UPDATED: Truncate category names for filters with advanced logic
+     * Now uses the same advanced logic as buttons and modals
+     */
+    truncateCategoryName(name, maxLength = 20) {
+        if (!name) return '';
+
+        // Use the advanced truncation logic for filters too
+        return this.truncateCategoryForButtonsAndModals(name);
     }
 
     /**
@@ -492,7 +660,7 @@ class TransactionsManager {
     }
 
     /**
-     * Populate category select options with English translations
+     * ✅ UPDATED: Populate category select options with advanced truncation for Add/Edit transaction
      */
     populateCategorySelect() {
         const categorySelect = document.getElementById('transaction-category');
@@ -508,11 +676,17 @@ class TransactionsManager {
         // Filter categories by type
         const filteredCategories = this.categories.filter(cat => cat.type === currentType);
 
-        // Add filtered categories with English names
+        // Add filtered categories with advanced truncation for buttons and modals
         filteredCategories.forEach(category => {
             const option = document.createElement('option');
             option.value = category.id;
-            option.textContent = this.translateCategoryName(category.name);
+
+            // Translate and apply advanced truncation for buttons/modals
+            const translatedName = this.translateCategoryName(category.name);
+            const truncatedName = this.truncateCategoryForButtonsAndModals(translatedName);
+
+            option.textContent = truncatedName;
+            option.title = translatedName; // Full name as tooltip
             option.style.color = category.color || '#6366f1';
             categorySelect.appendChild(option);
         });
@@ -1123,15 +1297,21 @@ class TransactionsManager {
         // Hide empty state and show transactions
         if (emptyState) emptyState.style.display = 'none';
 
-        container.innerHTML = currentTransactions.map(transaction =>
+        // ✅ CRITICAL: Clear container first to remove old tooltips and event listeners
+        container.innerHTML = '';
+
+        // Generate fresh HTML with updated data
+        const transactionsHTML = currentTransactions.map(transaction =>
             this.createTransactionHTML(transaction)
         ).join('');
 
-        // Add click handlers for transaction items
+        container.innerHTML = transactionsHTML;
+
+        // Add click handlers for transaction items with fresh data
         container.querySelectorAll('.transaction-item').forEach(item => {
             const transactionId = item.dataset.transactionId;
 
-            // Edit on click
+            // Edit on click with fresh transaction data
             item.addEventListener('click', (e) => {
                 if (!e.target.closest('.transaction-actions')) {
                     this.editTransaction(transactionId);
@@ -1142,10 +1322,12 @@ class TransactionsManager {
         // Show pagination if needed
         this.renderPagination();
 
-        // Refresh icons
+        // ✅ CRITICAL: Refresh icons to ensure tooltips work properly
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+
+        console.log('✅ Transactions rendered with fresh tooltips and updated data');
     }
 
     /**
@@ -1338,7 +1520,7 @@ class TransactionsManager {
     }
 
     /**
-     * Create HTML for a single transaction
+     * ✅ UPDATED: Create HTML for a single transaction with SMART category truncation and fresh tooltips
      */
     createTransactionHTML(transaction) {
         const isIncome = transaction.type === 'INCOME';
@@ -1347,15 +1529,28 @@ class TransactionsManager {
         const amountPrefix = isIncome ? '+' : '-';
         const formattedDate = this.formatDate(transaction.transactionDate);
 
+        // Smart truncation for category display in Recent Transactions
+        // Always use the LATEST data from the transaction object
+        const originalCategoryName = this.translateCategoryName(transaction.categoryName || 'Unknown Category');
+        const displayCategoryName = this.truncateCategoryForDisplay(transaction.categoryName || 'Unknown Category');
+
+        // Only add tooltip if the category was actually truncated
+        const needsTooltip = originalCategoryName !== displayCategoryName;
+
+        // Use fresh transaction data for description
+        const transactionDescription = transaction.description || 'No description';
+
         return `
             <div class="transaction-item" data-transaction-id="${transaction.id}">
                 <div class="transaction-icon ${typeClass}">
                     <i data-lucide="${icon}"></i>
                 </div>
                 <div class="transaction-details">
-                    <div class="transaction-description">${this.escapeHtml(transaction.description)}</div>
-                    <div class="transaction-category" style="color: ${transaction.categoryColor || '#6b7280'}">
-                        ${this.escapeHtml(this.translateCategoryName(transaction.categoryName))}
+                    <div class="transaction-description">${this.escapeHtml(transactionDescription)}</div>
+                    <div class="transaction-category"
+                         style="color: ${transaction.categoryColor || '#6b7280'}"
+                         ${needsTooltip ? `title="${this.escapeHtml(originalCategoryName)}"` : ''}>
+                        ${this.escapeHtml(displayCategoryName)}
                     </div>
                 </div>
                 <div class="transaction-meta">
@@ -1394,7 +1589,7 @@ class TransactionsManager {
     }
 
     /**
-     * Show filter panel
+     * ✅ UPDATED: Show filter panel with truncated category names
      */
     showFilterPanel() {
         try {
@@ -1406,6 +1601,13 @@ class TransactionsManager {
             const filterPanel = document.createElement('div');
             filterPanel.id = 'transaction-filter-panel';
             filterPanel.className = 'filter-panel';
+
+            // Generate category options with ADVANCED truncation for filters
+            const categoryOptions = this.categories.map(cat => {
+                const translatedName = this.translateCategoryName(cat.name);
+                const truncatedName = this.truncateCategoryForButtonsAndModals(translatedName); // Use ADVANCED logic for filters
+                return `<option value="${cat.id}" style="color: ${cat.color || '#6366f1'}" title="${this.escapeHtml(translatedName)}">${this.escapeHtml(truncatedName)} (${cat.type === 'INCOME' ? 'Income' : 'Expense'})</option>`;
+            }).join('');
 
             filterPanel.innerHTML = `
                 <div class="filter-panel-content">
@@ -1449,14 +1651,12 @@ class TransactionsManager {
                             </div>
                         </div>
 
-                        <!-- Category Filter with Enhanced Styling -->
+                        <!-- Category Filter with Enhanced Styling and Truncation -->
                         <div class="filter-group">
                             <label class="filter-label">Category</label>
                             <select id="filter-transaction-category" class="filter-select elegant-category-dropdown">
                                 <option value="all">All Categories</option>
-                                ${this.categories.map(cat =>
-                                    `<option value="${cat.id}" style="color: ${cat.color || '#6366f1'}">${this.translateCategoryName(cat.name)} (${cat.type === 'INCOME' ? 'Income' : 'Expense'})</option>`
-                                ).join('')}
+                                ${categoryOptions}
                             </select>
                         </div>
 
@@ -1891,10 +2091,11 @@ class TransactionsManager {
                 result = await this.updateTransaction(this.currentTransaction.id, transactionData);
                 this.showToast('Transaction updated successfully!', 'success');
 
-                // Add notification for updated transaction
+                // Add notification for updated transaction with truncated description
+                const truncatedDescription = this.truncateTransactionDescription(transactionData.description);
                 this.addNotification({
                     title: 'Transaction Updated',
-                    message: `${transactionData.description} - €${transactionData.amount} updated`,
+                    message: `${truncatedDescription} - €${transactionData.amount} updated`,
                     type: 'info'
                 });
             } else {
@@ -2034,7 +2235,7 @@ class TransactionsManager {
     }
 
     /**
-     * Show delete confirmation modal
+     * ✅ UPDATED: Show delete confirmation modal with truncated description and category
      */
     showDeleteConfirmation(transaction) {
         const modal = document.getElementById('delete-confirmation-modal');
@@ -2061,14 +2262,25 @@ class TransactionsManager {
         const amountPrefix = isIncome ? '+' : '-';
         const categoryName = transaction.categoryName || 'Unknown Category';
         const transactionDate = transaction.transactionDate || 'Unknown Date';
+        const description = transaction.description || 'No description';
+
+        // Apply truncation for both description and category
+        const originalDescription = description;
+        const truncatedDescription = this.truncateDescriptionForModal(description);
+        const needsDescriptionTooltip = originalDescription !== truncatedDescription;
+
+        // Translate and apply advanced truncation for delete modal
+        const translatedCategoryName = this.translateCategoryName(categoryName);
+        const truncatedCategoryName = this.truncateCategoryForButtonsAndModals(translatedCategoryName);
+        const needsCategoryTooltip = translatedCategoryName !== truncatedCategoryName;
 
         preview.innerHTML = `
             <div class="transaction-summary">
                 <div class="summary-amount ${amountClass}">
                     ${amountPrefix}€${transaction.amount || '0.00'}
                 </div>
-                <div class="summary-description">${this.escapeHtml(transaction.description || 'No description')}</div>
-                <div class="summary-category">${this.escapeHtml(this.translateCategoryName(categoryName))}</div>
+                <div class="summary-description" ${needsDescriptionTooltip ? `title="${this.escapeHtml(originalDescription)}"` : ''}>${this.escapeHtml(truncatedDescription)}</div>
+                <div class="summary-category" ${needsCategoryTooltip ? `title="${this.escapeHtml(translatedCategoryName)}"` : ''}>${this.escapeHtml(truncatedCategoryName)}</div>
                 <div class="summary-date">${this.formatDate(transactionDate)}</div>
             </div>
         `;
@@ -2110,10 +2322,11 @@ class TransactionsManager {
             // Show success message
             this.showToast('Transaction deleted successfully!', 'success');
 
-            // Add notification for deleted transaction
+            // Add notification for deleted transaction with truncated description
+            const truncatedDescription = this.truncateTransactionDescription(transactionDescription);
             this.addNotification({
                 title: 'Transaction Deleted',
-                message: `${transactionDescription} has been removed`,
+                message: `${truncatedDescription} has been removed`,
                 type: 'warning'
             });
 
@@ -2210,11 +2423,61 @@ class TransactionsManager {
             // Update notification badge
             this.updateNotificationBadge();
 
+            // ✅ CRITICAL: Force re-render of all UI elements to update tooltips
+            this.forceUIRefresh();
+
             console.log('✅ All data refreshed successfully with newest first sorting maintained');
 
         } catch (error) {
             console.error('❌ Error in refreshAllData:', error);
             // Don't show toast here as it might conflict with other success messages
+        }
+    }
+
+    /**
+     * ✅ NEW: Force refresh of all UI elements to update tooltips and display data
+     */
+    forceUIRefresh() {
+        try {
+            // Force re-render of transactions list to update tooltips
+            const transactionsContainer = document.getElementById('transactions-list');
+            if (transactionsContainer) {
+                // Clear and re-render to ensure fresh tooltips
+                this.renderTransactions();
+                console.log('🔄 Forced refresh of transactions UI elements');
+            }
+
+            // Refresh Lucide icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            // Force garbage collection of old event listeners and elements
+            setTimeout(() => {
+                // Clear any cached DOM references that might contain old data
+                this.clearCachedUIElements();
+            }, 100);
+
+        } catch (error) {
+            console.error('❌ Error in forceUIRefresh:', error);
+        }
+    }
+
+    /**
+     * ✅ NEW: Clear cached UI elements to prevent stale data
+     */
+    clearCachedUIElements() {
+        try {
+            // Remove any temporary cached elements or references
+            // This ensures that tooltips and other UI elements are freshly generated
+            const oldTooltips = document.querySelectorAll('[data-tooltip-stale]');
+            oldTooltips.forEach(element => {
+                element.removeAttribute('data-tooltip-stale');
+            });
+
+            console.log('🧹 Cleared cached UI elements');
+        } catch (error) {
+            console.error('❌ Error clearing cached UI elements:', error);
         }
     }
 
@@ -2407,7 +2670,7 @@ class TransactionsManager {
     }
 
     /**
-     * Generate transaction notifications
+     * ✅ UPDATED: Generate transaction notifications with FULL category names (no truncation)
      */
     async generateTransactionNotifications() {
         const notifications = [];
@@ -2421,11 +2684,13 @@ class TransactionsManager {
 
             if (largeExpenses.length > 0) {
                 const expenseTime = new Date(largeExpenses[0].transactionDate + 'T10:00:00');
+                const translatedCategoryName = this.translateCategoryName(largeExpenses[0].categoryName);
+
                 notifications.push({
                     id: Date.now() + 1,
                     persistentId: 'large-expense-' + largeExpenses[0].id,
                     title: 'Large Expense Alert',
-                    message: `Large expense of €${largeExpenses[0].amount} recorded for ${this.translateCategoryName(largeExpenses[0].categoryName)}`,
+                    message: `Large expense of €${largeExpenses[0].amount} recorded for ${translatedCategoryName}`,
                     type: 'warning',
                     timestamp: expenseTime.toISOString(),
                     isRead: false
@@ -2491,8 +2756,16 @@ class TransactionsManager {
     addNotification(notification) {
         const sessionNotifications = JSON.parse(localStorage.getItem('transactionNotifications') || '[]');
 
+        // Truncate the message if it contains a transaction description (only for notifications)
+        let processedMessage = notification.message;
+        if (notification.message && notification.message.includes('€')) {
+            // This is likely a transaction notification, truncate any long descriptions
+            processedMessage = this.truncateNotificationMessage(notification.message);
+        }
+
         const newNotification = {
             ...notification,
+            message: processedMessage,
             id: Date.now(),
             persistentId: notification.persistentId || ('user-action-' + Date.now()),
             timestamp: new Date().toISOString(),
@@ -2504,6 +2777,30 @@ class TransactionsManager {
 
         localStorage.setItem('transactionNotifications', JSON.stringify(sessionNotifications));
         this.updateNotificationBadge();
+    }
+
+    /**
+     * ✅ NEW: Truncate notification messages that contain transaction descriptions
+     */
+    truncateNotificationMessage(message) {
+        if (!message) return '';
+
+        // Look for patterns like "Description - €amount" and truncate the description part
+        const euroPattern = /^(.+?)\s*-\s*€/;
+        const match = message.match(euroPattern);
+
+        if (match && match[1]) {
+            const description = match[1].trim();
+            const truncatedDescription = this.truncateTransactionDescription(description);
+            return message.replace(match[1], truncatedDescription);
+        }
+
+        // If no euro pattern, check if the message itself is too long
+        if (message.length > 50) {
+            return message.substring(0, 50) + '...';
+        }
+
+        return message;
     }
 
     /**
@@ -2838,6 +3135,9 @@ class TransactionsManager {
                     errorMessage = response.statusText || errorMessage;
                 }
 
+                // ✅ Convert technical database errors to user-friendly messages
+                errorMessage = this.translateErrorMessage(errorMessage);
+
                 console.warn(`⚠️ API Error: ${errorMessage}`);
                 throw new Error(errorMessage);
             }
@@ -2880,6 +3180,68 @@ class TransactionsManager {
             console.error(`❌ API Error for ${method} ${url}:`, error.message);
             throw error;
         }
+    }
+
+    /**
+     * ✅ NEW: Translate technical error messages to user-friendly English messages
+     */
+    translateErrorMessage(errorMessage) {
+        if (!errorMessage) return 'An unexpected error occurred. Please try again.';
+
+        const message = errorMessage.toLowerCase();
+
+        // Check for amount/data truncation errors
+        if (message.includes('data truncation') && message.includes('out of range') && message.includes('amount')) {
+            return 'The amount is too large. Maximum allowed amount is €999,999,999.99.';
+        }
+
+        // Check for other amount-related errors
+        if (message.includes('out of range') && message.includes('amount')) {
+            return 'Invalid amount entered. Please enter an amount between €0.01 and €999,999,999.99.';
+        }
+
+        // Check for database constraint errors
+        if (message.includes('constraint') || message.includes('foreign key')) {
+            return 'Invalid data. Please check the selected category and try again.';
+        }
+
+        // Check for duplicate errors
+        if (message.includes('duplicate') || message.includes('unique')) {
+            return 'A similar transaction already exists. Please check your data.';
+        }
+
+        // Check for validation errors
+        if (message.includes('validation') || message.includes('invalid')) {
+            return 'Invalid data. Please check all fields and try again.';
+        }
+
+        // Check for network/connection errors
+        if (message.includes('network') || message.includes('connection') || message.includes('timeout')) {
+            return 'Connection problem. Please check your internet connection and try again.';
+        }
+
+        // Check for server errors (500, 503, etc.)
+        if (message.includes('internal server error') || message.includes('service unavailable')) {
+            return 'Temporary server problem. Please try again in a few minutes.';
+        }
+
+        // Check for authentication/authorization errors
+        if (message.includes('unauthorized') || message.includes('forbidden') || message.includes('authentication')) {
+            return 'You do not have permission for this operation. Please log in again.';
+        }
+
+        // Check for not found errors
+        if (message.includes('not found') || message.includes('404')) {
+            return 'The requested information was not found.';
+        }
+
+        // Default fallback for any other technical errors
+        if (message.includes('sql') || message.includes('database') || message.includes('execute statement')) {
+            return 'A problem occurred while saving the data. Please try again.';
+        }
+
+        // Return original message if no pattern matches (but clean it up a bit)
+        return errorMessage.charAt(0).toUpperCase() + errorMessage.slice(1);
     }
 }
 
