@@ -519,10 +519,10 @@
 
                         <!-- Login Form -->
                         <div class="tab-content active" id="login-tab">
-                            <form class="auth-form" action="/login" method="post">
+                            <form class="auth-form" action="/login" method="post" autocomplete="on">
                                 <div class="form-group">
                                     <div class="input-wrapper">
-                                        <input type="email" id="login-email" name="email" class="form-input" placeholder=" " required>
+                                        <input type="email" id="login-email" name="email" class="form-input" placeholder=" " required autocomplete="username">
                                         <label for="login-email" class="form-label">Enter your email address</label>
                                         <div class="input-border"></div>
                                     </div>
@@ -530,18 +530,10 @@
 
                                 <div class="form-group">
                                     <div class="input-wrapper">
-                                        <input type="password" id="login-password" name="password" class="form-input" placeholder=" " required>
+                                        <input type="password" id="login-password" name="password" class="form-input" placeholder=" " required autocomplete="current-password">
                                         <label for="login-password" class="form-label">Enter your password</label>
                                         <div class="input-border"></div>
                                     </div>
-                                </div>
-
-                                <div class="form-group checkbox-group">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" name="remember-me" class="checkbox">
-                                        <span class="checkmark"></span>
-                                        <span class="checkbox-text">Remember me</span>
-                                    </label>
                                 </div>
 
                                 <button type="submit" class="btn btn-auth btn-full">
@@ -562,15 +554,19 @@
                                     </svg>
                                     <span>Google</span>
                                 </a>
+
+                                <div class="auth-footer">
+                                    <a href="/forgot-password" class="forgot-password">Forgot your password?</a>
+                                </div>
                             </form>
                         </div>
 
                         <!-- Register Form -->
                         <div class="tab-content" id="register-tab">
-                            <form class="auth-form" id="register-form">
+                            <form class="auth-form" id="register-form" autocomplete="on">
                                 <div class="form-group">
                                     <div class="input-wrapper">
-                                        <input type="text" id="register-firstname" name="firstName" class="form-input" placeholder=" " required>
+                                        <input type="text" id="register-firstname" name="firstName" class="form-input" placeholder=" " required autocomplete="given-name">
                                         <label for="register-firstname" class="form-label">Enter your first name</label>
                                         <div class="input-border"></div>
                                     </div>
@@ -578,7 +574,7 @@
 
                                 <div class="form-group">
                                     <div class="input-wrapper">
-                                        <input type="text" id="register-lastname" name="lastName" class="form-input" placeholder=" " required>
+                                        <input type="text" id="register-lastname" name="lastName" class="form-input" placeholder=" " required autocomplete="family-name">
                                         <label for="register-lastname" class="form-label">Enter your last name</label>
                                         <div class="input-border"></div>
                                     </div>
@@ -586,7 +582,7 @@
 
                                 <div class="form-group">
                                     <div class="input-wrapper">
-                                        <input type="email" id="register-email" name="email" class="form-input" placeholder=" " required>
+                                        <input type="email" id="register-email" name="email" class="form-input" placeholder=" " required autocomplete="email">
                                         <label for="register-email" class="form-label">Enter your email address</label>
                                         <div class="input-border"></div>
                                     </div>
@@ -594,7 +590,7 @@
 
                                 <div class="form-group">
                                     <div class="input-wrapper">
-                                        <input type="password" id="register-password" name="password" class="form-input" placeholder=" " required>
+                                        <input type="password" id="register-password" name="password" class="form-input" placeholder=" " required autocomplete="new-password">
                                         <label for="register-password" class="form-label">Create a secure password</label>
                                         <div class="input-border"></div>
                                     </div>
