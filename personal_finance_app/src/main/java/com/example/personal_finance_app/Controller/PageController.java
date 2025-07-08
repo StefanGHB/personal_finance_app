@@ -20,9 +20,15 @@ public class PageController {
     @GetMapping("/")
     public String landingPage(@RequestParam(value = "error", required = false) String error,
                               @RequestParam(value = "logout", required = false) String logout,
-                              @RequestParam(value = "register", required = false) String register) {
+                              @RequestParam(value = "register", required = false) String register,
+                              @RequestParam(value = "password-changed", required = false) String passwordChanged,
+                              @RequestParam(value = "view", required = false) String view,
+                              @RequestParam(value = "token", required = false) String token) {
 
         System.out.println("🔍 Landing page accessed!");
+        System.out.println("🔍 Parameters: error=" + error + ", logout=" + logout +
+                ", register=" + register + ", password-changed=" + passwordChanged +
+                ", view=" + view + ", token=" + (token != null ? token.substring(0, 8) + "..." : "null"));
 
         // Проверка дали потребителят е вече логнат
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -36,19 +42,38 @@ public class PageController {
 
         // Пренасочва към статичния HTML файл с параметри
         String redirectUrl = "/static/index.html";
+        StringBuilder params = new StringBuilder();
 
+        // Build query parameters
         if (error != null) {
-            if ("invalid_token".equals(error)) {
-                redirectUrl += "?error=invalid_token";
-            } else if ("confirmation_failed".equals(error)) {
-                redirectUrl += "?error=confirmation_failed";
-            } else {
-                redirectUrl += "?error=true";
+            appendParam(params, "error", error);
+        }
+
+        if (logout != null) {
+            appendParam(params, "logout", logout);
+        }
+
+        if (register != null && register.equals("success")) {
+            appendParam(params, "register", register);
+        }
+
+        if (passwordChanged != null && passwordChanged.equals("true")) {
+            appendParam(params, "password-changed", passwordChanged);
+        }
+
+        // NEW: Handle special views (reset-password, etc.)
+        if (view != null) {
+            appendParam(params, "view", view);
+
+            // If it's reset-password view, also pass the token
+            if ("reset-password".equals(view) && token != null) {
+                appendParam(params, "token", token);
             }
-        } else if (logout != null) {
-            redirectUrl += "?logout=true";
-        } else if (register != null && register.equals("success")) {
-            redirectUrl += "?register=success";
+        }
+
+        // Append parameters to URL if any exist
+        if (params.length() > 0) {
+            redirectUrl += "?" + params.toString();
         }
 
         System.out.println("🔍 Redirecting to: " + redirectUrl);
@@ -60,7 +85,8 @@ public class PageController {
      */
     @GetMapping("/confirm-email")
     public String confirmEmail(@RequestParam String token) {
-        System.out.println("🔍 Email confirmation accessed with token: " + token.substring(0, 8) + "...");
+        System.out.println("🔍 Email confirmation accessed with token: " +
+                (token != null ? token.substring(0, 8) + "..." : "null"));
 
         try {
             boolean confirmed = emailValidationService.confirmEmail(token);
@@ -96,6 +122,94 @@ public class PageController {
         System.out.println("🔍 Register page accessed - redirecting to landing");
         return "redirect:/";
     }
+
+    // ==========================================
+    // PASSWORD RESET PAGES - REDIRECT TO LANDING
+    // ==========================================
+
+    /**
+     * Forgot Password страница - пренасочва към landing с модал
+     */
+    @GetMapping("/forgot-password")
+    public String forgotPasswordPage(@RequestParam(value = "email", required = false) String email,
+                                     @RequestParam(value = "sent", required = false) String sent) {
+        System.out.println("🔍 Forgot password page accessed");
+
+        // Ако потребителят е логнат, пренасочи го към dashboard
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            System.out.println("🔍 User already authenticated, redirecting to dashboard");
+            return "redirect:/dashboard";
+        }
+
+        // NEW: Redirect to landing with special view parameter
+        String redirectUrl = "/?view=forgot-password";
+        StringBuilder params = new StringBuilder();
+
+        if (email != null && !email.trim().isEmpty()) {
+            appendParam(params, "email", email.trim());
+        }
+
+        if ("true".equals(sent)) {
+            appendParam(params, "sent", "true");
+        }
+
+        if (params.length() > 0) {
+            redirectUrl += "&" + params.toString();
+        }
+
+        System.out.println("🔍 Redirecting to landing with forgot password view: " + redirectUrl);
+        return "redirect:" + redirectUrl;
+    }
+
+    /**
+     * Reset Password страница - пренасочва към landing с модал
+     */
+    @GetMapping("/reset-password")
+    public String resetPasswordPage(@RequestParam(value = "token", required = false) String token,
+                                    @RequestParam(value = "error", required = false) String error,
+                                    @RequestParam(value = "success", required = false) String success) {
+        System.out.println("🔍 Reset password page accessed with token: " +
+                (token != null ? token.substring(0, 8) + "..." : "null"));
+
+        // Ако потребителят е логнат, пренасочи го към dashboard
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            System.out.println("🔍 User already authenticated, redirecting to dashboard");
+            return "redirect:/dashboard";
+        }
+
+        // NEW: Redirect to landing with reset-password view
+        String redirectUrl = "/?view=reset-password";
+        StringBuilder params = new StringBuilder();
+
+        if (token != null && !token.trim().isEmpty()) {
+            appendParam(params, "token", token.trim());
+        } else {
+            // Няма token - пренасочи към forgot password view
+            System.out.println("🔍 No token provided, redirecting to forgot password view");
+            return "redirect:/?view=forgot-password&error=no_token";
+        }
+
+        if (error != null) {
+            appendParam(params, "error", error);
+        }
+
+        if ("true".equals(success)) {
+            appendParam(params, "success", "true");
+        }
+
+        if (params.length() > 0) {
+            redirectUrl += "&" + params.toString();
+        }
+
+        System.out.println("🔍 Redirecting to landing with reset password view: " + redirectUrl);
+        return "redirect:" + redirectUrl;
+    }
+
+    // ==========================================
+    // AUTHENTICATED PAGES (БЕЗ ПРОМЕНИ)
+    // ==========================================
 
     /**
      * Dashboard страница - пренасочва към статичен HTML
@@ -175,39 +289,17 @@ public class PageController {
         return "redirect:/static/categories.html";
     }
 
-    /**
-     * Reports страница
-     */
-    @GetMapping("/reports")
-    public String reportsPage() {
-        System.out.println("🔍 Reports page accessed");
-
-        // Проверка за автентикация
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
-            System.out.println("🔍 User not authenticated, redirecting to landing");
-            return "redirect:/";
-        }
-
-        System.out.println("🔍 Redirecting to reports page");
-        return "redirect:/static/reports.html";
-    }
+    // ==========================================
+    // HELPER METHODS
+    // ==========================================
 
     /**
-     * Settings страница
+     * Helper method за добавяне на URL параметри
      */
-    @GetMapping("/settings")
-    public String settingsPage() {
-        System.out.println("🔍 Settings page accessed");
-
-        // Проверка за автентикация
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
-            System.out.println("🔍 User not authenticated, redirecting to landing");
-            return "redirect:/";
+    private void appendParam(StringBuilder params, String key, String value) {
+        if (params.length() > 0) {
+            params.append("&");
         }
-
-        System.out.println("🔍 Redirecting to settings page");
-        return "redirect:/static/settings.html";
+        params.append(key).append("=").append(value);
     }
 }

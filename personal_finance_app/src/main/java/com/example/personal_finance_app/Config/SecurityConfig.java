@@ -249,7 +249,13 @@ public class SecurityConfig {
                         path.startsWith("/confirm-email") ||
                         path.startsWith("/oauth2/") ||
                         path.equals("/favicon.ico") ||
-                        path.equals("/error");
+                        path.equals("/error") ||
+                        // ===== НОВИ PASSWORD RESET ENDPOINTS =====
+                        path.startsWith("/api/password-reset/") ||
+                        path.equals("/forgot-password") ||
+                        path.equals("/reset-password") ||
+                        path.startsWith("/reset-password");
+                // ==========================================
             }
 
             private void forceLogoutComplete(HttpServletRequest request, HttpServletResponse response, String reason)
@@ -325,20 +331,41 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
+                        // Landing & Auth pages
                         .requestMatchers("/", "/login", "/register").permitAll()
+
+                        // Static resources
                         .requestMatchers("/static/**").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
+
+                        // User registration & auth
                         .requestMatchers("/api/users/register", "/api/users/check-email").permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/current-user").permitAll()
                         .requestMatchers("/api/auth/login-error").permitAll()
+
+                        // Email validation
                         .requestMatchers("/api/email-validation/**").permitAll()
                         .requestMatchers("/api/auth/confirm-email").permitAll()
                         .requestMatchers("/api/auth/resend-confirmation").permitAll()
-                        .requestMatchers("/oauth2/**").permitAll()
                         .requestMatchers("/confirm-email").permitAll()
+
+                        // OAuth
+                        .requestMatchers("/oauth2/**").permitAll()
+
+                        // Error handling
                         .requestMatchers("/error").permitAll()
+
+                        // ===== НОВИ PASSWORD RESET ENDPOINTS =====
+                        .requestMatchers("/api/password-reset/**").permitAll()
+                        .requestMatchers("/forgot-password").permitAll()
+                        .requestMatchers("/reset-password").permitAll()
+                        .requestMatchers("/reset-password/**").permitAll()
+                        // ==========================================
+
+                        // Authenticated endpoints
                         .requestMatchers("/api/**").authenticated()
                         .requestMatchers("/dashboard", "/app/**").authenticated()
+                        .requestMatchers("/transactions", "/budgets", "/categories", "/reports", "/settings").authenticated()
                         .anyRequest().authenticated()
                 )
 
