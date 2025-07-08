@@ -1,13 +1,17 @@
 /* ===================================
-   ULTRA MODERN ANALYTICS DASHBOARD CSS - UPDATED WITH PERFECT NOTIFICATIONS
-   Complete redesign with perfect formatting
-   UPDATED: Perfect symmetry between Budget Adherence & Spending Patterns
+   ULTRA MODERN ANALYTICS DASHBOARD CSS - FIXED HAMBURGER POSITIONING
+   Complete redesign with perfect formatting + PERFECT RESPONSIVE
+   UPDATED: Perfect synchronization between hamburger and header
    ENHANCED: Modern Empty States for Charts
-   FIXED: Removed user profile styles, ensured Spending Patterns icon works
+   FIXED: Hamburger never overlaps sidebar - synchronized positioning
    NEW: Perfect Notification Styles (identical to transactions)
+   RESPONSIVE: Added perfect responsive design without changing original structure
+   COLORS & ANIMATIONS: Restored exact lighting effects and colors from original
+   FIXED: Notifications z-index issue - now properly visible
+   FIXED: Hamburger synchronized with header padding
    ================================== */
 
-/* CSS Variables - Enhanced for Modern Analytics */
+/* CSS Variables - Enhanced for Modern Analytics + RESPONSIVE VARIABLES */
 :root {
   /* Primary Colors - Deep Blues & Cyans */
   --primary-50: #eff6ff;
@@ -114,15 +118,15 @@
   --ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Spacing System */
-  --space-xs: 0.5rem;
-  --space-sm: 0.75rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: 3rem;
-  --space-3xl: 4rem;
-  --space-4xl: 5rem;
+  /* RESPONSIVE SPACING SYSTEM - MOBILE OPTIMIZED */
+  --space-xs: clamp(0.25rem, 1vw, 0.5rem);
+  --space-sm: clamp(0.5rem, 1.5vw, 0.75rem);
+  --space-md: clamp(0.75rem, 2vw, 1rem);
+  --space-lg: clamp(1rem, 2.5vw, 1.5rem);
+  --space-xl: clamp(1.25rem, 3vw, 2rem);
+  --space-2xl: clamp(1.5rem, 4vw, 3rem);
+  --space-3xl: clamp(2rem, 5vw, 4rem);
+  --space-4xl: clamp(2.5rem, 6vw, 5rem);
 
   /* Border Radius System */
   --radius-sm: 0.5rem;
@@ -133,18 +137,25 @@
   --radius-3xl: 2rem;
 }
 
-/* Reset & Base Styles */
+/* Reset & Base Styles - ENHANCED FOR MOBILE - ZERO HORIZONTAL SCROLL */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  max-width: 100%; /* FORCE all elements to stay within viewport */
 }
 
 html {
   font-size: 16px;
   scroll-behavior: smooth;
+  /* MOBILE VIEWPORT FIX */
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  overflow-x: hidden !important; /* FORCE no horizontal scroll */
+  width: 100%;
+  max-width: 100vw;
 }
 
 body {
@@ -153,26 +164,200 @@ body {
   line-height: 1.6;
   color: var(--text-primary);
   background: var(--bg-primary);
-  overflow-x: hidden;
+  overflow-x: hidden !important; /* FORCE no horizontal scroll */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* MOBILE SPECIFIC */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  width: 100%;
+  max-width: 100vw;
+  min-width: 320px; /* Minimum mobile width */
+  position: relative;
 }
 
-/* App Container */
+/* UNIVERSAL WIDTH CONSTRAINT */
+* {
+  max-width: 100vw !important;
+  box-sizing: border-box !important;
+}
+
+/* App Container - MOBILE OPTIMIZED - ZERO OVERFLOW */
 .app-container {
   display: flex;
   min-height: 100vh;
   position: relative;
+  width: 100%;
+  max-width: 100vw !important; /* FORCE viewport constraint */
+  overflow-x: hidden !important; /* FORCE no horizontal scroll */
 }
 
 .main-content {
   flex: 1;
   min-height: 100vh;
   width: 100%;
+  max-width: 100% !important; /* FORCE constraint */
+  overflow-x: hidden !important; /* FORCE no horizontal scroll */
 }
 
 /* ===================================
-   DASHBOARD HEADER - UPDATED TITLE
+   HAMBURGER SYNCHRONIZED FIX - MOVES WITH HEADER
+   Never overlaps sidebar, synchronized with header padding, scrolls with header
+   ================================== */
+
+/* HAMBURGER DEFAULT STATE - HIDDEN ON DESKTOP */
+.mobile-hamburger {
+  position: absolute !important; /* ABSOLUTE relative to header */
+  top: 1.25rem !important; /* Relative to header top */
+  left: 1rem !important; /* Relative to header left */
+  width: 44px !important;
+  height: 44px !important;
+  z-index: 500 !important; /* LOWER than sidebar (1000) */
+  display: none !important; /* HIDDEN BY DEFAULT */
+  align-items: center !important;
+  justify-content: center !important;
+  background: var(--surface-glass) !important;
+  border: 1px solid var(--border-glass) !important;
+  border-radius: var(--radius-lg) !important;
+  color: var(--text-secondary) !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* HOVER EFFECT */
+.mobile-hamburger:hover {
+  background: var(--surface-glass-hover) !important;
+  color: var(--text-primary) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border-color: var(--border-trading) !important;
+}
+
+/* MANUAL HIDE CLASS */
+.mobile-hamburger.hidden {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+/* DESKTOP: Always hidden, normal header padding */
+@media (min-width: 1024px) {
+  .mobile-hamburger {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    z-index: -1 !important;
+  }
+
+  /* ENSURE HEADER HAS NO EXTRA PADDING ON DESKTOP */
+  .dashboard-header {
+    padding-left: var(--space-xl) !important; /* Normal padding */
+    transition: padding-left 0.3s ease !important;
+  }
+}
+
+/* TABLET RESPONSIVE - SYNCHRONIZED SHOW */
+@media (max-width: 1023px) and (min-width: 768px) {
+  /* SIMULTANEOUSLY: Show hamburger AND add header padding */
+  .mobile-hamburger {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    z-index: 500 !important;
+    left: 1rem !important; /* Relative to header left */
+    top: 1.25rem !important; /* Relative to header top */
+    width: 44px !important;
+    height: 44px !important;
+    position: absolute !important; /* ABSOLUTE relative to header */
+  }
+
+  .mobile-hamburger i {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  /* SIMULTANEOUSLY: Add header padding for hamburger space */
+  .dashboard-header {
+    padding-left: 5.5rem !important; /* Space for hamburger */
+    transition: padding-left 0.3s ease !important;
+    position: relative !important; /* Ensure hamburger reference */
+  }
+}
+
+/* MOBILE RESPONSIVE - EXACT SYNC */
+@media (max-width: 767px) {
+  .mobile-hamburger {
+    top: 1rem !important; /* Relative to header top */
+    left: 0.75rem !important; /* Relative to header left */
+    width: 40px !important;
+    height: 40px !important;
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    z-index: 500 !important;
+    position: absolute !important; /* ABSOLUTE relative to header */
+  }
+
+  .mobile-hamburger i {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* MOBILE: Header gets padding for hamburger */
+  .dashboard-header {
+    padding-left: 3.5rem !important; /* Space for hamburger */
+    transition: padding-left 0.3s ease !important;
+    position: relative !important; /* Ensure hamburger reference */
+  }
+}
+
+@media (max-width: 480px) {
+  .mobile-hamburger {
+    top: 1rem !important; /* Relative to header top */
+    left: 0.75rem !important; /* Relative to header left */
+    width: 40px !important;
+    height: 40px !important;
+    z-index: 500 !important;
+    position: absolute !important; /* ABSOLUTE relative to header */
+  }
+
+  .dashboard-header {
+    padding-left: 3.5rem !important;
+    position: relative !important;
+  }
+}
+
+@media (max-width: 320px) {
+  .mobile-hamburger {
+    top: 0.75rem !important; /* Relative to header top */
+    left: 0.5rem !important; /* Relative to header left */
+    width: 36px !important;
+    height: 36px !important;
+    z-index: 500 !important;
+    position: absolute !important; /* ABSOLUTE relative to header */
+  }
+
+  .mobile-hamburger i {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .dashboard-header {
+    padding-left: 3rem !important; /* Space for tiny hamburger */
+    position: relative !important;
+  }
+}
+
+/* ===================================
+   DASHBOARD HEADER - UPDATED TITLE - RESPONSIVE - MOBILE FIXED
    ================================== */
 
 .dashboard-header {
@@ -184,8 +369,21 @@ body {
   background: var(--bg-primary);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 50;
   backdrop-filter: blur(20px);
+  width: 100%;
+  max-width: 100vw;
+  overflow: visible;
+  box-sizing: border-box;
+  transition: padding-left 0.3s ease; /* Smooth transition for hamburger space */
+  /* ADD RELATIVE POSITIONING FOR HAMBURGER REFERENCE */
+  position: relative !important;
+}
+
+.header-left {
+  flex: 1;
+  min-width: 0;
+  max-width: calc(100% - 60px); /* Reserve space for notification */
 }
 
 .header-left h1 {
@@ -197,27 +395,37 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .page-subtitle {
   color: var(--text-tertiary);
   font-size: 0.925rem;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .header-right {
   display: flex;
   align-items: center;
   gap: var(--space-lg);
+  flex-shrink: 0;
 }
 
 /* ===================================
-   PERFECT NOTIFICATION STYLES - IDENTICAL TO TRANSACTIONS
+   PERFECT NOTIFICATION STYLES - RESPONSIVE - SYNCED WITH HAMBURGER
    ================================== */
 
 /* Notifications Dropdown */
 .notifications-dropdown {
   position: relative;
+  z-index: 10000;
 }
 
 .notification-btn {
@@ -229,16 +437,16 @@ body {
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--duration-normal) var(--ease-in-out);
-  width: 48px;
-  height: 48px;
+  width: 48px; /* DEFAULT DESKTOP SIZE */
+  height: 48px; /* DEFAULT DESKTOP SIZE */
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .notification-btn i {
-  width: 28px;
-  height: 28px;
+  width: 28px; /* DEFAULT DESKTOP SIZE */
+  height: 28px; /* DEFAULT DESKTOP SIZE */
 }
 
 .notification-btn:hover {
@@ -281,16 +489,16 @@ body {
 }
 
 .notifications-panel {
-  position: absolute;
-  top: calc(100% + 0.75rem);
-  right: 0;
+  position: fixed;
+  top: 80px;
+  right: var(--space-xl);
   width: 380px;
   background: var(--bg-modal);
   backdrop-filter: blur(20px);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-xl);
-  z-index: 1000;
+  z-index: 10001;
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
@@ -487,28 +695,8 @@ body {
   transform: scale(1.1);
 }
 
-/* Responsive Notifications */
-@media (max-width: 768px) {
-  .notifications-panel {
-    width: calc(100vw - 2rem);
-    right: auto;
-    left: 50%;
-    transform: translateX(-50%) translateY(-15px);
-  }
-
-  .notifications-panel.active {
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-@media (max-width: 480px) {
-  .notifications-panel {
-    width: calc(100vw - 1rem);
-  }
-}
-
 /* ===================================
-   DASHBOARD CONTENT
+   DASHBOARD CONTENT - ZERO HORIZONTAL SCROLL
    ================================== */
 
 .dashboard-content {
@@ -517,11 +705,13 @@ body {
   flex-direction: column;
   gap: var(--space-3xl);
   width: 100%;
-  max-width: none;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
 }
 
 /* ===================================
-   SECTION HEADERS - ENHANCED
+   SECTION HEADERS - ENHANCED - MOBILE CONSTRAINED
    ================================== */
 
 .section-header {
@@ -529,6 +719,10 @@ body {
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--space-2xl);
+  width: 100%;
+  max-width: 100% !important;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .section-title {
@@ -537,16 +731,24 @@ body {
   color: var(--text-primary);
   margin-bottom: 0.375rem;
   letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .section-subtitle {
   font-size: 1.125rem;
   color: var(--text-tertiary);
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 /* ===================================
-   ULTRA COOL SUMMARY CARDS - ENHANCED
+   ULTRA COOL SUMMARY CARDS - ENHANCED - ORIGINAL STRUCTURE - ZERO OVERFLOW
    ================================== */
 
 .enhanced-grid {
@@ -555,6 +757,11 @@ body {
   grid-template-rows: repeat(2, minmax(200px, auto));
   gap: var(--space-xl);
   margin-bottom: var(--space-lg);
+  width: 100%;
+  max-width: 100% !important;
+  overflow: visible !important; /* Allow cards to expand on hover without clipping */
+  box-sizing: border-box !important;
+  padding: 10px; /* Extra padding to prevent clipping of hover effects */
 }
 
 /* First card takes 2x2 space */
@@ -604,9 +811,12 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 200px;
+  width: 100%;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
-/* TRADING VIEW STYLE ANIMATED BACKGROUND EFFECTS - PURPLE */
+/* TRADING VIEW STYLE ANIMATED BACKGROUND EFFECTS - PURPLE - RESTORED ORIGINAL */
 .summary-card::before {
   content: '';
   position: absolute;
@@ -1421,7 +1631,7 @@ body {
 }
 
 /* ===================================
-   MODERN MONTHLY COMPARISON SECTION - WITH SPENDING VELOCITY
+   MODERN MONTHLY COMPARISON SECTION - WITH SPENDING VELOCITY - ORIGINAL STRUCTURE
    ================================== */
 
 .monthly-comparison-section {
@@ -2787,8 +2997,38 @@ body {
 }
 
 /* ===================================
-   RESPONSIVE DESIGN - ENHANCED
+   RESPONSIVE DESIGN - PERFECT RESPONSIVE ADDITIONS
+   Запазване на оригиналната структура + добавяне на responsive функционалност
    ================================== */
+
+/* Responsive Notifications */
+@media (max-width: 1023px) {
+  /* TABLET RESPONSIVE */
+  .notifications-panel {
+    position: fixed !important;
+    top: 75px !important;
+    right: var(--space-md) !important;
+    width: clamp(280px, 90vw, 360px) !important;
+    z-index: 10001 !important;
+  }
+
+  /* SYNC NOTIFICATION SIZE WITH HAMBURGER - TABLET */
+  .notification-btn {
+    width: 44px !important; /* Same as hamburger */
+    height: 44px !important;
+  }
+
+  .notification-btn i {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .notification-badge {
+    min-width: 18px !important;
+    height: 18px !important;
+    font-size: 0.7rem !important;
+  }
+}
 
 @media (max-width: 1600px) {
   .widgets-grid {
@@ -2803,6 +3043,7 @@ body {
 }
 
 @media (max-width: 1200px) {
+  /* ENHANCED GRID - RESPONSIVE ADAPTATION */
   .enhanced-grid {
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, minmax(160px, auto));
@@ -2842,96 +3083,220 @@ body {
     display: none;
   }
 
+  /* CHARTS RESPONSIVE */
   .charts-grid {
     grid-template-columns: 1fr;
   }
-}
 
-@media (max-width: 768px) {
-  .dashboard-header {
-    padding: var(--space-lg) var(--space-lg) var(--space-md);
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-md);
+  /* MODERN COMPARISON GRID RESPONSIVE */
+  .modern-comparison-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, auto);
   }
 
-  .header-left h1 {
-    font-size: 1.75rem;
-  }
-
-  .header-right {
-    width: 100%;
-    justify-content: flex-end;
-  }
-
-  .dashboard-content {
-    padding: var(--space-xl) var(--space-lg);
-    gap: var(--space-2xl);
-  }
-
-  .enhanced-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(7, minmax(140px, auto));
-  }
-
-  .enhanced-grid .summary-card:nth-child(1) {
-    grid-column: 1;
+  .modern-comparison-grid .modern-comparison-card:nth-child(1) {
+    grid-column: 1 / 3;
     grid-row: 1;
   }
 
-  .enhanced-grid .summary-card:nth-child(2) {
+  .modern-comparison-grid .modern-comparison-card:nth-child(2) {
     grid-column: 1;
     grid-row: 2;
   }
 
-  .enhanced-grid .summary-card:nth-child(3) {
-    grid-column: 1;
+  .modern-comparison-grid .modern-comparison-card:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .modern-comparison-grid .modern-comparison-card:nth-child(4) {
+    grid-column: 1 / 3;
     grid-row: 3;
   }
 
-  .enhanced-grid .summary-card:nth-child(4) {
-    grid-column: 1;
-    grid-row: 4;
-  }
-
-  .enhanced-grid .summary-card:nth-child(5) {
-    grid-column: 1;
-    grid-row: 5;
-  }
-
-  .enhanced-grid .summary-card:nth-child(6) {
-    grid-column: 1;
-    grid-row: 6;
-  }
-
-  .enhanced-grid .summary-card:nth-child(7) {
-    display: block;
-    grid-column: 1;
-    grid-row: 7;
-  }
-
-  .modern-comparison-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .widgets-grid {
-    grid-template-columns: 1fr;
-  }
-
+  /* BUDGET SUMMARY RESPONSIVE */
   .budget-summary-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* MOBILE FIXES - FORCE ZERO HORIZONTAL SCROLL */
+@media (max-width: 767px) {
+  /* FORCE VIEWPORT CONSTRAINTS ON EVERYTHING */
+  * {
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
   }
 
-  .velocity-value {
-    font-size: 2rem;
+  html, body {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
   }
 
-  .velocity-projection {
-    padding: var(--space-sm) var(--space-md);
+  .app-container,
+  .main-content,
+  .dashboard-content {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
   }
 
-  .projection-text {
-    font-size: 0.925rem;
+  /* SYNC NOTIFICATION SIZE WITH HAMBURGER - MOBILE */
+  .notification-btn {
+    width: 40px !important; /* EXACTLY SAME AS HAMBURGER */
+    height: 40px !important; /* EXACTLY SAME AS HAMBURGER */
+    padding: 0.5rem !important;
+  }
+
+  .notification-btn i {
+    width: 20px !important; /* EXACTLY SAME AS HAMBURGER */
+    height: 20px !important; /* EXACTLY SAME AS HAMBURGER */
+  }
+
+  .notification-badge {
+    min-width: 16px !important;
+    height: 16px !important;
+    font-size: 0.65rem !important;
+    top: -2px !important;
+    right: -2px !important;
+  }
+
+  /* DASHBOARD CONTENT - ULTRA MOBILE */
+  .dashboard-content {
+    padding: 1rem 0.75rem !important;
+    gap: 1.5rem !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  /* ALL GRIDS - SINGLE COLUMN MOBILE - ALLOW HOVER EFFECTS */
+  .enhanced-grid,
+  .charts-grid,
+  .modern-comparison-grid,
+  .widgets-grid,
+  .budget-summary-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important; /* Allow hover effects on mobile */
+    padding: 10px !important; /* Prevent clipping */
+  }
+
+  /* ENHANCED GRID MOBILE - SINGLE COLUMN */
+  .enhanced-grid {
+    grid-template-rows: repeat(auto-fit, minmax(120px, auto)) !important;
+  }
+
+  .enhanced-grid .summary-card:nth-child(1),
+  .enhanced-grid .summary-card:nth-child(2),
+  .enhanced-grid .summary-card:nth-child(3),
+  .enhanced-grid .summary-card:nth-child(4),
+  .enhanced-grid .summary-card:nth-child(5),
+  .enhanced-grid .summary-card:nth-child(6),
+  .enhanced-grid .summary-card:nth-child(7) {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+    display: block !important;
+  }
+
+  /* MODERN COMPARISON GRID MOBILE */
+  .modern-comparison-grid .modern-comparison-card:nth-child(1),
+  .modern-comparison-grid .modern-comparison-card:nth-child(2),
+  .modern-comparison-grid .modern-comparison-card:nth-child(3),
+  .modern-comparison-grid .modern-comparison-card:nth-child(4) {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+
+  /* ALL CARDS - MOBILE CONSTRAINED */
+  .summary-card,
+  .chart-card,
+  .modern-comparison-card,
+  .widget-card {
+    padding: 1rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    word-wrap: break-word !important;
+  }
+
+  /* NOTIFICATIONS MOBILE */
+  .notifications-panel {
+    position: fixed !important;
+    top: 70px !important;
+    width: calc(100vw - 1rem) !important;
+    max-width: calc(100vw - 1rem) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) translateY(-15px) !important;
+    z-index: 10001 !important;
+  }
+
+  .notifications-panel.active {
+    transform: translateX(-50%) translateY(0) !important;
+  }
+
+  /* TEXT SIZING MOBILE */
+  .section-title {
+    font-size: 1.5rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .section-subtitle {
+    font-size: 0.9rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .header-left h1 {
+    font-size: 1.25rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+  }
+
+  .page-subtitle {
+    font-size: 0.75rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+  }
+
+  /* CHART ELEMENTS MOBILE */
+  .chart-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1rem !important;
+  }
+
+  .chart-controls {
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  .chart-period-selector {
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  /* VALUE SIZING MOBILE */
+  .value-amount,
+  .value-percentage {
+    font-size: 1.5rem !important;
+  }
+
+  .enhanced-grid .summary-card:nth-child(1) .value-amount {
+    font-size: 2rem !important;
   }
 }
 
@@ -2943,13 +3308,18 @@ body {
 
   .summary-card,
   .chart-card,
-  .comparison-card,
+  .modern-comparison-card,
   .widget-card {
     padding: var(--space-lg);
   }
 
   .header-left h1 {
-    font-size: 1.875rem;
+    font-size: 1.5rem; /* Even smaller on very small screens */
+    line-height: 1.1;
+  }
+
+  .page-subtitle {
+    font-size: 0.75rem; /* Smaller subtitle */
   }
 
   .value-amount,
@@ -2959,6 +3329,57 @@ body {
 
   .enhanced-grid .summary-card:nth-child(1) .value-amount {
     font-size: 2.5rem;
+  }
+
+  .notifications-panel {
+    position: fixed !important;
+    top: 65px !important;
+    width: calc(100vw - 1rem) !important;
+    z-index: 10001 !important;
+  }
+}
+
+/* EXTRA SMALL SCREENS - ENSURE NOTIFICATION ALWAYS STAYS RIGHT */
+@media (max-width: 320px) {
+  .header-left h1 {
+    font-size: 1.25rem;
+    margin-bottom: 0;
+  }
+
+  .page-subtitle {
+    font-size: 0.7rem;
+    margin-top: 0.125rem;
+  }
+
+  .notification-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .notification-btn i {
+    width: 18px;
+    height: 18px;
+  }
+
+  .notification-badge {
+    min-width: 14px;
+    height: 14px;
+    font-size: 0.65rem;
+    padding: 0.1rem 0.25rem;
+  }
+
+  .notifications-panel {
+    position: fixed !important;
+    top: 60px !important;
+    width: calc(100vw - 0.5rem) !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) translateY(-10px) !important;
+    z-index: 10001 !important;
+  }
+
+  .notifications-panel.active {
+    transform: translateX(-50%) translateY(0) !important;
   }
 }
 

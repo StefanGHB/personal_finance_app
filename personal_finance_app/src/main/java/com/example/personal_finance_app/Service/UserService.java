@@ -205,6 +205,38 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    // ===== НОВ МЕТОД ЗА PASSWORD RESET FUNCTIONALITY =====
+
+    /**
+     * Обновява паролата на потребител (за password reset functionality)
+     * ВНИМАНИЕ: Този метод НЕ проверява стара парола - използва се само за password reset!
+     */
+    public void updateUserPassword(Long userId, String encodedPassword) {
+        try {
+            User user = findById(userId);
+
+            // Security check: cannot update password for OAuth users
+            if (user.isOAuthUser()) {
+                throw new RuntimeException("Cannot update password for OAuth users");
+            }
+
+            // Security check: user must be enabled
+            if (!user.getIsEnabled()) {
+                throw new RuntimeException("Cannot update password for disabled user");
+            }
+
+            // Update the password (already encoded by PasswordResetService)
+            user.setPassword(encodedPassword);
+            userRepository.save(user);
+
+            System.out.println("✅ Password updated successfully for user: " + user.getEmail());
+
+        } catch (Exception e) {
+            System.err.println("❌ Failed to update password for user ID: " + userId);
+            throw new RuntimeException("Failed to update user password: " + e.getMessage());
+        }
+    }
+
     // ===== HELPER METHODS =====
 
     /**
@@ -233,7 +265,6 @@ public class UserService {
     public long getPendingTokensCount() {
         return emailConfirmationTokenRepository.countActiveTokensForUser(null, LocalDateTime.now());
     }
-
 
     /**
      * OAuth user processing (compatibility method)
@@ -267,7 +298,4 @@ public class UserService {
             throw new RuntimeException("Failed to process OAuth user: " + e.getMessage());
         }
     }
-
-
-
 }

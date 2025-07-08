@@ -1,9 +1,10 @@
 /* ===================================
-   SHARED SIDEBAR CSS
-   Only Navigation & Sidebar Styles
+   RESPONSIVE SIDEBAR CSS - CLEAN VERSION
+   Само responsive функционалност, без допълнителни ефекти
+   UPDATED: Премахната логика за картинка
    ================================== */
 
-/* CSS Variables - Essential for sidebar */
+/* CSS Variables - Оригинални от първата версия */
 :root {
   /* Colors */
   --primary-500: #3b82f6;
@@ -43,10 +44,81 @@
 
   /* Sidebar Width */
   --sidebar-width: 280px;
+
+  /* Z-index layers */
+  --z-sidebar: 1000;
+  --z-overlay: 999;
+  --z-hamburger: 1001;
 }
 
 /* ===================================
-   SIDEBAR STYLES
+   MOBILE HAMBURGER BUTTON
+   ================================== */
+
+.mobile-hamburger {
+  display: none !important;
+  position: fixed;
+  top: 2.5rem; /* Позициониран под заглавието */
+  left: 2rem; /* Отляво на заглавието с отстъп */
+  width: 48px;
+  height: 48px;
+  background: var(--surface-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-normal) ease;
+  z-index: var(--z-hamburger);
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  visibility: visible;
+}
+
+.mobile-hamburger:hover {
+  background: var(--surface-glass-hover);
+  color: var(--text-primary);
+}
+
+.mobile-hamburger i {
+  width: 24px;
+  height: 24px;
+}
+
+/* НОВО: Скриване на hamburger когато sidebar е активен */
+.mobile-hamburger.hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: scale(0.8) !important;
+}
+
+/* ===================================
+   SIDEBAR OVERLAY FOR MOBILE
+   ================================== */
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: var(--z-overlay);
+  opacity: 0;
+  visibility: hidden;
+  transition: all var(--duration-normal) ease;
+}
+
+.sidebar-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ===================================
+   MAIN SIDEBAR COMPONENT - ОРИГИНАЛНИ СТИЛОВЕ
    ================================== */
 
 .sidebar {
@@ -58,7 +130,7 @@
   background: var(--gradient-card);
   backdrop-filter: blur(20px);
   border-right: 1px solid var(--border-glass);
-  z-index: 1000;
+  z-index: var(--z-sidebar);
   transition: transform var(--duration-normal) ease;
   display: flex;
   flex-direction: column;
@@ -75,9 +147,9 @@
   z-index: -1;
 }
 
-/* Sidebar Header */
+/* Sidebar Header - ТОЧНО ПОДРАВНЯВАНЕ НА ЧЕРТИТЕ */
 .sidebar-header {
-  padding: 1.5rem;
+  padding: 4rem 1.5rem 1.5rem 1.5rem; /* Намален padding за точно подравняване */
   border-bottom: 1px solid var(--border-glass);
   display: flex;
   align-items: center;
@@ -91,21 +163,38 @@
 }
 
 .logo-icon {
-  font-size: 1.5rem;
+  font-size: 1.75rem; /* Увеличена икона */
   filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
 }
 
 .logo-text {
-  font-size: 1.25rem;
+  font-size: 1.5rem; /* Увеличен размер на текста */
   font-weight: 700;
   background: var(--gradient-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  transition: font-size var(--duration-normal) ease; /* Плавен преход на размера */
+}
+
+/* ДИНАМИЧНО НАМАЛЯВАНЕ НА РАЗМЕРА КОГАТО SIDEBAR Е АКТИВЕН */
+.sidebar.active .logo-text {
+  font-size: 1.25rem; /* Намален размер за да побере X бутона */
+}
+
+.logo-icon {
+  font-size: 1.75rem; /* Увеличена икона */
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
+  transition: font-size var(--duration-normal) ease; /* Плавен преход на иконата */
+}
+
+/* ДИНАМИЧНО НАМАЛЯВАНЕ НА ИКОНАТА КОГАТО SIDEBAR Е АКТИВЕН */
+.sidebar.active .logo-icon {
+  font-size: 1.5rem; /* Намален размер на иконата */
 }
 
 .sidebar-toggle {
-  display: none;
+  display: none; /* Скрит по подразбиране */
   background: var(--surface-glass);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-md);
@@ -113,6 +202,14 @@
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--duration-fast) ease;
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+/* ПЛАВНО ПОЯВЯВАНЕ НА X БУТОНА */
+.sidebar.active .sidebar-toggle {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .sidebar-toggle:hover {
@@ -120,10 +217,10 @@
   color: var(--text-primary);
 }
 
-/* Sidebar Navigation */
+/* Sidebar Navigation - ПОДРАВНЕНО СЪС СЪДЪРЖАНИЕТО */
 .sidebar-nav {
   flex: 1;
-  padding: 1rem 0;
+  padding: 1.5rem 0 1rem 0; /* Увеличен top padding */
   overflow-y: auto;
 }
 
@@ -195,7 +292,7 @@
   font-weight: 500;
 }
 
-/* Sidebar Footer */
+/* Sidebar Footer - ОРИГИНАЛНИ СТИЛОВЕ */
 .sidebar-footer {
   padding: 1rem;
   border-top: 1px solid var(--border-glass);
@@ -216,23 +313,55 @@
   background: var(--surface-glass-hover);
 }
 
+/* UPDATED: User Avatar - с rainbow gradient и glamour hover */
 .user-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--gradient-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
+  /* Истинска rainbow дъга с всички цветове */
+  background: linear-gradient(45deg,
+    #ff0000 0%,   /* червено */
+    #ff8c00 14%,  /* оранжево */
+    #ffd700 28%,  /* жълто */
+    #32cd32 42%,  /* зелено */
+    #00bfff 57%,  /* синьо */
+    #4169e1 71%,  /* индиго */
+    #8a2be2 85%,  /* виолетово */
+    #ff0000 100%  /* отново червено за плавност */
+  );
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  transition: all var(--duration-normal) ease;
+  position: relative;
+  /* Добавяме анимация на градиента */
+  background-size: 200% 200%;
+  animation: rainbow-rotate 3s ease-in-out infinite;
 }
 
-.user-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+@keyframes rainbow-rotate {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
+
+.user-avatar:hover {
+  transform: scale(1.05);
+  /* Glamour rainbow glow ефект около border-а */
+  box-shadow:
+    0 0 20px rgba(255, 0, 150, 0.4),
+    0 0 40px rgba(0, 255, 255, 0.3),
+    0 0 60px rgba(255, 255, 0, 0.2),
+    0 4px 15px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.8);
+  /* По-бърза анимация при hover */
+  animation-duration: 1.5s;
+}
+
+/* ПРЕМАХНАТО: Всякаква логика за img елемент */
 
 .user-info {
   flex: 1;
@@ -285,13 +414,48 @@
   position: relative;
   width: calc(100% - var(--sidebar-width));
   max-width: none;
+  transition: margin-left var(--duration-normal) ease, width var(--duration-normal) ease;
 }
 
 /* ===================================
-   RESPONSIVE DESIGN
+   RESPONSIVE BREAKPOINTS
    ================================== */
 
-@media (max-width: 768px) {
+/* Tablet Portrait & Small Desktop (768px - 1023px) */
+@media (max-width: 1023px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.active {
+    transform: translateX(0);
+  }
+
+  .sidebar.active .sidebar-toggle {
+    display: block; /* Показва X бутона САМО когато sidebar е активен */
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .mobile-hamburger {
+    display: flex !important;
+  }
+
+  .sidebar-overlay {
+    display: block;
+  }
+
+  /* ИЗМЕСТВАНЕ НА HEADER ЗАГЛАВИЕТО НАДЯСНО ЗА МЯСТО НА HAMBURGER */
+  .dashboard-header {
+    padding-left: 5.5rem !important; /* Увеличен padding за още по-добро място */
+  }
+}
+
+/* Mobile Landscape (481px - 767px) */
+@media (max-width: 767px) {
   .sidebar {
     transform: translateX(-100%);
   }
@@ -301,10 +465,127 @@
   }
 
   .main-content {
-    margin-left: 0;
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .mobile-hamburger {
+    display: flex !important;
+  }
+
+  .sidebar-overlay {
+    display: block;
   }
 
   .sidebar-toggle {
     display: block;
+  }
+
+  .sidebar-header {
+    padding: 3.5rem 1rem 1rem 1rem; /* Намален padding за tablet */
+  }
+
+  .logo-text {
+    font-size: 1.375rem; /* Адаптиран размер за tablet */
+    transition: font-size var(--duration-normal) ease;
+  }
+
+  .sidebar.active .logo-text {
+    font-size: 1.125rem; /* Намален размер за tablet когато е активен */
+  }
+
+  .logo-icon {
+    font-size: 1.625rem; /* Адаптиран размер икона за tablet */
+    transition: font-size var(--duration-normal) ease;
+  }
+
+  .sidebar.active .logo-icon {
+    font-size: 1.375rem; /* Намален размер икона за tablet когато е активен */
+  }
+
+  .nav-link {
+    padding: 0.75rem 0.875rem;
+  }
+
+  .user-profile {
+    padding: 0.625rem;
+  }
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Mobile Portrait (320px - 480px) */
+@media (max-width: 480px) {
+  .sidebar {
+    width: 100vw;
+    transform: translateX(-100%);
+  }
+
+  .sidebar.active {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .mobile-hamburger {
+    display: flex !important;
+    width: 44px;
+    height: 44px;
+  }
+
+  .sidebar-overlay {
+    display: none; /* Full screen sidebar doesn't need overlay */
+  }
+
+  .sidebar-toggle {
+    display: block;
+  }
+
+  .sidebar-header {
+    padding: 3rem 0.875rem 1rem 0.875rem; /* Намален padding за mobile */
+  }
+
+  .logo-text {
+    font-size: 1.25rem; /* Адаптиран размер за mobile */
+    transition: font-size var(--duration-normal) ease;
+  }
+
+  .sidebar.active .logo-text {
+    font-size: 1rem; /* Намален размер за mobile когато е активен */
+  }
+
+  .logo-icon {
+    font-size: 1.5rem; /* Адаптиран размер икона за mobile */
+    transition: font-size var(--duration-normal) ease;
+  }
+
+  .sidebar.active .logo-icon {
+    font-size: 1.25rem; /* Намален размер икона за mobile когато е активен */
+  }
+
+  .nav-list {
+    padding: 0 0.75rem;
+  }
+
+  .nav-link {
+    padding: 0.875rem 0.75rem;
+  }
+
+  .sidebar-footer {
+    padding: 0.75rem;
+  }
+
+  .user-name {
+    font-size: 0.825rem;
+  }
+
+  .user-email {
+    font-size: 0.725rem;
   }
 }

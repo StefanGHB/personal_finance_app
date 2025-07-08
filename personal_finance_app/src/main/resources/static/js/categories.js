@@ -7,6 +7,7 @@
  * NEW: Vertical scrollbar for notifications (right side)
  * NEW: Smart notifications time system with 15min/1hour updates
  * UPDATED: Smart uppercase truncation logic (4 chars for all-uppercase, 6 chars for mixed case)
+ * FIXED: Auto notification badge update after category operations
  */
 
 class CategoriesManager {
@@ -76,6 +77,9 @@ class CategoriesManager {
 
             // 🕒 NEW: Start smart notifications time refresh
             this.smartTime.startSmartRefresh();
+
+            // ✅ FIXED: Always update notification badge after initialization
+            this.updateNotificationBadge();
 
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
@@ -1531,7 +1535,7 @@ class CategoriesManager {
     }
 
     /**
-     * Force complete data refresh with auto-focus on new category
+     * ✅ FIXED: Force complete data refresh with auto-focus on new category AND notification badge update
      */
     async forceCompleteRefresh(newCategoryId = null) {
         try {
@@ -1544,13 +1548,17 @@ class CategoriesManager {
 
             await Promise.all([
                 this.loadCategories(),
-                this.loadTransactions()
+                this.loadTransactions(),
+                this.loadNotifications() // ✅ CRITICAL: Also reload notifications
             ]);
 
             this.calculateSummaryData();
             this.applyFiltersAndRender();
 
-            console.log('✅ Complete data refresh finished');
+            // ✅ CRITICAL: Always update notification badge after refresh
+            this.updateNotificationBadge();
+
+            console.log('✅ Complete data refresh finished with notification badge update');
         } catch (error) {
             console.error('❌ Error during complete refresh:', error);
             this.showToast('Error refreshing data', 'error');
@@ -2386,7 +2394,7 @@ class CategoriesManager {
     }
 
     /**
-     * ✅ ENHANCED: Add a new notification with proper timestamp and 24h storage
+     * ✅ ENHANCED: Add a new notification with proper timestamp and 24h storage AND immediate badge update
      */
     addNotification(notification) {
         // ✅ CHANGED: Use localStorage instead of sessionStorage
@@ -2413,10 +2421,13 @@ class CategoriesManager {
         // ✅ Keep only notifications from last 24 hours (no arbitrary limit of 10)
         localStorage.setItem('categoryNotifications', JSON.stringify(filteredNotifications));
 
-        // ✅ Update badge immediately
+        // ✅ CRITICAL: Update internal notifications array immediately
+        this.notifications.unshift(newNotification);
+
+        // ✅ CRITICAL: Update badge immediately after adding notification
         this.updateNotificationBadge();
 
-        console.log(`✅ Added new notification. Total notifications in last 24h: ${filteredNotifications.length}`);
+        console.log(`✅ Added new notification with IMMEDIATE badge update. Total notifications in last 24h: ${filteredNotifications.length}`);
     }
 
     /**
@@ -2558,19 +2569,24 @@ class CategoriesManager {
     }
 
     /**
-     * Update notification badge
+     * ✅ FIXED: Update notification badge ALWAYS works - even when panel is closed
      */
     updateNotificationBadge() {
         const badge = document.getElementById('notification-badge');
-        if (!badge) return;
+        if (!badge) {
+            console.warn('⚠️ Notification badge element not found');
+            return;
+        }
 
         const unreadCount = this.notifications.filter(n => !n.isRead).length;
 
         if (unreadCount > 0) {
             badge.textContent = unreadCount;
             badge.style.display = 'block';
+            console.log(`🔔 Notification badge updated: ${unreadCount} unread notifications`);
         } else {
             badge.style.display = 'none';
+            console.log('🔔 Notification badge hidden: no unread notifications');
         }
     }
 
@@ -2679,7 +2695,7 @@ class CategoriesManager {
     }
 
     /**
-     * ✅ BULLETPROOF: Refresh all data with error isolation
+     * ✅ BULLETPROOF: Refresh all data with error isolation AND notification badge update
      */
     async refreshAllData() {
         try {
@@ -2707,11 +2723,11 @@ class CategoriesManager {
             // ✅ SAFE: Always try to update UI (even with partial data)
             this.calculateSummaryData();
             this.applyFiltersAndRender();
-            this.updateNotificationBadge();
+            this.updateNotificationBadge(); // ✅ CRITICAL: Always update badge
             this.updateArchivedToggleButton();
             this.updateViewModeIndicator();
 
-            console.log('✅ Data refresh completed (some operations may have failed safely)');
+            console.log('✅ Data refresh completed with notification badge update (some operations may have failed safely)');
         } catch (error) {
             console.error('❌ Critical error during data refresh:', error);
             // ✅ SAFE: Don't throw error - just log it
