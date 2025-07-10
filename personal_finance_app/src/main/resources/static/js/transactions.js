@@ -1,12 +1,3 @@
-/**
- * Transactions Page JavaScript - FIXED NEWEST FIRST SORTING
- * Complete transaction management with newest transactions always appearing first
- * ✅ COMPLETELY FIXED: New transactions appear at the top of page 1
- * ✅ GUARANTEED: Newest transactions are always shown first
- * ✅ FIXED: Category names over 20 characters are truncated with ...
- * ✅ FIXED: User-friendly error messages for database errors
- */
-
 class TransactionsManager {
     constructor() {
         this.API_BASE = '/api';
@@ -16,6 +7,7 @@ class TransactionsManager {
         this.notifications = [];
         this.currentTransaction = null;
         this.isEditing = false;
+        this.currentUserId = null;
         this.summaryData = {
             currentMonth: {
                 transactions: [],
@@ -63,6 +55,163 @@ class TransactionsManager {
         this.init();
     }
 
+
+
+    /**
+     * ✅ NEW: Get current user ID from authentication
+     */
+    async getCurrentUserId() {
+        try {
+            if (this.currentUserId) {
+                return this.currentUserId;
+            }
+
+            const response = await fetch(`${this.API_BASE}/auth/current-user`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to get current user');
+            }
+
+            const userData = await response.json();
+            if (userData.authenticated && userData.id) {
+                this.currentUserId = userData.id;
+                console.log(`✅ Current user ID: ${this.currentUserId}`);
+                return this.currentUserId;
+            } else {
+                throw new Error('User not authenticated');
+            }
+        } catch (error) {
+            console.error('❌ Failed to get current user ID:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * ✅ NEW: Get user-specific localStorage key
+     */
+    getUserStorageKey(baseKey) {
+        if (!this.currentUserId) {
+            console.warn('⚠️ No user ID available for storage key');
+            return baseKey; // Fallback to base key
+        }
+        return `${baseKey}_user_${this.currentUserId}`;
+    }
+
+    /**
+     * ✅ NEW: Get user-specific notifications from localStorage
+     */
+    getUserNotifications() {
+        try {
+            const storageKey = this.getUserStorageKey('transactionNotifications');
+            const userNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            console.log(`📥 Loaded ${userNotifications.length} transaction notifications for user ${this.currentUserId}`);
+            return userNotifications;
+        } catch (error) {
+            console.warn('⚠️ Failed to get user transaction notifications:', error);
+            return [];
+        }
+    }
+
+    /**
+     * ✅ NEW: Save user-specific notifications to localStorage
+     */
+    saveUserNotifications(notifications) {
+        try {
+            const storageKey = this.getUserStorageKey('transactionNotifications');
+            localStorage.setItem(storageKey, JSON.stringify(notifications));
+            console.log(`💾 Saved ${notifications.length} transaction notifications for user ${this.currentUserId}`);
+        } catch (error) {
+            console.warn('⚠️ Failed to save user transaction notifications:', error);
+        }
+    }
+
+    /**
+     * ✅ NEW: Get user-specific read notification states
+     */
+    getUserReadStates() {
+        try {
+            const storageKey = this.getUserStorageKey('notificationReadStates');
+            const readStates = JSON.parse(localStorage.getItem(storageKey) || '{}');
+            console.log(`📖 Retrieved ${Object.keys(readStates).length} read notification states for user ${this.currentUserId}`);
+            return readStates;
+        } catch (error) {
+            console.warn('⚠️ Failed to get user read notification states:', error);
+            return {};
+        }
+    }
+
+    /**
+     * ✅ NEW: Save user-specific read state
+     */
+    saveUserReadState(persistentId) {
+        try {
+            const readStates = this.getUserReadStates();
+            readStates[persistentId] = new Date().getTime();
+            const storageKey = this.getUserStorageKey('notificationReadStates');
+            localStorage.setItem(storageKey, JSON.stringify(readStates));
+            console.log(`💾 Saved read state for notification ${persistentId} for user ${this.currentUserId}`);
+        } catch (error) {
+            console.warn('⚠️ Failed to save user read state:', error);
+        }
+    }
+
+    /**
+     * ✅ NEW: Clean up old user notifications (only for current user)
+     */
+    cleanupOldUserNotifications() {
+        try {
+            const notifications = this.getUserNotifications();
+            const now = new Date();
+            const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+            const cleaned = notifications.filter(notification => {
+                if (notification.timestamp) {
+                    const notificationTime = new Date(notification.timestamp);
+                    return notificationTime > oneDayAgo;
+                }
+                return false;
+            });
+
+            if (cleaned.length !== notifications.length) {
+                this.saveUserNotifications(cleaned);
+                console.log(`🧹 Cleaned ${notifications.length - cleaned.length} old transaction notifications for user ${this.currentUserId}`);
+            }
+
+        } catch (error) {
+            console.warn('⚠️ Failed to cleanup old user notifications:', error);
+        }
+    }
+
+    /**
+     * ✅ NEW: Clear all data for current user (when switching users)
+     */
+    clearCurrentUserData() {
+        try {
+            console.log(`🧹 Clearing all transaction data for user ${this.currentUserId}...`);
+
+            // Clear notifications
+            const notificationsKey = this.getUserStorageKey('transactionNotifications');
+            localStorage.removeItem(notificationsKey);
+
+            // Clear read states
+            const readStatesKey = this.getUserStorageKey('notificationReadStates');
+            localStorage.removeItem(readStatesKey);
+
+            // Reset internal state
+            this.notifications = [];
+            this.currentUserId = null;
+
+            console.log('✅ User transaction data cleared successfully');
+        } catch (error) {
+            console.warn('⚠️ Failed to clear user transaction data:', error);
+        }
+    }
+
     /**
      * Initialize the transactions page
      */
@@ -70,6 +219,9 @@ class TransactionsManager {
         try {
             console.log('🚀 Initializing Transactions Manager...');
             this.showToast('Loading transactions...', 'info');
+
+            // ✅ CRITICAL: Get current user ID first
+            await this.getCurrentUserId();
 
             // Setup event listeners first
             this.setupEventListeners();
@@ -120,9 +272,9 @@ class TransactionsManager {
                 localStorage.setItem('transactionsLastRefresh', now.toString());
             }
 
-            // Refresh notifications on window focus preserving localStorage data
-            console.log('🔔 Refreshing notifications on window focus with localStorage persistence');
-            this.cleanupOldNotifications();
+            // ✅ UPDATED: Refresh user-specific notifications on window focus
+            console.log('🔔 Refreshing user-specific notifications on window focus');
+            this.cleanupOldUserNotifications();
             this.loadNotifications().then(() => {
                 this.updateNotificationBadge();
 
@@ -142,18 +294,21 @@ class TransactionsManager {
                 localStorage.removeItem('budgetUpdated');
             }
 
-            // Listen for notification updates from other tabs
-            if (e.key === 'transactionNotifications' && e.newValue) {
-                console.log('🔔 Notifications updated in another tab, refreshing...');
-                this.loadNotifications().then(() => {
-                    this.updateNotificationBadge();
+            // ✅ UPDATED: Listen for user-specific notification updates from other tabs
+            if (e.key && e.key.startsWith('transactionNotifications_user_') && e.newValue) {
+                const userIdFromKey = e.key.split('_user_')[1];
+                if (userIdFromKey === String(this.currentUserId)) {
+                    console.log('🔔 User-specific transaction notifications updated in another tab, refreshing...');
+                    this.loadNotifications().then(() => {
+                        this.updateNotificationBadge();
 
-                    // Update display if notifications panel is open
-                    const panel = document.getElementById('notifications-panel');
-                    if (panel && panel.classList.contains('active')) {
-                        this.renderNotifications();
-                    }
-                });
+                        // Update display if notifications panel is open
+                        const panel = document.getElementById('notifications-panel');
+                        if (panel && panel.classList.contains('active')) {
+                            this.renderNotifications();
+                        }
+                    });
+                }
             }
         });
     }
@@ -176,13 +331,16 @@ class TransactionsManager {
     setupEventListeners() {
         console.log('🔧 Setting up event listeners...');
 
-        // Primary action buttons
+        // Primary action buttons with improved mobile touch handling
         this.addEventListeners([
             ['add-transaction-btn', 'click', () => this.openTransactionModal()],
             ['add-first-transaction-btn', 'click', () => this.openTransactionModal()],
             ['quick-add-income', 'click', () => this.openTransactionModal('INCOME')],
             ['quick-add-expense', 'click', () => this.openTransactionModal('EXPENSE')]
         ]);
+
+        // ✅ CRITICAL: Add mobile-specific touch event listeners for better responsiveness
+        this.setupMobileTouchEvents();
 
         // Modal controls
         this.addEventListeners([
@@ -253,6 +411,66 @@ class TransactionsManager {
         });
 
         console.log('✅ All event listeners setup completed');
+    }
+
+    /**
+     * ✅ NEW: Setup mobile-specific touch events for better responsiveness
+     */
+    setupMobileTouchEvents() {
+        // Quick action buttons with improved mobile handling
+        const quickActionButtons = ['quick-add-income', 'quick-add-expense'];
+
+        quickActionButtons.forEach(buttonId => {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                // Improve mobile touch responsiveness
+                button.style.touchAction = 'manipulation';
+                button.style.webkitTouchCallout = 'none';
+                button.style.userSelect = 'none';
+
+                // Add mobile-specific styling for better touch targets
+                if (window.innerWidth <= 768) {
+                    button.style.minHeight = '56px';
+                    button.style.padding = '16px 20px';
+                    button.style.fontSize = '0.9rem';
+                }
+
+                // Add touch events for immediate feedback
+                button.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    button.style.transform = 'scale(0.95)';
+                }, { passive: false });
+
+                button.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    button.style.transform = 'scale(1)';
+
+                    // Trigger the appropriate action
+                    if (buttonId === 'quick-add-income') {
+                        this.openTransactionModal('INCOME');
+                    } else if (buttonId === 'quick-add-expense') {
+                        this.openTransactionModal('EXPENSE');
+                    }
+                }, { passive: false });
+
+                console.log(`✅ Enhanced mobile touch for ${buttonId}`);
+            }
+        });
+
+        // Also enhance any dynamically created buttons (empty state buttons)
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.mobile-friendly-btn')) {
+                const button = e.target.closest('.mobile-friendly-btn');
+                button.style.transform = 'scale(0.95)';
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            if (e.target.closest('.mobile-friendly-btn')) {
+                const button = e.target.closest('.mobile-friendly-btn');
+                button.style.transform = 'scale(1)';
+            }
+        }, { passive: true });
     }
 
     /**
@@ -1430,7 +1648,7 @@ class TransactionsManager {
     }
 
     /**
-     * Get empty state HTML
+     * ✅ FIXED: Get empty state HTML with working buttons - IMPROVED MOBILE TOUCH TARGETS
      */
     getEmptyStateHTML() {
         const hasFilters = this.getActiveFiltersCount() > 0;
@@ -1464,7 +1682,9 @@ class TransactionsManager {
                         </div>
 
                         <div class="empty-actions">
-                            <button class="modern-btn secondary-btn" onclick="window.transactionsManager?.clearFilters?.()">
+                            <button class="modern-btn secondary-btn mobile-friendly-btn"
+                                    onclick="window.transactionsManager.clearFilters()"
+                                    style="min-height: 56px; padding: 16px 24px; width: 100%; touch-action: manipulation;">
                                 <span class="btn-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
@@ -1503,7 +1723,9 @@ class TransactionsManager {
                         </div>
 
                         <div class="empty-actions">
-                            <button class="modern-btn hero-btn" onclick="window.transactionsManager?.openTransactionModal?.()">
+                            <button class="modern-btn hero-btn mobile-friendly-btn"
+                                    onclick="window.transactionsManager.openTransactionModal()"
+                                    style="min-height: 56px; padding: 16px 24px; width: 100%; touch-action: manipulation; cursor: pointer; border: none; outline: none; text-align: center; display: flex; align-items: center; justify-content: center;">
                                 <span class="btn-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                         <line x1="12" y1="5" x2="12" y2="19"/>
@@ -2482,49 +2704,29 @@ class TransactionsManager {
     }
 
     /**
-     * Initialize notifications
+     * ✅ UPDATED: Initialize notifications with user-specific data
      */
     async initializeNotifications() {
         try {
-            this.cleanupOldNotifications();
+            this.cleanupOldUserNotifications();
             await this.loadNotifications();
             this.updateNotificationBadge();
             this.setupNotificationRefreshTimer();
-            console.log('✅ Notifications initialized');
+            console.log(`✅ Notifications initialized for user ${this.currentUserId}`);
         } catch (error) {
             console.error('❌ Failed to initialize notifications:', error);
         }
     }
 
     /**
-     * Clean up old notifications
+     * ✅ UPDATED: Clean up old notifications (user-specific)
      */
     cleanupOldNotifications() {
-        try {
-            const notifications = JSON.parse(localStorage.getItem('transactionNotifications') || '[]');
-            const now = new Date();
-            const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-            const cleaned = notifications.filter(notification => {
-                if (notification.timestamp) {
-                    const notificationTime = new Date(notification.timestamp);
-                    return notificationTime > oneDayAgo;
-                }
-                return false;
-            });
-
-            if (cleaned.length !== notifications.length) {
-                localStorage.setItem('transactionNotifications', JSON.stringify(cleaned));
-                console.log(`🧹 Cleaned ${notifications.length - cleaned.length} old notifications`);
-            }
-
-        } catch (error) {
-            console.error('❌ Error cleaning old notifications:', error);
-        }
+        this.cleanupOldUserNotifications();
     }
 
     /**
-     * Setup notification refresh timer
+     * ✅ UPDATED: Setup notification refresh timer with user-specific data
      */
     setupNotificationRefreshTimer() {
         if (this.notificationTimer) {
@@ -2543,7 +2745,7 @@ class TransactionsManager {
     }
 
     /**
-     * Toggle notifications panel
+     * ✅ FIXED: Toggle notifications panel with CENTERED positioning
      */
     async toggleNotifications() {
         const panel = document.getElementById('notifications-panel');
@@ -2557,12 +2759,15 @@ class TransactionsManager {
     }
 
     /**
-     * Show notifications panel
+     * ✅ FIXED: Show notifications panel CENTERED on desktop and tablet
      */
     async showNotificationsPanel() {
         try {
             const panel = document.getElementById('notifications-panel');
             if (!panel) return;
+
+            // ✅ CRITICAL: Apply centered positioning for desktop and tablet
+            this.applyCenteredNotificationPositioning(panel);
 
             await this.loadNotifications();
             this.renderNotifications();
@@ -2578,6 +2783,44 @@ class TransactionsManager {
     }
 
     /**
+     * ✅ NEW: Apply centered positioning for notification panel - DROPDOWN STYLE
+     */
+    applyCenteredNotificationPositioning(panel) {
+        // Check screen size to determine positioning
+        const screenWidth = window.innerWidth;
+
+        if (screenWidth >= 769) {
+            // Desktop and tablet: Center horizontally, position below notification button
+            panel.style.position = 'fixed';
+            panel.style.top = '5rem'; // Position below header
+            panel.style.left = '50%';
+            panel.style.right = 'auto';
+            panel.style.bottom = 'auto';
+            panel.style.transform = 'translateX(-50%)'; // Only center horizontally
+            panel.style.width = 'min(420px, 90vw)';
+            panel.style.maxWidth = '420px';
+            panel.style.maxHeight = '70vh'; // Limit height so it doesn't go off screen
+            panel.style.marginTop = '0';
+
+            console.log('🔔 Applied CENTERED DROPDOWN positioning for desktop/tablet notifications panel');
+        } else {
+            // Mobile: Use full width positioning below header
+            panel.style.position = 'fixed';
+            panel.style.top = '4rem';
+            panel.style.left = '1rem';
+            panel.style.right = '1rem';
+            panel.style.bottom = 'auto';
+            panel.style.transform = 'none';
+            panel.style.width = 'calc(100vw - 2rem)';
+            panel.style.maxWidth = 'none';
+            panel.style.maxHeight = '60vh'; // Limit height for mobile
+            panel.style.marginTop = '0';
+
+            console.log('🔔 Applied MOBILE DROPDOWN positioning for notifications panel');
+        }
+    }
+
+    /**
      * Close notifications panel
      */
     closeNotificationsPanel() {
@@ -2588,7 +2831,7 @@ class TransactionsManager {
     }
 
     /**
-     * Load notifications
+     * ✅ UPDATED: Load notifications with user-specific data
      */
     async loadNotifications() {
         try {
@@ -2610,11 +2853,11 @@ class TransactionsManager {
     }
 
     /**
-     * Load read states
+     * ✅ UPDATED: Load read states (user-specific)
      */
     loadReadStates() {
         try {
-            const readStates = JSON.parse(localStorage.getItem('notificationReadStates') || '{}');
+            const readStates = this.getUserReadStates();
             const twoDaysAgo = new Date().getTime() - (2 * 24 * 60 * 60 * 1000);
             const cleanStates = {};
 
@@ -2624,7 +2867,8 @@ class TransactionsManager {
                 }
             });
 
-            localStorage.setItem('notificationReadStates', JSON.stringify(cleanStates));
+            const storageKey = this.getUserStorageKey('notificationReadStates');
+            localStorage.setItem(storageKey, JSON.stringify(cleanStates));
             return cleanStates;
         } catch (error) {
             console.error('❌ Error loading read states:', error);
@@ -2633,16 +2877,10 @@ class TransactionsManager {
     }
 
     /**
-     * Save read state
+     * ✅ UPDATED: Save read state (user-specific)
      */
     saveReadState(persistentId) {
-        try {
-            const readStates = this.loadReadStates();
-            readStates[persistentId] = new Date().getTime();
-            localStorage.setItem('notificationReadStates', JSON.stringify(readStates));
-        } catch (error) {
-            console.error('❌ Error saving read state:', error);
-        }
+        this.saveUserReadState(persistentId);
     }
 
     /**
@@ -2728,10 +2966,10 @@ class TransactionsManager {
     }
 
     /**
-     * Get session notifications
+     * ✅ UPDATED: Get session notifications (user-specific)
      */
     getSessionNotifications() {
-        const sessionNotifications = JSON.parse(localStorage.getItem('transactionNotifications') || '[]');
+        const sessionNotifications = this.getUserNotifications();
         const now = new Date();
         const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
@@ -2744,17 +2982,17 @@ class TransactionsManager {
         });
 
         if (filtered.length !== sessionNotifications.length) {
-            localStorage.setItem('transactionNotifications', JSON.stringify(filtered));
+            this.saveUserNotifications(filtered);
         }
 
         return filtered;
     }
 
     /**
-     * Add notification
+     * ✅ UPDATED: Add notification (user-specific)
      */
     addNotification(notification) {
-        const sessionNotifications = JSON.parse(localStorage.getItem('transactionNotifications') || '[]');
+        const sessionNotifications = this.getUserNotifications();
 
         // Truncate the message if it contains a transaction description (only for notifications)
         let processedMessage = notification.message;
@@ -2775,7 +3013,7 @@ class TransactionsManager {
         sessionNotifications.unshift(newNotification);
         sessionNotifications.splice(20); // Keep only last 20
 
-        localStorage.setItem('transactionNotifications', JSON.stringify(sessionNotifications));
+        this.saveUserNotifications(sessionNotifications);
         this.updateNotificationBadge();
     }
 
@@ -2882,7 +3120,7 @@ class TransactionsManager {
     }
 
     /**
-     * Mark notification as read
+     * ✅ UPDATED: Mark notification as read (user-specific)
      */
     async markNotificationAsRead(notificationId) {
         try {
@@ -2895,11 +3133,11 @@ class TransactionsManager {
                 this.saveReadState(notification.persistentId);
             }
 
-            const sessionNotifications = JSON.parse(localStorage.getItem('transactionNotifications') || '[]');
+            const sessionNotifications = this.getUserNotifications();
             const sessionNotification = sessionNotifications.find(n => n.id === notificationId);
             if (sessionNotification) {
                 sessionNotification.isRead = true;
-                localStorage.setItem('transactionNotifications', JSON.stringify(sessionNotifications));
+                this.saveUserNotifications(sessionNotifications);
             }
 
             this.updateNotificationBadge();
@@ -2911,7 +3149,7 @@ class TransactionsManager {
     }
 
     /**
-     * Mark all notifications as read
+     * ✅ UPDATED: Mark all notifications as read (user-specific)
      */
     async markAllNotificationsAsRead() {
         try {
@@ -2922,11 +3160,11 @@ class TransactionsManager {
                 }
             });
 
-            const sessionNotifications = JSON.parse(localStorage.getItem('transactionNotifications') || '[]');
+            const sessionNotifications = this.getUserNotifications();
             sessionNotifications.forEach(notification => {
                 notification.isRead = true;
             });
-            localStorage.setItem('transactionNotifications', JSON.stringify(sessionNotifications));
+            this.saveUserNotifications(sessionNotifications);
 
             this.showToast('All notifications marked as read', 'success');
             this.updateNotificationBadge();
@@ -3181,6 +3419,7 @@ class TransactionsManager {
             throw error;
         }
     }
+
 
     /**
      * ✅ NEW: Translate technical error messages to user-friendly English messages

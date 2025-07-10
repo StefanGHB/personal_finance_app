@@ -1,14 +1,3 @@
-/**
- * Categories Page JavaScript - FIXED PAGINATION SYSTEM & BULGARIAN SEARCH
- * Fixed: Single pagination block that updates dynamically - NO DUPLICATION
- * Fixed: Bulgarian and Unicode search support
- * Fixed: Archive category error handling
- * Enhanced: Modern notifications scroller for 3+ notifications
- * NEW: Vertical scrollbar for notifications (right side)
- * NEW: Smart notifications time system with 15min/1hour updates
- * UPDATED: Smart uppercase truncation logic (4 chars for all-uppercase, 6 chars for mixed case)
- * FIXED: Auto notification badge update after category operations
- */
 
 class CategoriesManager {
     constructor() {
@@ -19,6 +8,7 @@ class CategoriesManager {
         this.notifications = [];
         this.currentCategory = null;
         this.isEditing = false;
+        this.currentUserId = null; // ✅ NEW: Track current user ID
         this.summaryData = {
             totalCategories: 0,
             incomeCategories: 0,
@@ -56,12 +46,183 @@ class CategoriesManager {
     }
 
     /**
+     * ✅ NEW: Get current user ID from authentication
+     */
+    async getCurrentUserId() {
+        try {
+            if (this.currentUserId) {
+                return this.currentUserId;
+            }
+
+            const response = await fetch(`${this.API_BASE}/auth/current-user`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to get current user');
+            }
+
+            const userData = await response.json();
+            if (userData.authenticated && userData.id) {
+                this.currentUserId = userData.id;
+                console.log(`✅ Current user ID: ${this.currentUserId}`);
+                return this.currentUserId;
+            } else {
+                throw new Error('User not authenticated');
+            }
+        } catch (error) {
+            console.error('❌ Failed to get current user ID:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * ✅ NEW: Get user-specific localStorage key
+     */
+    getUserStorageKey(baseKey) {
+        if (!this.currentUserId) {
+            console.warn('⚠️ No user ID available for storage key');
+            return baseKey; // Fallback to base key
+        }
+        return `${baseKey}_user_${this.currentUserId}`;
+    }
+
+    /**
+     * ✅ NEW: Get user-specific notifications from localStorage
+     */
+    getUserNotifications() {
+        try {
+            const storageKey = this.getUserStorageKey('categoryNotifications');
+            const userNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            console.log(`📥 Loaded ${userNotifications.length} notifications for user ${this.currentUserId}`);
+            return userNotifications;
+        } catch (error) {
+            console.warn('⚠️ Failed to get user notifications:', error);
+            return [];
+        }
+    }
+
+    /**
+     * ✅ NEW: Save user-specific notifications to localStorage
+     */
+    saveUserNotifications(notifications) {
+        try {
+            const storageKey = this.getUserStorageKey('categoryNotifications');
+            localStorage.setItem(storageKey, JSON.stringify(notifications));
+            console.log(`💾 Saved ${notifications.length} notifications for user ${this.currentUserId}`);
+        } catch (error) {
+            console.warn('⚠️ Failed to save user notifications:', error);
+        }
+    }
+
+    /**
+     * ✅ NEW: Get user-specific read notification IDs
+     */
+    getUserReadNotificationIds() {
+        try {
+            const storageKey = this.getUserStorageKey('readNotificationIds');
+            const readIds = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            console.log(`📖 Retrieved ${readIds.length} read notification IDs for user ${this.currentUserId}`);
+            return readIds;
+        } catch (error) {
+            console.warn('⚠️ Failed to get user read notification IDs:', error);
+            return [];
+        }
+    }
+
+    /**
+     * ✅ NEW: Save user-specific read notification ID
+     */
+    saveUserReadNotificationId(notificationId) {
+        try {
+            const readIds = this.getUserReadNotificationIds();
+            if (!readIds.includes(notificationId)) {
+                readIds.push(notificationId);
+                const storageKey = this.getUserStorageKey('readNotificationIds');
+                localStorage.setItem(storageKey, JSON.stringify(readIds));
+                console.log(`💾 Saved read notification ID ${notificationId} for user ${this.currentUserId}`);
+            }
+        } catch (error) {
+            console.warn('⚠️ Failed to save user read notification ID:', error);
+        }
+    }
+
+    /**
+     * ✅ NEW: Save all user notifications as read
+     */
+    saveAllUserNotificationsAsRead() {
+        try {
+            const allIds = this.notifications.map(n => n.id);
+            const storageKey = this.getUserStorageKey('readNotificationIds');
+            localStorage.setItem(storageKey, JSON.stringify(allIds));
+            console.log(`💾 Saved all ${allIds.length} notifications as read for user ${this.currentUserId}`);
+        } catch (error) {
+            console.warn('⚠️ Failed to save all user notifications as read:', error);
+        }
+    }
+
+    /**
+     * ✅ NEW: Clean up old user notifications (only for current user)
+     */
+    cleanupOldUserNotifications() {
+        try {
+            const notifications = this.getUserNotifications();
+            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+            const validNotifications = notifications.filter(notification => {
+                const notificationTime = new Date(notification.timestamp);
+                return notificationTime > oneDayAgo;
+            });
+
+            // ✅ Only update if there were changes
+            if (validNotifications.length !== notifications.length) {
+                this.saveUserNotifications(validNotifications);
+                console.log(`🧹 Cleaned up old notifications for user ${this.currentUserId}. Kept ${validNotifications.length} from last 24h`);
+            }
+
+        } catch (error) {
+            console.warn('⚠️ Failed to cleanup old user notifications:', error);
+        }
+    }
+
+    /**
+     * ✅ NEW: Clear all data for current user (when switching users)
+     */
+    clearCurrentUserData() {
+        try {
+            console.log(`🧹 Clearing all data for user ${this.currentUserId}...`);
+
+            // Clear notifications
+            const notificationsKey = this.getUserStorageKey('categoryNotifications');
+            localStorage.removeItem(notificationsKey);
+
+            // Clear read notification IDs
+            const readIdsKey = this.getUserStorageKey('readNotificationIds');
+            localStorage.removeItem(readIdsKey);
+
+            // Reset internal state
+            this.notifications = [];
+            this.currentUserId = null;
+
+            console.log('✅ User data cleared successfully');
+        } catch (error) {
+            console.warn('⚠️ Failed to clear user data:', error);
+        }
+    }
+
+    /**
      * Initialize the categories page
      */
     async init() {
         try {
             console.log('🚀 Initializing Categories Manager...');
             this.showToast('Loading categories...', 'info');
+
+            // ✅ CRITICAL: Get current user ID first
+            await this.getCurrentUserId();
 
             this.setupEventListeners();
             this.showLoadingState();
@@ -2097,16 +2258,16 @@ class CategoriesManager {
     }
 
     /**
-     * Initialize notifications
+     * ✅ UPDATED: Initialize notifications with user-specific data
      */
     async initializeNotifications() {
         try {
-            // ✅ ENHANCED: Clean up old notifications on startup
-            this.cleanupOldNotifications();
+            // ✅ ENHANCED: Clean up old notifications for current user on startup
+            this.cleanupOldUserNotifications();
 
             await this.loadNotifications();
             this.updateNotificationBadge();
-            console.log('✅ Notifications initialized with 24h persistence');
+            console.log(`✅ Notifications initialized for user ${this.currentUserId} with 24h persistence`);
         } catch (error) {
             console.error('❌ Failed to initialize notifications:', error);
         }
@@ -2218,7 +2379,7 @@ class CategoriesManager {
     }
 
     /**
-     * Load notifications
+     * ✅ UPDATED: Load notifications with user-specific data
      */
     async loadNotifications() {
         try {
@@ -2230,7 +2391,7 @@ class CategoriesManager {
     }
 
     /**
-     * 🕒 ENHANCED: Generate category-related notifications with smart time filtering
+     * ✅ UPDATED: Generate category-related notifications with user-specific read state
      */
     async generateCategoryNotifications() {
         const notifications = [];
@@ -2238,8 +2399,8 @@ class CategoriesManager {
         try {
             const activeCategories = this.categories.filter(cat => !cat.isDeleted);
 
-            // ✅ FIXED: Check if these notifications were already marked as read
-            const readNotifications = this.getReadNotificationIds();
+            // ✅ FIXED: Check if these notifications were already marked as read for this user
+            const readNotifications = this.getUserReadNotificationIds();
 
             const unusedCategories = activeCategories.filter(cat =>
                 (this.summaryData.categoryUsage.get(cat.id) || 0) === 0
@@ -2255,7 +2416,7 @@ class CategoriesManager {
                     message: `You have ${unusedCategories.length} categories that haven't been used yet`,
                     type: 'info',
                     timestamp: timestamp,
-                    isRead: readNotifications.includes(notificationId) // ✅ Check if already read
+                    isRead: readNotifications.includes(notificationId) // ✅ Check if already read by current user
                 });
             }
 
@@ -2273,7 +2434,7 @@ class CategoriesManager {
                     message: `${frequentCategories.length} categories are heavily used - consider creating subcategories`,
                     type: 'info',
                     timestamp: timestamp,
-                    isRead: readNotifications.includes(notificationId) // ✅ Check if already read
+                    isRead: readNotifications.includes(notificationId) // ✅ Check if already read by current user
                 });
             }
 
@@ -2290,12 +2451,12 @@ class CategoriesManager {
                     message: `You have many more expense categories (${expenseCount}) than income categories (${incomeCount})`,
                     type: 'warning',
                     timestamp: timestamp,
-                    isRead: readNotifications.includes(notificationId) // ✅ Check if already read
+                    isRead: readNotifications.includes(notificationId) // ✅ Check if already read by current user
                 });
             }
 
-            // ✅ ENHANCED: Add session notifications with proper read state
-            const sessionNotifications = this.getSessionNotifications();
+            // ✅ ENHANCED: Add user-specific session notifications with proper read state
+            const sessionNotifications = this.getUserSessionNotifications();
             notifications.push(...sessionNotifications);
 
             // 🕒 NEW: Filter notifications older than 1 day
@@ -2312,7 +2473,7 @@ class CategoriesManager {
                 return timestampB - timestampA; // Newest first
             });
 
-            console.log(`🕒 Generated ${filteredNotifications.length} notifications (filtered to last 24h), sorted by time (newest first)`);
+            console.log(`🕒 Generated ${filteredNotifications.length} notifications for user ${this.currentUserId} (filtered to last 24h), sorted by time (newest first)`);
             return filteredNotifications;
 
         } catch (error) {
@@ -2322,55 +2483,12 @@ class CategoriesManager {
     }
 
     /**
-     * ✅ NEW: Get list of read notification IDs
+     * ✅ UPDATED: Get user-specific session notifications with 1-day filter
      */
-    getReadNotificationIds() {
-        try {
-            const readIds = JSON.parse(localStorage.getItem('readNotificationIds') || '[]');
-            console.log('📖 Retrieved read notification IDs:', readIds);
-            return readIds;
-        } catch (error) {
-            console.warn('⚠️ Failed to get read notification IDs:', error);
-            return [];
-        }
-    }
-
-    /**
-     * ✅ NEW: Save read notification ID permanently
-     */
-    saveReadNotificationId(notificationId) {
-        try {
-            const readIds = this.getReadNotificationIds();
-            if (!readIds.includes(notificationId)) {
-                readIds.push(notificationId);
-                localStorage.setItem('readNotificationIds', JSON.stringify(readIds));
-                console.log('💾 Saved read notification ID:', notificationId);
-            }
-        } catch (error) {
-            console.warn('⚠️ Failed to save read notification ID:', error);
-        }
-    }
-
-    /**
-     * ✅ NEW: Save all notification IDs as read
-     */
-    saveAllNotificationsAsRead() {
-        try {
-            const allIds = this.notifications.map(n => n.id);
-            localStorage.setItem('readNotificationIds', JSON.stringify(allIds));
-            console.log('💾 Saved all notifications as read:', allIds);
-        } catch (error) {
-            console.warn('⚠️ Failed to save all notifications as read:', error);
-        }
-    }
-
-    /**
-     * 🕒 ENHANCED: Get session-specific notifications with 1-day filter
-     */
-    getSessionNotifications() {
-        // ✅ CHANGED: Use localStorage instead of sessionStorage for persistence
-        const sessionNotifications = JSON.parse(localStorage.getItem('categoryNotifications') || '[]');
-        const readIds = this.getReadNotificationIds(); // ✅ Get read IDs
+    getUserSessionNotifications() {
+        // ✅ UPDATED: Use user-specific storage
+        const sessionNotifications = this.getUserNotifications();
+        const readIds = this.getUserReadNotificationIds(); // ✅ Get user-specific read IDs
 
         // 🕒 CHANGED: Filter notifications up to 1 day old (instead of 1 hour)
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
@@ -2383,7 +2501,7 @@ class CategoriesManager {
             })
             .map(notification => ({
                 ...notification,
-                isRead: readIds.includes(notification.id) || notification.isRead // ✅ Preserve read state
+                isRead: readIds.includes(notification.id) || notification.isRead // ✅ Preserve user-specific read state
             }))
             .sort((a, b) => {
                 // ✅ Sort session notifications by timestamp (newest first)
@@ -2394,11 +2512,11 @@ class CategoriesManager {
     }
 
     /**
-     * ✅ ENHANCED: Add a new notification with proper timestamp and 24h storage AND immediate badge update
+     * ✅ UPDATED: Add a new notification with user-specific storage and 24h persistence AND immediate badge update
      */
     addNotification(notification) {
-        // ✅ CHANGED: Use localStorage instead of sessionStorage
-        const sessionNotifications = JSON.parse(localStorage.getItem('categoryNotifications') || '[]');
+        // ✅ UPDATED: Use user-specific storage
+        const sessionNotifications = this.getUserNotifications();
 
         const currentTime = new Date();
         const newNotification = {
@@ -2419,7 +2537,7 @@ class CategoriesManager {
         });
 
         // ✅ Keep only notifications from last 24 hours (no arbitrary limit of 10)
-        localStorage.setItem('categoryNotifications', JSON.stringify(filteredNotifications));
+        this.saveUserNotifications(filteredNotifications);
 
         // ✅ CRITICAL: Update internal notifications array immediately
         this.notifications.unshift(newNotification);
@@ -2427,31 +2545,7 @@ class CategoriesManager {
         // ✅ CRITICAL: Update badge immediately after adding notification
         this.updateNotificationBadge();
 
-        console.log(`✅ Added new notification with IMMEDIATE badge update. Total notifications in last 24h: ${filteredNotifications.length}`);
-    }
-
-    /**
-     * ✅ NEW: Clean up old notifications (called periodically)
-     */
-    cleanupOldNotifications() {
-        try {
-            const notifications = JSON.parse(localStorage.getItem('categoryNotifications') || '[]');
-            const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-            const validNotifications = notifications.filter(notification => {
-                const notificationTime = new Date(notification.timestamp);
-                return notificationTime > oneDayAgo;
-            });
-
-            // ✅ Only update if there were changes
-            if (validNotifications.length !== notifications.length) {
-                localStorage.setItem('categoryNotifications', JSON.stringify(validNotifications));
-                console.log(`🧹 Cleaned up old notifications. Kept ${validNotifications.length} from last 24h`);
-            }
-
-        } catch (error) {
-            console.warn('⚠️ Failed to cleanup old notifications:', error);
-        }
+        console.log(`✅ Added new notification for user ${this.currentUserId} with IMMEDIATE badge update. Total notifications in last 24h: ${filteredNotifications.length}`);
     }
 
     /**
@@ -2465,7 +2559,7 @@ class CategoriesManager {
         if (!container) return;
 
         const notificationCount = this.notifications.length;
-        console.log(`🔔 Rendering ${notificationCount} notifications with simple smart time display`);
+        console.log(`🔔 Rendering ${notificationCount} notifications for user ${this.currentUserId} with simple smart time display`);
 
         // Simple empty state
         if (notificationCount === 0) {
@@ -2488,7 +2582,7 @@ class CategoriesManager {
             smartTime: this.smartTime.calculateSmartTime(notification.timestamp)
         })).filter(notification => notification.smartTime !== null); // Filter out notifications older than 1 day
 
-        console.log(`🕒 Filtered to ${notificationsWithSmartTime.length} notifications (within 1 day)`);
+        console.log(`🕒 Filtered to ${notificationsWithSmartTime.length} notifications for user ${this.currentUserId} (within 1 day)`);
 
         // Update the notifications array to only include valid ones
         this.notifications = notificationsWithSmartTime;
@@ -2524,8 +2618,8 @@ class CategoriesManager {
             </div>
         `).join('');
 
-        // Apply scrolling behavior if > 3 notifications
-        if (notificationsWithSmartTime.length > 3) {
+        // Apply scrolling behavior if > 2 notifications (CHANGED from 3 to 2)
+        if (notificationsWithSmartTime.length > 2) {
             this.activateEnhancedVerticalScroller(container, listContainer);
         } else {
             this.removeScrollBehavior(container, listContainer);
@@ -2536,11 +2630,11 @@ class CategoriesManager {
             lucide.createIcons();
         }
 
-        console.log(`✅ Rendered ${notificationsWithSmartTime.length} notifications with simple time display`);
+        console.log(`✅ Rendered ${notificationsWithSmartTime.length} notifications for user ${this.currentUserId} with simple time display`);
     }
 
     /**
-     * 🎨 NEW: Activate enhanced VERTICAL scroller for notifications > 3 - SIMPLE VERSION
+     * 🎨 NEW: Activate enhanced VERTICAL scroller for notifications > 2 - SIMPLE VERSION
      */
     activateEnhancedVerticalScroller(container, listContainer) {
         if (!container) return;
@@ -2555,7 +2649,7 @@ class CategoriesManager {
     }
 
     /**
-     * 🎨 NEW: Remove scroll behavior for <= 3 notifications - SIMPLE VERSION
+     * 🎨 NEW: Remove scroll behavior for <= 2 notifications - SIMPLE VERSION
      */
     removeScrollBehavior(container, listContainer) {
         if (!container) return;
@@ -2583,10 +2677,10 @@ class CategoriesManager {
         if (unreadCount > 0) {
             badge.textContent = unreadCount;
             badge.style.display = 'block';
-            console.log(`🔔 Notification badge updated: ${unreadCount} unread notifications`);
+            console.log(`🔔 Notification badge updated for user ${this.currentUserId}: ${unreadCount} unread notifications`);
         } else {
             badge.style.display = 'none';
-            console.log('🔔 Notification badge hidden: no unread notifications');
+            console.log(`🔔 Notification badge hidden for user ${this.currentUserId}: no unread notifications`);
         }
     }
 
@@ -2604,7 +2698,7 @@ class CategoriesManager {
     }
 
     /**
-     * ✅ ENHANCED: Mark notification as read with permanent storage and cleanup
+     * ✅ UPDATED: Mark notification as read with user-specific permanent storage and cleanup
      */
     async markNotificationAsRead(notificationId) {
         try {
@@ -2613,15 +2707,15 @@ class CategoriesManager {
                 notification.isRead = true;
             }
 
-            // ✅ CRITICAL: Save this notification as permanently read
-            this.saveReadNotificationId(notificationId);
+            // ✅ CRITICAL: Save this notification as permanently read for current user
+            this.saveUserReadNotificationId(notificationId);
 
-            // ✅ CHANGED: Update localStorage for session notifications (not sessionStorage)
-            const sessionNotifications = JSON.parse(localStorage.getItem('categoryNotifications') || '[]');
+            // ✅ UPDATED: Update user-specific storage for session notifications
+            const sessionNotifications = this.getUserNotifications();
             const sessionNotification = sessionNotifications.find(n => n.id === notificationId);
             if (sessionNotification) {
                 sessionNotification.isRead = true;
-                localStorage.setItem('categoryNotifications', JSON.stringify(sessionNotifications));
+                this.saveUserNotifications(sessionNotifications);
             }
 
             // Update UI with smooth animation
@@ -2652,7 +2746,7 @@ class CategoriesManager {
                 }
             }
 
-            console.log(`✅ Notification ${notificationId} marked as read permanently`);
+            console.log(`✅ Notification ${notificationId} marked as read permanently for user ${this.currentUserId}`);
 
         } catch (error) {
             console.error('❌ Failed to mark notification as read:', error);
@@ -2660,33 +2754,33 @@ class CategoriesManager {
     }
 
     /**
-     * ✅ FIXED: Mark all notifications as read with permanent storage and cleanup
+     * ✅ UPDATED: Mark all notifications as read with user-specific permanent storage and cleanup
      */
     async markAllNotificationsAsRead() {
         try {
-            console.log('🔔 Marking ALL notifications as read permanently...');
+            console.log(`🔔 Marking ALL notifications as read permanently for user ${this.currentUserId}...`);
 
             // ✅ CRITICAL: Mark all current notifications as read
             this.notifications.forEach(notification => {
                 notification.isRead = true;
             });
 
-            // ✅ CRITICAL: Save all notification IDs as permanently read
-            this.saveAllNotificationsAsRead();
+            // ✅ CRITICAL: Save all notification IDs as permanently read for current user
+            this.saveAllUserNotificationsAsRead();
 
-            // ✅ CHANGED: Update localStorage for session notifications (not sessionStorage)
-            const sessionNotifications = JSON.parse(localStorage.getItem('categoryNotifications') || '[]');
+            // ✅ UPDATED: Update user-specific storage for session notifications
+            const sessionNotifications = this.getUserNotifications();
             sessionNotifications.forEach(notification => {
                 notification.isRead = true;
             });
-            localStorage.setItem('categoryNotifications', JSON.stringify(sessionNotifications));
+            this.saveUserNotifications(sessionNotifications);
 
             this.showToast('All notifications marked as read', 'success');
 
             this.updateNotificationBadge();
             this.renderNotifications();
 
-            console.log('✅ All notifications marked as read permanently');
+            console.log(`✅ All notifications marked as read permanently for user ${this.currentUserId}`);
 
         } catch (error) {
             console.error('❌ Failed to mark all notifications as read:', error);

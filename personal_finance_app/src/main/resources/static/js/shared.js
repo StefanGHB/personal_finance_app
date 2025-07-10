@@ -1,14 +1,10 @@
-/**
- * Enhanced Navigation Manager
- * Само responsive функционалност, запазва оригиналната логика
- */
 
 class NavigationManager {
     constructor() {
         this.currentUser = null;
         this.API_BASE = '/api';
 
-        // Responsive properties - САМО за responsive поведение
+        // Responsive properties
         this.isOpen = false;
         this.isMobile = false;
         this.isTablet = false;
@@ -22,7 +18,7 @@ class NavigationManager {
     }
 
     /**
-     * Initialize navigation - ЗАПАЗЕНА оригинална логика
+     * Initialize navigation
      */
     async init() {
         try {
@@ -56,7 +52,7 @@ class NavigationManager {
     }
 
     /**
-     * НОВО: Създаване на responsive елементи
+     * NEW: Create responsive elements
      */
     createResponsiveElements() {
         // Create mobile hamburger
@@ -104,7 +100,7 @@ class NavigationManager {
     }
 
     /**
-     * НОВО: Setup responsive behavior
+     * NEW: Setup responsive behavior
      */
     setupResponsiveBehavior() {
         this.checkBreakpoint();
@@ -123,7 +119,7 @@ class NavigationManager {
     }
 
     /**
-     * НОВО: Check breakpoint
+     * NEW: Check breakpoint
      */
     checkBreakpoint() {
         const width = window.innerWidth;
@@ -146,9 +142,7 @@ class NavigationManager {
         this.updateSidebarBehavior();
     }
 
-    /**
-     * НОВО: Update sidebar behavior
-     */
+
     updateSidebarBehavior() {
         const sidebar = document.getElementById('sidebar');
         const hamburger = document.getElementById('mobile-hamburger');
@@ -193,7 +187,7 @@ class NavigationManager {
     }
 
     /**
-     * Load sidebar component - НЕПРОМЕНЕНО
+     * Load sidebar component
      */
     async loadSidebar() {
         const sidebarContainer = document.getElementById('sidebar-container');
@@ -209,14 +203,14 @@ class NavigationManager {
     }
 
     /**
-     * Setup navigation event listeners - ОПРОСТЕНА ЛОГИКА ЗА X БУТОНА
+     * Setup navigation event listeners -
      */
     setupNavigation() {
         console.log('🔧 Setting up navigation...');
 
-        // САМО ЕДИН event listener за X бутона - много опростено
+
         document.addEventListener('click', (e) => {
-            // X button click - ДИРЕКТНА ПРОВЕРКА
+            // X button click
             if (e.target.id === 'sidebar-toggle' || e.target.closest('#sidebar-toggle')) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -273,7 +267,7 @@ class NavigationManager {
     }
 
     /**
-     * Load current user data - НЕПРОМЕНЕНО
+     * Load current user data
      */
     async loadCurrentUser() {
         try {
@@ -292,7 +286,7 @@ class NavigationManager {
     }
 
     /**
-     * Update user profile in sidebar - НЕПРОМЕНЕНО
+     * Update user profile in sidebar
      */
     updateUserProfile(user) {
         const userName = document.getElementById('user-name');
@@ -308,7 +302,7 @@ class NavigationManager {
     }
 
     /**
-     * Set active navigation based on current page - НЕПРОМЕНЕНО
+     * Set active navigation based on current page
      */
     setActiveNavigation() {
         const currentPath = window.location.pathname;
@@ -336,7 +330,7 @@ class NavigationManager {
     }
 
     /**
-     * Handle navigation - НЕПРОМЕНЕНО
+     * Handle navigation
      */
     handleNavigation(event) {
         const link = event.currentTarget;
@@ -345,7 +339,7 @@ class NavigationManager {
     }
 
     /**
-     * Toggle sidebar - ПОДОБРЕНО за моментална реакция
+     * Toggle sidebar
      */
     toggleSidebar() {
         console.log(`🔄 Toggle sidebar - Current state: ${this.isOpen}`);
@@ -357,9 +351,7 @@ class NavigationManager {
         }
     }
 
-    /**
-     * НОВО: Open sidebar - ОПРОСТЕНО БЕЗ СТРАННА ЛОГИКА
-     */
+
     openSidebar() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
@@ -390,9 +382,7 @@ class NavigationManager {
         }
     }
 
-    /**
-     * НОВО: Close sidebar - ОПРОСТЕНО БЕЗ СТРАННА ЛОГИКА
-     */
+
     closeSidebar() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');

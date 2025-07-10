@@ -1,31 +1,3 @@
-/**
- * COMPLETELY FIXED Budgets JavaScript - RESPONSIVE CAROUSEL WITH SMART DEVICE ADAPTATION
- * ✅ FIXED: Mobile/Tablet notifications panel display issue - now shows properly on all devices
- * ✅ FIXED: Carousel cards maintain CONSTANT size regardless of content
- * ✅ FIXED: Container never shrinks/grows during navigation
- * ✅ FIXED: Perfect carousel stability with RESPONSIVE card sizing
- * ✅ NEW: SMART RESPONSIVE - 1 card on mobile, 2 on tablet+, 3 on desktop+
- * ✅ UPDATED: English notifications with smart time logic and purple scrollbar
- * ✅ FIXED: All Bulgarian messages translated to English
- * ✅ NEW: Smart time updates (15min <1h, hourly 1h-1d, hide >1d)
- * ✅ REMOVED: Emoji prefixes from notification messages
- * ✅ FIXED: Total Spent calculation - ONLY from Category Budgets (excluding General Budget)
- * ✅ UPDATED: Category name truncation - limit to 20 characters with ".." suffix
- * ✅ ENHANCED: Smart category truncation based on case patterns (15 chars for mixed/uppercase)
- * ✅ FIXED: Validation order for maximum amount check - NOW WORKS CORRECTLY
- * ✅ COMPLETELY FIXED: Notification logic - proper creation, loading and display
- * ✅ NEW: Analytics-specific truncation - mixed case with >3 uppercase letters = 7 chars for Top Spending Categories
- * FIXED: General Budget logic, analytics calculations, duplicate prevention
- * NEW: Dynamic dropdown sizing for exactly 5 visible options
- * FIXED: Enhanced category dropdown scroller functionality
- * COMPLETELY FIXED: Category deselect functionality with visual feedback
- * ✅ NEW: RESPONSIVE CAROUSEL SYSTEM - Perfect adaptation for all devices
- * ✅ FIXED: Mobile analytics layout - Budget Health under Top Spending Categories in single column
- * ✅ FIXED: Header layout symmetry - perfectly aligned with hamburger in responsive versions
- * ✅ CRITICAL FIX: Responsive resize handling - fixed expand/contract window behavior
- * ✅ FIXED: Summary cards hover clipping issue - proper z-index and overflow handling
- * ✅ CRITICAL FIX: Mobile/Tablet notifications panel - fixed positioning and display issues
- */
 
 class BudgetsManager {
 	constructor() {
@@ -34,7 +6,8 @@ class BudgetsManager {
 		this.categories = [];
 		this.filteredBudgets = [];
 		this.notifications = []; // API notifications
-		this.localNotifications = []; // ✅ НОВО: Локални нотификации
+		this.localNotifications = []; // ✅ FIXED: Now user-specific
+		this.currentUser = null; // ✅ NEW: Store current user info
 		this.currentBudget = null;
 		this.isEditing = false;
 		this.timeUpdateInterval = null;
@@ -115,6 +88,9 @@ class BudgetsManager {
 			console.log('🚀 Initializing Responsive Budgets Manager...');
 			this.showToast('Loading budgets...', 'info');
 
+			// ✅ CRITICAL FIX: Load current user info FIRST
+			await this.loadCurrentUser();
+
 			// ✅ CRITICAL FIX: Apply summary cards hover fix
 			this.applySummaryCardsHoverFix();
 
@@ -147,6 +123,43 @@ class BudgetsManager {
 			console.error('❌ Failed to initialize Budgets Manager:', error);
 			this.showToast('Failed to load budgets page. Please refresh and try again.', 'error');
 		}
+	}
+
+	/**
+	 * ✅ CRITICAL FIX: Load current user info for user-specific notifications
+	 */
+	async loadCurrentUser() {
+		try {
+			const userData = await this.fetchAPI('/auth/current-user');
+			if (userData.authenticated) {
+				this.currentUser = {
+					id: userData.id,
+					email: userData.email,
+					fullName: userData.fullName || `${userData.firstName} ${userData.lastName}`.trim()
+				};
+				console.log('✅ Current user loaded:', {
+					id: this.currentUser.id,
+					email: this.currentUser.email
+				});
+			} else {
+				console.warn('⚠️ User not authenticated');
+				this.currentUser = null;
+			}
+		} catch (error) {
+			console.error('❌ Failed to load current user:', error);
+			this.currentUser = null;
+		}
+	}
+
+	/**
+	 * ✅ CRITICAL FIX: Get user-specific localStorage key
+	 */
+	getUserSpecificStorageKey(baseKey) {
+		if (!this.currentUser || !this.currentUser.id) {
+			console.warn('⚠️ No current user for storage key, using generic key');
+			return baseKey + '_anonymous';
+		}
+		return baseKey + '_user_' + this.currentUser.id;
 	}
 
 	/**
@@ -883,7 +896,7 @@ class BudgetsManager {
 	}
 
 	/**
-	 * ✅ COMPLETELY FIXED: Update notification times and filter old ones with proper array handling and localStorage sync
+	 * ✅ CRITICAL FIX: Update notification times with user-specific localStorage handling
 	 */
 	updateNotificationTimes() {
 		const now = new Date();
@@ -903,7 +916,7 @@ class BudgetsManager {
 			return notificationDate > oneDayAgo;
 		});
 
-		// ✅ NEW: Save filtered local notifications to localStorage
+		// ✅ CRITICAL FIX: Save filtered local notifications to user-specific localStorage
 		if (oldLocalCount !== this.localNotifications.length) {
 			this.saveLocalNotificationsToStorage();
 		}
@@ -913,7 +926,7 @@ class BudgetsManager {
 		const totalRemoved = (oldApiCount - newApiCount) + (oldLocalCount - newLocalCount);
 
 		if (totalRemoved > 0) {
-			console.log(`🗑️ Removed ${totalRemoved} old notifications (>1 day): ${oldApiCount - newApiCount} API + ${oldLocalCount - newLocalCount} local`);
+			console.log(`🗑️ Removed ${totalRemoved} old notifications (>1 day): ${oldApiCount - newApiCount} API + ${oldLocalCount - newLocalCount} local for user ${this.currentUser?.id}`);
 		}
 
 		// Update badge and re-render if panel is open
@@ -3224,16 +3237,16 @@ class BudgetsManager {
 	}
 
 	/**
-	 * ✅ COMPLETELY FIXED: Initialize notifications with proper structure and localStorage persistence
+	 * ✅ CRITICAL FIX: Initialize notifications with user-specific localStorage and proper structure
 	 */
 	async initializeNotifications() {
 		try {
-			// ✅ NEW: Load local notifications from localStorage first
+			// ✅ CRITICAL FIX: Load local notifications from user-specific localStorage first
 			this.loadLocalNotificationsFromStorage();
 
 			await this.loadNotifications();
 			this.updateNotificationBadge();
-			console.log('✅ Notifications initialized:', {
+			console.log('✅ Notifications initialized for user:', this.currentUser?.id, {
 				apiNotifications: this.notifications.length,
 				localNotifications: this.localNotifications.length
 			});
@@ -3243,11 +3256,13 @@ class BudgetsManager {
 	}
 
 	/**
-	 * ✅ NEW: Load local notifications from localStorage
+	 * ✅ CRITICAL FIX: Load local notifications from user-specific localStorage
 	 */
 	loadLocalNotificationsFromStorage() {
 		try {
-			const stored = localStorage.getItem('budgetLocalNotifications');
+			const storageKey = this.getUserSpecificStorageKey('budgetLocalNotifications');
+			const stored = localStorage.getItem(storageKey);
+
 			if (stored) {
 				const parsedNotifications = JSON.parse(stored);
 
@@ -3258,29 +3273,90 @@ class BudgetsManager {
 					return notificationDate > oneDayAgo;
 				});
 
-				// ✅ SAVE: Update localStorage with filtered notifications
+				// ✅ CRITICAL FIX: Save filtered notifications back to user-specific localStorage
 				this.saveLocalNotificationsToStorage();
 
-				console.log(`✅ Loaded ${this.localNotifications.length} local notifications from storage (filtered from ${parsedNotifications.length})`);
+				console.log(`✅ Loaded ${this.localNotifications.length} local notifications for user ${this.currentUser?.id} (filtered from ${parsedNotifications.length})`);
 			} else {
 				this.localNotifications = [];
-				console.log('✅ No local notifications found in storage');
+				console.log(`✅ No local notifications found in user-specific storage for user ${this.currentUser?.id}`);
 			}
 		} catch (error) {
-			console.error('❌ Failed to load local notifications from storage:', error);
+			console.error('❌ Failed to load local notifications from user-specific storage:', error);
 			this.localNotifications = [];
 		}
 	}
 
 	/**
-	 * ✅ NEW: Save local notifications to localStorage
+	 * ✅ CRITICAL FIX: Save local notifications to user-specific localStorage
 	 */
 	saveLocalNotificationsToStorage() {
 		try {
-			localStorage.setItem('budgetLocalNotifications', JSON.stringify(this.localNotifications));
-			console.log(`💾 Saved ${this.localNotifications.length} local notifications to storage`);
+			const storageKey = this.getUserSpecificStorageKey('budgetLocalNotifications');
+			localStorage.setItem(storageKey, JSON.stringify(this.localNotifications));
+			console.log(`💾 Saved ${this.localNotifications.length} local notifications to user-specific storage for user ${this.currentUser?.id}`);
 		} catch (error) {
-			console.error('❌ Failed to save local notifications to storage:', error);
+			console.error('❌ Failed to save local notifications to user-specific storage:', error);
+		}
+	}
+
+	/**
+	 * ✅ CRITICAL FIX: Clean up OLD notifications (>24h) for ALL users, but preserve recent ones
+	 */
+	cleanupNotificationsForOtherUsers() {
+		if (!this.currentUser || !this.currentUser.id) {
+			console.log('⚠️ No current user, skipping cleanup');
+			return;
+		}
+
+		try {
+			// Get all localStorage keys
+			const allKeys = Object.keys(localStorage);
+
+			// Find all budgetLocalNotifications keys
+			const notificationKeys = allKeys.filter(key => key.startsWith('budgetLocalNotifications_user_'));
+
+			const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+			let totalCleaned = 0;
+
+			// Clean up old notifications (>24h) for ALL users, but keep recent ones
+			notificationKeys.forEach(key => {
+				try {
+					const storedData = localStorage.getItem(key);
+					if (storedData) {
+						const notifications = JSON.parse(storedData);
+						const originalCount = notifications.length;
+
+						// Filter out notifications older than 24 hours
+						const recentNotifications = notifications.filter(notification => {
+							const notificationDate = new Date(notification.createdAt);
+							return notificationDate > oneDayAgo;
+						});
+
+						const cleanedCount = originalCount - recentNotifications.length;
+						totalCleaned += cleanedCount;
+
+						if (cleanedCount > 0) {
+							// Save back the filtered notifications
+							localStorage.setItem(key, JSON.stringify(recentNotifications));
+							console.log(`🗑️ Cleaned up ${cleanedCount} old notifications for ${key}`);
+						}
+
+						// ✅ OPTIONAL: Remove storage entirely if no recent notifications remain
+						// Only for users who haven't been active for a while
+						if (recentNotifications.length === 0 && key !== this.getUserSpecificStorageKey('budgetLocalNotifications')) {
+							localStorage.removeItem(key);
+							console.log(`🗑️ Removed empty notification storage: ${key}`);
+						}
+					}
+				} catch (error) {
+					console.error(`❌ Failed to clean up ${key}:`, error);
+				}
+			});
+
+			console.log(`✅ Notification cleanup completed for user ${this.currentUser.id}: removed ${totalCleaned} old notifications total`);
+		} catch (error) {
+			console.error('❌ Failed to cleanup old notifications:', error);
 		}
 	}
 
@@ -3295,7 +3371,7 @@ class BudgetsManager {
 				source: 'api' // ✅ Mark as API source
 			}));
 
-			console.log(`✅ Loaded ${this.notifications.length} API notifications`);
+			console.log(`✅ Loaded ${this.notifications.length} API notifications for user ${this.currentUser?.id}`);
 		} catch (error) {
 			console.error('❌ Failed to load API notifications:', error);
 			this.notifications = [];
@@ -3499,7 +3575,7 @@ class BudgetsManager {
 	}
 
 	/**
-	 * ✅ COMPLETELY FIXED: Render notifications with proper merging of API and local notifications
+	 * ✅ CRITICAL FIX: Render notifications with proper merging of API and local notifications
 	 */
 	renderNotifications() {
 		const container = document.getElementById('notifications-list');
@@ -3572,7 +3648,7 @@ class BudgetsManager {
 			lucide.createIcons();
 		}
 
-		console.log(`📱 Rendered ${validNotifications.length} total notifications (${this.notifications.length} API + ${this.localNotifications.length} local)`);
+		console.log(`📱 Rendered ${validNotifications.length} total notifications for user ${this.currentUser?.id} (${this.notifications.length} API + ${this.localNotifications.length} local)`);
 	}
 
 	/**
@@ -3657,7 +3733,7 @@ class BudgetsManager {
 	}
 
 	/**
-	 * ✅ COMPLETELY FIXED: Update notification badge with proper counting
+	 * ✅ CRITICAL FIX: Update notification badge with proper counting for current user
 	 */
 	updateNotificationBadge() {
 		const badge = document.getElementById('notification-badge');
@@ -3679,11 +3755,11 @@ class BudgetsManager {
 			badge.style.display = 'none';
 		}
 
-		console.log(`🔔 Badge updated: ${unreadCount} unread notifications`);
+		console.log(`🔔 Badge updated for user ${this.currentUser?.id}: ${unreadCount} unread notifications`);
 	}
 
 	/**
-	 * ✅ FIXED: Mark notification as read with proper handling of local vs API notifications and localStorage sync
+	 * ✅ CRITICAL FIX: Mark notification as read with proper handling of local vs API notifications and user-specific localStorage sync
 	 */
 	async markNotificationAsRead(notificationId) {
 		try {
@@ -3691,9 +3767,9 @@ class BudgetsManager {
 			const localNotification = this.localNotifications.find(n => n.id === notificationId);
 			if (localNotification) {
 				localNotification.isRead = true;
-				// ✅ NEW: Save to localStorage after marking as read
+				// ✅ CRITICAL FIX: Save to user-specific localStorage after marking as read
 				this.saveLocalNotificationsToStorage();
-				console.log(`✅ Marked local notification ${notificationId} as read`);
+				console.log(`✅ Marked local notification ${notificationId} as read for user ${this.currentUser?.id}`);
 			} else {
 				// Try API notification
 				await this.fetchAPI(`/alerts/${notificationId}/read`, 'PUT');
@@ -3701,7 +3777,7 @@ class BudgetsManager {
 				if (apiNotification) {
 					apiNotification.isRead = true;
 				}
-				console.log(`✅ Marked API notification ${notificationId} as read`);
+				console.log(`✅ Marked API notification ${notificationId} as read for user ${this.currentUser?.id}`);
 			}
 
 			this.updateNotificationBadge();
@@ -3713,7 +3789,7 @@ class BudgetsManager {
 	}
 
 	/**
-	 * ✅ FIXED: Mark all notifications as read with proper handling and localStorage sync
+	 * ✅ CRITICAL FIX: Mark all notifications as read with proper handling and user-specific localStorage sync
 	 */
 	async markAllNotificationsAsRead() {
 		try {
@@ -3730,14 +3806,14 @@ class BudgetsManager {
 				notification.isRead = true;
 			});
 
-			// ✅ NEW: Save to localStorage after marking all as read
+			// ✅ CRITICAL FIX: Save to user-specific localStorage after marking all as read
 			this.saveLocalNotificationsToStorage();
 
 			this.updateNotificationBadge();
 			this.renderNotifications();
 			this.showToast('All notifications marked as read', 'success');
 
-			console.log('✅ Marked all notifications as read (API + local)');
+			console.log(`✅ Marked all notifications as read for user ${this.currentUser?.id} (API + local)`);
 		} catch (error) {
 			console.error('❌ Failed to mark all notifications as read:', error);
 			this.showToast('Failed to update notifications', 'error');
@@ -3745,7 +3821,7 @@ class BudgetsManager {
 	}
 
 	/**
-	 * ✅ COMPLETELY FIXED: Add local notification with proper structure, deduplication and localStorage persistence
+	 * ✅ CRITICAL FIX: Add local notification with proper structure, deduplication and user-specific localStorage persistence
 	 */
 	addLocalNotification(notification) {
 		const newNotification = {
@@ -3769,7 +3845,7 @@ class BudgetsManager {
 		);
 
 		if (isDuplicate) {
-			console.log('🚫 Duplicate notification prevented:', newNotification.message);
+			console.log(`🚫 Duplicate notification prevented for user ${this.currentUser?.id}:`, newNotification.message);
 			return;
 		}
 
@@ -3781,12 +3857,12 @@ class BudgetsManager {
 			this.localNotifications.splice(20);
 		}
 
-		// ✅ NEW: Save to localStorage immediately after adding
+		// ✅ CRITICAL FIX: Save to user-specific localStorage immediately after adding
 		this.saveLocalNotificationsToStorage();
 
 		this.updateNotificationBadge();
 
-		console.log('📬 Added local notification:', {
+		console.log(`📬 Added local notification for user ${this.currentUser?.id}:`, {
 			title: newNotification.title,
 			message: newNotification.message,
 			categoryName: newNotification.categoryName,
@@ -4158,7 +4234,7 @@ class BudgetsManager {
 	}
 
 	/**
-	 * ✅ RESPONSIVE UPDATE: Cleanup method with responsive system cleanup
+	 * ✅ CRITICAL FIX: Cleanup method with responsive system cleanup and user-specific notifications cleanup
 	 */
 	cleanup() {
 		// Clear time update interval
@@ -4183,14 +4259,17 @@ class BudgetsManager {
 			clearInterval(this.refreshTimer);
 		}
 
-		// ✅ NEW: Save local notifications to localStorage before cleanup
+		// ✅ CRITICAL FIX: Save local notifications to user-specific localStorage before cleanup
 		this.saveLocalNotificationsToStorage();
+
+		// ✅ CRITICAL FIX: Clean up notifications for other users
+		this.cleanupNotificationsForOtherUsers();
 
 		// Clear both notification arrays from memory
 		this.notifications = [];
 		this.localNotifications = [];
 
-		console.log('🧹 RESPONSIVE BudgetsManager cleanup completed with localStorage save and notifications cleared');
+		console.log(`🧹 RESPONSIVE BudgetsManager cleanup completed with user-specific localStorage save for user ${this.currentUser?.id} and notifications cleared`);
 	}
 }
 

@@ -1,17 +1,4 @@
-/**
- * ULTRA MODERN FINANCIAL ANALYTICS DASHBOARD - FIXED NOTIFICATION BADGE + SMART NUMBER FORMATTING
- * 🚀 Professional financial charts with Trading View style
- * 📊 Advanced analytics and real-time updates
- * 💹 PRODUCTION READY: All calculation logic and dynamic updates - NO HARDCODED VALUES
- * ✨ Perfect symmetry between Budget Adherence & Spending Patterns
- * 🎯 100% Dynamic calculations - PRODUCTION READY
- * 🎨 UPDATED: Modern Empty States for Charts
- * 🔔 FIXED: Complete Notifications System with Immediate Badge Updates
- * 🔄 ENHANCED: Perfect synchronization with budgets, categories, transactions
- * ⏰ FIXED: Notification badge shows immediately when new notification appears
- * ✂️ NEW: Dynamic Category Name Truncation for perfect layout
- * 🔢 NEW: Intelligent Number Formatting for Budget Utilization (K, M format)
- */
+
 
 (function() {
     'use strict';
@@ -164,6 +151,18 @@
                 // ✅ CRITICAL FIX: Initialize notifications FIRST before anything else
                 await this.initializeNotifications();
 
+                // ✅ NEW: Load current user data for user-specific notifications
+                try {
+                    const userResponse = await this.fetchAPI('/auth/current-user');
+                    if (userResponse.authenticated) {
+                        this.currentUser = userResponse;
+                        console.log('✅ Current user loaded for notifications:', this.currentUser.email);
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Could not load current user, using anonymous notifications');
+                    this.currentUser = null;
+                }
+
                 // Try to load data, but don't fail completely if it doesn't work
                 try {
                     await this.loadCompleteDataInstantly();
@@ -206,6 +205,25 @@
                     this.handleCriticalError('Failed to initialize dashboard', error);
                 }
             }
+        }
+
+        /**
+         * ✅ NEW: Get user-specific storage key
+         */
+        getUserStorageKey(baseKey) {
+            let userKey = 'anonymous';
+
+            try {
+                if (this.currentUser && this.currentUser.id) {
+                    userKey = `user_${this.currentUser.id}`;
+                } else if (this.currentUser && this.currentUser.email) {
+                    userKey = `user_${this.currentUser.email.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                }
+            } catch (error) {
+                console.warn('⚠️ Could not determine user key, using anonymous');
+            }
+
+            return `${baseKey}_${userKey}`;
         }
 
         // ===================================
@@ -366,12 +384,9 @@
             }
         }
 
-        /**
-         * ✅ FIXED: Clean up old notifications - PROPER 24 HOUR CLEANUP
-         */
         cleanupOldNotifications() {
             try {
-                const storageKey = 'dashboardNotifications';
+                const storageKey = this.getUserStorageKey('dashboardNotifications');
                 const notifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
                 const now = new Date();
                 const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -388,10 +403,10 @@
                 // Save cleaned notifications back to localStorage
                 if (cleaned.length !== notifications.length) {
                     localStorage.setItem(storageKey, JSON.stringify(cleaned));
-                    console.log(`🧹 Cleaned ${notifications.length - cleaned.length} old notifications (>24h) from localStorage`);
+                    console.log(`🧹 Cleaned ${notifications.length - cleaned.length} old notifications (>24h) from localStorage for current user`);
                 }
 
-                // Also clean read states for notifications older than 24 hours
+                // Also clean read states for current user
                 this.cleanupOldReadStates();
 
             } catch (error) {
@@ -399,9 +414,6 @@
             }
         }
 
-        /**
-         * ✅ ENHANCED: Advanced cleanup that removes notifications older than 24 hours
-         */
         cleanupOldNotificationsAdvanced() {
             try {
                 const now = new Date();
@@ -414,12 +426,12 @@
                         const notificationTime = new Date(notification.timestamp);
                         return notificationTime > oneDayAgo;
                     }
-                    return false; // Remove notifications without timestamp
+                    return false;
                 });
                 const afterCount = this.notifications.length;
 
-                // Clean from localStorage
-                const storageKey = 'dashboardNotifications';
+                // Clean from localStorage for current user
+                const storageKey = this.getUserStorageKey('dashboardNotifications');
                 const storedNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
                 const cleanedStored = storedNotifications.filter(notification => {
                     if (notification.timestamp) {
@@ -430,16 +442,12 @@
                 });
                 localStorage.setItem(storageKey, JSON.stringify(cleanedStored));
 
-                // Clean read states
+                // Clean read states for current user
                 this.cleanupOldReadStates();
 
                 if (beforeCount !== afterCount) {
-                    console.log(`🧹 Advanced cleanup: Removed ${beforeCount - afterCount} notifications older than 24 hours`);
-
-                    // Force badge update after cleanup
+                    console.log(`🧹 Advanced cleanup: Removed ${beforeCount - afterCount} notifications older than 24 hours for current user`);
                     this.forceShowBadgeNow();
-
-                    // Update display if panel is open
                     const panel = document.getElementById('notifications-panel');
                     if (panel && panel.classList.contains('active')) {
                         this.renderNotifications();
@@ -450,12 +458,11 @@
                 console.error('❌ Error in advanced notification cleanup:', error);
             }
         }
-        /**
-         * ✅ FIXED: Clean old read states with proper timing
-         */
+
         cleanupOldReadStates() {
             try {
-                const readStates = JSON.parse(localStorage.getItem('dashboardNotificationReadStates') || '{}');
+                const readStatesKey = this.getUserStorageKey('dashboardNotificationReadStates');
+                const readStates = JSON.parse(localStorage.getItem(readStatesKey) || '{}');
                 const cutoffTime = new Date().getTime() - (24 * 60 * 60 * 1000);
                 const cleanStates = {};
 
@@ -465,8 +472,8 @@
                     }
                 });
 
-                localStorage.setItem('dashboardNotificationReadStates', JSON.stringify(cleanStates));
-                console.log(`🧹 Cleaned ${Object.keys(readStates).length - Object.keys(cleanStates).length} old read states (>24h)`);
+                localStorage.setItem(readStatesKey, JSON.stringify(cleanStates));
+                console.log(`🧹 Cleaned ${Object.keys(readStates).length - Object.keys(cleanStates).length} old read states (>24h) for current user`);
             } catch (error) {
                 console.error('❌ Error cleaning read states:', error);
             }
@@ -746,12 +753,10 @@
             }
         }
 
-        /**
-         * ✅ Load persistent read states from dedicated storage
-         */
         loadReadStates() {
             try {
-                const readStates = JSON.parse(localStorage.getItem('dashboardNotificationReadStates') || '{}');
+                const readStatesKey = this.getUserStorageKey('dashboardNotificationReadStates');
+                const readStates = JSON.parse(localStorage.getItem(readStatesKey) || '{}');
                 return readStates;
             } catch (error) {
                 console.error('❌ Error loading read states:', error);
@@ -759,15 +764,13 @@
             }
         }
 
-        /**
-         * ✅ Save persistent read state
-         */
         saveReadState(persistentId) {
             try {
+                const readStatesKey = this.getUserStorageKey('dashboardNotificationReadStates');
                 const readStates = this.loadReadStates();
                 readStates[persistentId] = new Date().getTime();
-                localStorage.setItem('dashboardNotificationReadStates', JSON.stringify(readStates));
-                console.log(`💾 Saved read state for: ${persistentId}`);
+                localStorage.setItem(readStatesKey, JSON.stringify(readStates));
+                console.log(`💾 Saved read state for: ${persistentId} (current user)`);
             } catch (error) {
                 console.error('❌ Error saving read state:', error);
             }
@@ -1069,12 +1072,9 @@
            return notifications;
        }
 
-       /**
-        * ✅ NEW: Save notification to localStorage with persistent timestamp
-        */
        saveNotificationToStorage(notification) {
            try {
-               const storageKey = 'dashboardNotifications';
+               const storageKey = this.getUserStorageKey('dashboardNotifications');
                const existingNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
 
                // Check if notification already exists to avoid duplicates
@@ -1082,12 +1082,12 @@
 
                if (!exists) {
                    existingNotifications.unshift(notification);
-                   // Keep only last 25 notifications
+                   // Keep only last 25 notifications per user
                    existingNotifications.splice(25);
                    localStorage.setItem(storageKey, JSON.stringify(existingNotifications));
-                   console.log(`💾 Saved notification to storage: ${notification.persistentId}`);
+                   console.log(`💾 Saved notification to storage for current user: ${notification.persistentId}`);
                } else {
-                   console.log(`💾 Notification already exists in storage: ${notification.persistentId}`);
+                   console.log(`💾 Notification already exists in storage for current user: ${notification.persistentId}`);
                }
            } catch (error) {
                console.error('❌ Error saving notification to storage:', error);
@@ -1159,7 +1159,7 @@
          * ✅ FIXED: Get user action notifications with proper time filtering
          */
         getUserActionNotifications() {
-            const storageKey = 'dashboardNotifications';
+            const storageKey = this.getUserStorageKey('dashboardNotifications');
             const userNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
 
             // Filter notifications older than 24 hours
@@ -1222,9 +1222,10 @@
         /**
          * ✅ CRITICAL FIX: Add notification with GUARANTEED badge display
          */
+
         addNotification(notification) {
             try {
-                const storageKey = 'dashboardNotifications';
+                const storageKey = this.getUserStorageKey('dashboardNotifications');
                 const userNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
 
                 const newNotification = {
@@ -1236,9 +1237,9 @@
                     category: notification.category || 'user-action'
                 };
 
-                console.log('🔔 Adding notification:', newNotification.title, '-', newNotification.message);
+                console.log('🔔 Adding notification for current user:', newNotification.title, '-', newNotification.message);
 
-                // Save to localStorage
+                // Save to localStorage for current user
                 userNotifications.unshift(newNotification);
                 userNotifications.splice(this.maxNotifications);
                 localStorage.setItem(storageKey, JSON.stringify(userNotifications));
@@ -1247,24 +1248,21 @@
                 this.notifications.unshift(newNotification);
                 this.notifications = this.processNotifications(this.notifications);
 
-                // ✅ CRITICAL: Force badge to show with multiple attempts
+                // Force badge to show
                 this.forceShowBadgeNow();
 
-                // Additional attempt after short delay
                 setTimeout(() => {
                     this.forceShowBadgeNow();
-                    console.log('✅ Badge force update completed for new notification');
+                    console.log('✅ Badge force update completed for new notification (current user)');
                 }, 100);
 
-                console.log('✅ Notification added with GUARANTEED badge display');
+                console.log('✅ Notification added with GUARANTEED badge display for current user');
 
             } catch (error) {
                 console.error('❌ Error adding notification:', error);
                 this.forceShowBadgeNow();
             }
         }
-
-
 
        /**
         * ✅ INSTANT: Toggle notifications with immediate response
@@ -1648,7 +1646,7 @@
          */
         async markNotificationAsRead(notificationId) {
             try {
-                console.log(`🔔 Marking notification ${notificationId} as read`);
+                console.log(`🔔 Marking notification ${notificationId} as read for current user`);
 
                 // Find the notification
                 const notification = this.notifications.find(n => n.id === notificationId);
@@ -1660,13 +1658,13 @@
                 // Mark as read in current state
                 notification.isRead = true;
 
-                // Save persistent read state
+                // Save persistent read state for current user
                 if (notification.persistentId) {
                     this.saveReadState(notification.persistentId);
                 }
 
-                // Update localStorage for user action notifications
-                const storageKey = 'dashboardNotifications';
+                // Update localStorage for current user action notifications
+                const storageKey = this.getUserStorageKey('dashboardNotifications');
                 const userNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
                 const userNotification = userNotifications.find(n => n.id === notificationId);
                 if (userNotification) {
@@ -1674,15 +1672,14 @@
                     localStorage.setItem(storageKey, JSON.stringify(userNotifications));
                 }
 
-                // ✅ CRITICAL FIX: FORCE badge update immediately after marking as read
+                // Force badge update
                 this.forceUpdateBadgeImmediately();
                 this.renderNotifications();
 
-                console.log(`✅ Notification ${notificationId} marked as read with FORCED badge update`);
+                console.log(`✅ Notification ${notificationId} marked as read for current user`);
 
             } catch (error) {
                 console.error('❌ Failed to mark notification as read:', error);
-                // Even on error, force badge update
                 this.forceUpdateBadgeImmediately();
             }
         }
@@ -1692,7 +1689,7 @@
          */
         async markAllNotificationsAsRead() {
             try {
-                console.log('🔔 Marking all notifications as read');
+                console.log('🔔 Marking all notifications as read for current user');
 
                 // Mark all notifications as read
                 this.notifications.forEach(notification => {
@@ -1703,26 +1700,89 @@
                     }
                 });
 
-                // Update localStorage user notifications
-                const storageKey = 'dashboardNotifications';
+                // Update localStorage user notifications for current user
+                const storageKey = this.getUserStorageKey('dashboardNotifications');
                 const userNotifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
                 userNotifications.forEach(notification => {
                     notification.isRead = true;
                 });
                 localStorage.setItem(storageKey, JSON.stringify(userNotifications));
 
-                // ✅ CRITICAL FIX: FORCE badge update immediately
+                // Force badge update
                 this.forceUpdateBadgeImmediately();
                 this.renderNotifications();
 
-                console.log('✅ All notifications marked as read with FORCED badge update');
+                console.log('✅ All notifications marked as read for current user');
 
             } catch (error) {
                 console.error('❌ Failed to mark all notifications as read:', error);
-                // Even on error, force badge update
                 this.forceUpdateBadgeImmediately();
             }
         }
+
+        /**
+         * ✅ NEW: Clear notifications when user changes
+         */
+        clearNotificationsForUserChange() {
+            try {
+                console.log('🧹 Clearing notifications for user change');
+
+                // Clear current notifications array
+                this.notifications = [];
+
+                // Clear the notification display
+                const container = document.getElementById('notifications-list');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="empty-notifications">
+                            <div class="empty-icon">🔔</div>
+                            <p>All caught up!</p>
+                            <small>No new dashboard alerts</small>
+                        </div>
+                    `;
+                }
+
+                // Force badge update
+                this.forceShowBadgeNow();
+
+                console.log('✅ Notifications cleared for user change');
+            } catch (error) {
+                console.error('❌ Error clearing notifications for user change:', error);
+            }
+        }
+
+        /**
+         * ✅ NEW: Debug user-specific notifications
+         */
+        debugUserNotifications() {
+            console.log('🔍 DEBUG: User-specific notifications');
+            console.log('Current user:', this.currentUser);
+
+            const storageKey = this.getUserStorageKey('dashboardNotifications');
+            const readStatesKey = this.getUserStorageKey('dashboardNotificationReadStates');
+
+            console.log('Storage key:', storageKey);
+            console.log('Read states key:', readStatesKey);
+
+            const notifications = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            const readStates = JSON.parse(localStorage.getItem(readStatesKey) || '{}');
+
+            console.log('Stored notifications:', notifications.length);
+            console.log('Read states:', Object.keys(readStates).length);
+
+            // List all user-specific keys in localStorage
+            const userKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.includes('dashboardNotifications') || key.includes('dashboardNotificationReadStates')) {
+                    userKeys.push(key);
+                }
+            }
+
+            console.log('All notification keys in localStorage:', userKeys);
+        }
+
+
         /**
          * ✅ TEST: Manual testing function with FORCED timer restart
          */

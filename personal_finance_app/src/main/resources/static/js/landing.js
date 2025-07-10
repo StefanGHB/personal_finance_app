@@ -1,8 +1,4 @@
-/*
- * PERSONAL FINANCE - COMPLETE LANDING PAGE JAVASCRIPT
- * PRODUCTION-READY VERSION with Forgot Password + Reset Password Modals
- * Enhanced with comprehensive error handling and security features
- */
+
 
 // ==========================================
 // CORE INITIALIZATION
