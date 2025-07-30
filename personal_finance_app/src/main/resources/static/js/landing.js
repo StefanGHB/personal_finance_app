@@ -1,9 +1,5 @@
 
 
-// ==========================================
-// CORE INITIALIZATION
-// ==========================================
-
 document.addEventListener('DOMContentLoaded', function() {
     initializeTabs();
     initializeFormHandlers();
