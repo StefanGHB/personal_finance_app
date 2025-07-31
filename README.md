@@ -15,65 +15,65 @@
 ## 📸 Application Screenshots
 
 ### 🎯 Landing Page Experience
-![Landing Hero](docs/screenshots/landing-hero.png)
+![Landing Hero](screenshots/landing-hero.png)
 *Modern landing page showcasing the core value proposition with clean design and clear call-to-action.*
 
-![Landing Features](docs/screenshots/landing-features.png)
+![Landing Features](screenshots/landing-features.png)
 *Comprehensive feature overview highlighting smart transaction management, budget control, and advanced analytics.*
 
-![Landing Signup](docs/screenshots/landing-signup.png)
+![Landing Signup](screenshots/landing-signup.png)
 *Streamlined registration process with traditional signup form and convenient Google OAuth2 integration.*
 
 ### 🏠 Financial Dashboard
-![Dashboard Overview](docs/screenshots/dashboard-overview.png)
+![Dashboard Overview](screenshots/dashboard-overview.png)
 *Real-time financial overview displaying current balance, monthly income/expenses, and key performance metrics.*
 
-![Dashboard Analytics](docs/screenshots/dashboard-analytics.png)
+![Dashboard Analytics](screenshots/dashboard-analytics.png)
 *Advanced budget performance tracking and category allocation analysis with visual progress indicators.*
 
-![Dashboard Performance](docs/screenshots/dashboard-performance.png)
+![Dashboard Performance](screenshots/dashboard-performance.png)
 *Monthly performance insights with spending velocity tracking and financial health scoring.*
 
-![Dashboard Insights](docs/screenshots/dashboard-insights.png)
+![Dashboard Insights](screenshots/dashboard-insights.png)
 *Detailed financial insights including spending patterns, budget adherence rates, and actionable recommendations.*
 
 ### 💳 Transaction Management
-![Transactions Overview](docs/screenshots/transactions-overview.png)
+![Transactions Overview](screenshots/transactions-overview.png)
 *Clean transaction interface with comprehensive filtering options and intuitive empty state guidance.*
 
-![Transaction Add Modal](docs/screenshots/transaction-add-modal.png)
+![Transaction Add Modal](screenshots/transaction-add-modal.png)
 *User-friendly transaction creation form with category selection, amount input, and date picker.*
 
-![Transactions With Filter](docs/screenshots/transactions-with-filter.png)
+![Transactions With Filter](screenshots/transactions-with-filter.png)
 *Advanced filtering system allowing users to sort transactions by type, period, category, and amount range.*
 
 ### 📊 Budget Planning
-![Budgets Overview](docs/screenshots/budgets-overview.png)
+![Budgets Overview](screenshots/budgets-overview.png)
 *Budget management dashboard showing total budget, spending progress, and health indicators.*
 
-![Budget Create Modal](docs/screenshots/budget-create-modal.png)
+![Budget Create Modal](screenshots/budget-create-modal.png)
 *Intelligent budget creation form with general/category options and customizable alert settings.*
 
-![Budget Empty State](docs/screenshots/budget-empty-state.png)
+![Budget Empty State](screenshots/budget-empty-state.png)
 *Helpful empty state encouraging users to create their first budget with clear guidance.*
 
-![Budget Filter Panel](docs/screenshots/budget-filter-panel.png)
+![Budget Filter Panel](screenshots/budget-filter-panel.png)
 *Sophisticated filtering system for organizing budgets by type, status, and category.*
 
 ### 🏷️ Category Organization  
-![Categories Overview](docs/screenshots/categories-overview.png)
+![Categories Overview](screenshots/categories-overview.png)
 *Category management dashboard with statistics showing total, income, and expense categories distribution.*
 
-![Category Create Modal](docs/screenshots/category-create-modal.png)
+![Category Create Modal](screenshots/category-create-modal.png)
 *Intuitive category creation interface with type selection, naming, and color customization options.*
 
-![Categories List](docs/screenshots/categories-list.png)
+![Categories List](screenshots/categories-list.png)
 *Organized category listing showing default categories with usage statistics and management options.*
 
-![Categories Filter](docs/screenshots/categories-filter.png)
+![Categories Filter](screenshots/categories-filter.png)
 *Advanced category filtering with type, usage status, origin, and search functionality.*
 
-![Categories Quick Actions](docs/screenshots/categories-quick-actions.png)
+![Categories Quick Actions](screenshots/categories-quick-actions.png)
 *Fast category creation shortcuts for both income and expense categories with visual guidance.*
 
 ---
@@ -1002,13 +1002,9 @@ For new feature requests:
 
 <div align="center">
 
-## 🌟 Star History
+**🌟 Star this project if it helped you! ⭐**
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/personal-finance-app&type=Date)](https://star-history.com/#yourusername/personal-finance-app&Date)
-
----
-
-**Made with ❤️ by [Your Name](https://github.com/yourusername)**
+**Built with ❤️ and modern Java technologies**
 
 *PersonalFinance - Empowering smart financial decisions*
 
