@@ -288,23 +288,23 @@ public class CategoryService {
         logger.info("Creating default categories for user ID: {}", user.getId());
 
         // Expense категории
-        createDefaultCategory(user, "Храна и напитки", TransactionType.EXPENSE, "#ef4444");
-        createDefaultCategory(user, "Транспорт", TransactionType.EXPENSE, "#f97316");
-        createDefaultCategory(user, "Жилище", TransactionType.EXPENSE, "#eab308");
-        createDefaultCategory(user, "Здравеопазване", TransactionType.EXPENSE, "#22c55e");
-        createDefaultCategory(user, "Развлечения", TransactionType.EXPENSE, "#3b82f6");
-        createDefaultCategory(user, "Образование", TransactionType.EXPENSE, "#8b5cf6");
-        createDefaultCategory(user, "Дрехи", TransactionType.EXPENSE, "#ec4899");
-        createDefaultCategory(user, "Подарци", TransactionType.EXPENSE, "#06b6d4");
-        createDefaultCategory(user, "Спорт", TransactionType.EXPENSE, "#10b981");
-        createDefaultCategory(user, "Други разходи", TransactionType.EXPENSE, "#6b7280");
+        createDefaultCategory(user, "Food & Drinks", TransactionType.EXPENSE, "#ef4444");
+        createDefaultCategory(user, "Transport", TransactionType.EXPENSE, "#f97316");
+        createDefaultCategory(user, "Housing", TransactionType.EXPENSE, "#eab308");
+        createDefaultCategory(user, "Healthcare", TransactionType.EXPENSE, "#22c55e");
+        createDefaultCategory(user, "Entertainment", TransactionType.EXPENSE, "#3b82f6");
+        createDefaultCategory(user, "Education", TransactionType.EXPENSE, "#8b5cf6");
+        createDefaultCategory(user, "Clothing", TransactionType.EXPENSE, "#ec4899");
+        createDefaultCategory(user, "Gifts", TransactionType.EXPENSE, "#06b6d4");
+        createDefaultCategory(user, "Sports", TransactionType.EXPENSE, "#10b981");
+        createDefaultCategory(user, "Other Expenses", TransactionType.EXPENSE, "#6b7280");
 
         // Income категории
-        createDefaultCategory(user, "Заплата", TransactionType.INCOME, "#16a34a");
-        createDefaultCategory(user, "Бонус", TransactionType.INCOME, "#059669");
-        createDefaultCategory(user, "Инвестиции", TransactionType.INCOME, "#0891b2");
-        createDefaultCategory(user, "Подарък", TransactionType.INCOME, "#7c3aed");
-        createDefaultCategory(user, "Други приходи", TransactionType.INCOME, "#dc2626");
+        createDefaultCategory(user, "Salary", TransactionType.INCOME, "#16a34a");
+        createDefaultCategory(user, "Bonus", TransactionType.INCOME, "#059669");
+        createDefaultCategory(user, "Investments", TransactionType.INCOME, "#0891b2");
+        createDefaultCategory(user, "Gift", TransactionType.INCOME, "#7c3aed");
+        createDefaultCategory(user, "Other Income", TransactionType.INCOME, "#dc2626");
 
         logger.info("Successfully created default categories for user ID: {}", user.getId());
     }
