@@ -41,7 +41,7 @@
 ![Transactions Overview](screenshots/transactions-overview.png)
 *Clean transaction interface with comprehensive filtering options and intuitive empty state guidance.*
 
-![Transaction Add Modal](screenshots/transaction-add-modal.png)
+![Transactions Add Modal](screenshots/transactions-add-modal.png)
 *User-friendly transaction creation form with category selection, amount input, and date picker.*
 
 ![Transactions With Filter](screenshots/transactions-with-filter.png)
