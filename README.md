@@ -874,17 +874,6 @@ logging.level.org.springframework.security=DEBUG
 spring.mail.properties.mail.debug=true
 ```
 
-### **Health Checks**
-
-Quick health verification:
-```bash
-# Application health
-curl http://localhost:8080/api/auth/current-user
-
-# Email service
-POST http://localhost:8080/api/email-validation/test-email
-```
-
 </details>
 
 ---
@@ -983,18 +972,6 @@ For new feature requests:
 - 💰 [Building REST APIs with Spring Boot](https://spring.io/guides/tutorials/rest/)
 - 🔄 [OAuth2 Integration Guide](https://spring.io/guides/tutorials/spring-boot-oauth2/)
 - 📊 [JPA and Hibernate Tutorial](https://spring.io/guides/gs/accessing-data-jpa/)
-
-### **Tools & Resources**
-- 🛠️ [Postman Collection](docs/PersonalFinance-API.postman_collection.json) - API testing
-- 📊 [Database Schema](docs/database-schema.sql) - Complete database structure
-- 🎨 [UI Components](docs/ui-components.md) - Frontend component documentation
-- 🔧 [Development Setup Guide](docs/development-setup.md) - Detailed dev environment setup
-
-### **Community & Support**
-- 💬 [GitHub Discussions](https://github.com/yourusername/personal-finance-app/discussions)
-- 🐛 [Issue Tracker](https://github.com/yourusername/personal-finance-app/issues)
-- 📧 [Email Support](mailto:support@personalfinance.app)
-- 💼 [LinkedIn](https://linkedin.com/in/yourprofile)
 
 </details>
 
